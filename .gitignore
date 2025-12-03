@@ -1,0 +1,45 @@
+# Node
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+dist/
+build/
+
+# Environment variables
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Misc
+coverage/
+
+# Local server
+*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional: ignore generated files
+*.log
+
+# Ignore by project structure
+/client/node_modules/
+/server/node_modules/
+/client/dist/
+/server/dist/
