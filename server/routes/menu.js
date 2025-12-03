@@ -3,12 +3,7 @@ const router = express.Router();
 const MenuItem = require('../models/MenuItem');
 
 router.get('/', async (req, res) => {
-  try {
-    const items = await MenuItem.find();
-    res.json(items);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  res.json([]);
 });
 
 router.post('/', async (req, res) => {

@@ -76,10 +76,18 @@ const Home: React.FC = () => {
           <div className="flex justify-center mb-6 text-orange-500">
              {[...Array(5)].map((_, i) => <Star key={i} fill="currentColor" size={24} />)}
           </div>
-          <blockquote className="text-2xl md:text-3xl font-serif italic leading-relaxed mb-8">
-            "{REVIEWS[0].text}"
-          </blockquote>
-          <cite className="not-italic text-stone-400 font-medium">— {REVIEWS[0].author}</cite>
+          {REVIEWS.length > 0 ? (
+            <>
+              <blockquote className="text-2xl md:text-3xl font-serif italic leading-relaxed mb-8">
+                "{REVIEWS[0].text}"
+              </blockquote>
+              <cite className="not-italic text-stone-400 font-medium">— {REVIEWS[0].author}</cite>
+            </>
+          ) : (
+            <blockquote className="text-2xl md:text-3xl font-serif italic leading-relaxed mb-8">
+              No reviews yet. Be the first to leave feedback!
+            </blockquote>
+          )}
           <div className="mt-8">
              <NavLink to="/reviews" className="text-sm border-b border-orange-500 pb-1 hover:text-orange-400 transition-colors">See all reviews</NavLink>
           </div>
