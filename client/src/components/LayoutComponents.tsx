@@ -75,25 +75,33 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    // Basic validation
     if (!loginEmail || !loginPassword) {
       setLoginError('Email and password are required.');
+      return;
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(loginEmail)) {
+      setLoginError('Please enter a valid email address.');
+      return;
+    }
+    // Strong password validation
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+    if (!strongPasswordRegex.test(loginPassword)) {
+      setLoginError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
       return;
     }
     setIsLoggingIn(true);
     try {
       const loggedInUser = await loginUser(loginEmail, loginPassword);
-      // Ensure user.id is set for downstream logic
       const userWithId = { ...loggedInUser, id: String(loggedInUser._id || loggedInUser.id) };
       onLogin(userWithId);
       localStorage.setItem('userEmail', userWithId.email);
       setIsLoginModalOpen(false);
-      // Role-based Redirect
       if (userWithId.role === 'admin') {
         navigate('/admin');
       } else if (userWithId.role === 'staff') {
         navigate('/staff');
       } else {
-        // Redirect customer to Home page after signin
         navigate('/');
       }
     } catch (err) {
@@ -106,8 +114,27 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupError('');
+    // Basic validation
+    if (!signupName.trim()) {
+      setSignupError('Full name is required.');
+      return;
+    }
+    if (!signupEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(signupEmail)) {
+      setSignupError('Please enter a valid email address.');
+      return;
+    }
+    if (!signupPhone || !/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/.test(signupPhone)) {
+      setSignupError('Please enter a valid phone number.');
+      return;
+    }
     if (!signupPassword || !signupConfirmPassword) {
       setSignupError('Please enter and confirm your password.');
+      return;
+    }
+    // Strong password validation
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+    if (!strongPasswordRegex.test(signupPassword)) {
+      setSignupError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
       return;
     }
     if (signupPassword !== signupConfirmPassword) {
