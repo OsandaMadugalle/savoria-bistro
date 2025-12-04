@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw } from 'lucide-react';
-import { User, Order } from '../types';
-import { fetchUserProfile, updateUserProfile, fetchUserOrders } from '../services/api';
+import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar } from 'lucide-react';
+import { User, Order, ReservationData } from '../types';
+import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const ProfilePage: React.FC = () => {
@@ -20,6 +20,8 @@ const ProfilePage: React.FC = () => {
    const [confirmTouched, setConfirmTouched] = useState(false);
    const [orders, setOrders] = useState<Order[]>([]);
    const [ordersLoading, setOrdersLoading] = useState(true);
+   const [reservations, setReservations] = useState<ReservationData[]>([]);
+   const [reservationsLoading, setReservationsLoading] = useState(true);
    const navigate = useNavigate();
 
    useEffect(() => {
@@ -47,16 +49,21 @@ const ProfilePage: React.FC = () => {
             setEditData({ name: profile.name, email: profile.email, phone: profile.phone, password: '', confirmPassword: '' });
             setLoading(false);
             // Fetch user's orders
-                  const userId = profile.id ? profile.id : (profile._id ? profile._id : '');
-                  if (userId) {
-                     fetchUserOrders(userId)
-                        .then(setOrders)
-                        .catch(() => setOrders([]))
-                        .finally(() => setOrdersLoading(false));
-                  } else {
-                     setOrders([]);
-                     setOrdersLoading(false);
-                  }
+            const userId = profile.id ? profile.id : (profile._id ? profile._id : '');
+            if (userId) {
+              fetchUserOrders(userId)
+                .then(setOrders)
+                .catch(() => setOrders([]))
+                .finally(() => setOrdersLoading(false));
+            } else {
+              setOrders([]);
+              setOrdersLoading(false);
+            }
+            // Fetch user's reservations
+            fetchUserReservations(profile.email)
+              .then(setReservations)
+              .catch(() => setReservations([]))
+              .finally(() => setReservationsLoading(false));
          })
          .catch(() => {
             setError('Could not load profile.');
@@ -279,8 +286,8 @@ const ProfilePage: React.FC = () => {
                      )}
           </div>
 
-          {/* Right Column: Order History */}
-          <div className="md:col-span-2">
+          {/* Right Column: Order History & Reservations */}
+          <div className="md:col-span-2 space-y-8">
              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
                 <div className="p-6 border-b border-stone-100 flex justify-between items-center">
                    <h3 className="font-bold text-xl text-stone-900">Recent Orders</h3>
@@ -314,6 +321,41 @@ const ProfilePage: React.FC = () => {
                             >
                                <RefreshCcw size={12} /> Track
                             </button>
+                         </div>
+                       </div>
+                     ))
+                   )}
+                </div>
+             </div>
+
+             <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+                <div className="p-6 border-b border-stone-100 flex justify-between items-center">
+                   <h3 className="font-bold text-xl text-stone-900">My Reservations</h3>
+                </div>
+                <div className="divide-y divide-stone-100">
+                   {reservationsLoading ? (
+                     <div className="p-6 text-center text-stone-500">Loading reservations...</div>
+                   ) : reservations.length === 0 ? (
+                     <div className="p-6 text-center text-stone-500">No reservations found.</div>
+                   ) : (
+                     reservations.map(res => (
+                       <div key={res._id || res.date + res.time} className="p-6 hover:bg-stone-50 transition-colors flex flex-col sm:flex-row gap-4 justify-between items-center">
+                         <div className="flex items-start gap-4 flex-1">
+                            <div className="bg-orange-50 p-3 rounded-full text-orange-600">
+                               <Calendar size={20} />
+                            </div>
+                            <div>
+                               <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-bold text-stone-900">{res.date} at {res.time}</span>
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${res.status === 'Completed' ? 'bg-green-100 text-green-700' : res.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{res.status || 'Pending'}</span>
+                               </div>
+                               <p className="text-xs text-stone-500 mb-1">{res.name} • {res.guests} guests</p>
+                               <p className="text-sm text-stone-600">{res.notes || 'No special requests.'}</p>
+                            </div>
+                         </div>
+                         <div className="text-right flex flex-col items-end gap-2">
+                            <span className="font-bold text-stone-900">{res.phone}</span>
+                            <span className="text-xs text-stone-500">{res.email}</span>
                          </div>
                        </div>
                      ))

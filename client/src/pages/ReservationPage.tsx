@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Phone, Clock, MapPin, Calendar, Users, User as UserIcon } from 'lucide-react';
 import { User, ReservationData } from '../types';
+import { createReservation } from '../services/api';
 
 interface ReservationPageProps {
   user: User | null;
@@ -18,14 +19,17 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
     }
   }, [user]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('submitting');
-    // Simulate backend call
-    setTimeout(() => {
+    try {
+      await createReservation(formData);
       setStatus('success');
       setFormData({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '', date: '', time: '', guests: 2, notes: '' });
-    }, 1500);
+    } catch (err) {
+      setStatus('idle');
+      alert('Reservation failed. Please try again.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

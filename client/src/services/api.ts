@@ -1,3 +1,20 @@
+// Fetch all reservations for a user (by email)
+export const fetchUserReservations = async (email: string): Promise<ReservationData[]> => {
+  const res = await fetch(`${API_URL}/reservations?email=${encodeURIComponent(email)}`);
+  if (!res.ok) throw new Error('Failed to fetch reservations');
+  return await res.json();
+};
+// --- RESERVATION CREATION ---
+export const createReservation = async (reservation: Partial<ReservationData>): Promise<ReservationData> => {
+  const res = await fetch(`${API_URL}/reservations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(reservation)
+  });
+  if (!res.ok) throw new Error('Reservation failed');
+  const data = await res.json();
+  return data.reservation;
+};
 // Fetch single order by orderId
 export const fetchOrderById = async (orderId: string): Promise<Order | null> => {
   const res = await fetch(`${API_URL}/orders/${orderId}`);

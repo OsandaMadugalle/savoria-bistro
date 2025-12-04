@@ -24,6 +24,7 @@ export interface ReservationData {
   time: string;
   guests: number;
   notes: string;
+  status?: 'Pending' | 'Completed' | 'Cancelled';
 }
 
 export interface Review {
