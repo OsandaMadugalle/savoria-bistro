@@ -32,7 +32,14 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    await MenuItem.findOneAndDelete({ id: req.params.id });
+    // Try to delete by custom id, then by MongoDB _id
+    let deleted = await MenuItem.findOneAndDelete({ id: req.params.id });
+    if (!deleted) {
+      deleted = await MenuItem.findByIdAndDelete(req.params.id);
+    }
+    if (!deleted) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
     res.json({ message: 'Item deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });

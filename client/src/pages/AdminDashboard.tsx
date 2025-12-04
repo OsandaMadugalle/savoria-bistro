@@ -22,7 +22,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogin }) => {
 
   // Form State
   const [formData, setFormData] = useState<Partial<MenuItem>>({
-    name: '', description: '', price: 0, category: 'Main', tags: [], image: 'https://picsum.photos/400/300'
+    name: '', description: '', price: 0, category: 'Main', tags: [], image: ''
   });
 
   useEffect(() => {
@@ -272,7 +272,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogin }) => {
                       </thead>
                       <tbody className="divide-y divide-stone-100 text-sm">
                          {menuItems.map(item => (
-                            <tr key={item.id} className="hover:bg-stone-50 transition-colors">
+                            <tr key={item._id || item.id || item.name} className="hover:bg-stone-50 transition-colors">
                                <td className="p-4"><img src={item.image} className="w-12 h-12 rounded-lg object-cover bg-stone-200" alt="" /></td>
                                <td className="p-4 font-bold text-stone-900">{item.name}</td>
                                <td className="p-4"><span className="bg-stone-100 px-2 py-1 rounded text-xs uppercase font-bold text-stone-600">{item.category}</span></td>
