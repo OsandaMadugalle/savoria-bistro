@@ -64,7 +64,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogin }) => {
       ...item,
       tags: item.tags // Keep as array, form will handle display
     });
-    setEditingId(item.id);
+        setEditingId(item._id || item.id || item.name);
     setIsFormOpen(true);
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -279,7 +279,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogin }) => {
                                <td className="p-4 font-mono font-medium">${item.price.toFixed(2)}</td>
                                <td className="p-4 flex gap-2">
                                   <button onClick={() => handleEdit(item)} className="p-2 text-stone-400 hover:text-orange-600 hover:bg-orange-50 rounded-full transition-colors"><Edit2 size={18} /></button>
-                                  <button onClick={() => handleDelete(item.id)} className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={18} /></button>
+                                  <button onClick={() => handleDelete(item._id || item.id || item.name)} className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={18} /></button>
                                </td>
                             </tr>
                          ))}

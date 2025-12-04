@@ -23,7 +23,14 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const updatedItem = await MenuItem.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
+    // Try to update by custom id, then by MongoDB _id
+    let updatedItem = await MenuItem.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
+    if (!updatedItem) {
+      updatedItem = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    }
+    if (!updatedItem) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
     res.json(updatedItem);
   } catch (err) {
     res.status(400).json({ message: err.message });
