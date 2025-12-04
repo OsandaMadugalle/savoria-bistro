@@ -13,6 +13,12 @@ router.post('/', async (req, res) => {
     const orderId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
     const newOrder = new Order({ ...req.body, orderId });
     await newOrder.save();
+
+    // Award loyalty points to user (10 points per $1 spent)
+    const User = require('../models/User');
+    const pointsEarned = Math.floor(newOrder.total * 10);
+    await User.findByIdAndUpdate(newOrder.userId, { $inc: { loyaltyPoints: pointsEarned } });
+
     res.status(201).json(newOrder);
   } catch (err) {
     res.status(400).json({ message: err.message });
