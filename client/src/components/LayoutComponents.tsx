@@ -83,6 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
     try {
       const loggedInUser = await loginUser(loginEmail, loginPassword);
       onLogin(loggedInUser);
+      localStorage.setItem('userEmail', loggedInUser.email);
       setIsLoginModalOpen(false);
       // Role-based Redirect
       if (loggedInUser.role === 'admin') {
@@ -90,7 +91,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
       } else if (loggedInUser.role === 'staff') {
         navigate('/staff');
       } else {
-        if (location.pathname === '/') navigate('/menu');
+        // Redirect customer to Home page after signin
+        navigate('/');
       }
     } catch (err) {
       setLoginError('Invalid email or password.');

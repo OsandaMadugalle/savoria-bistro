@@ -1,3 +1,9 @@
+// --- PROFILE API ---
+export const fetchUserProfile = async (email: string): Promise<User> => {
+  const res = await fetch(`${API_URL}/auth/me?email=${encodeURIComponent(email)}`);
+  if (!res.ok) throw new Error('Profile fetch failed');
+  return await res.json();
+};
 import { MenuItem, User, Order, ReservationData } from '../types';
 
 // Use environment variable for API URL with a default fallback

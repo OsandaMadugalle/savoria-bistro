@@ -3,6 +3,21 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
+// Get current user profile (simple: via email query param)
+router.get('/me', async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ message: 'Email required' });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    res.json(userResponse);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Seed Admin and Staff if not exists
 const seedAccounts = async () => {
   const adminExists = await User.findOne({ email: 'admin@savoria.com' });

@@ -1,27 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Trophy, ChefHat, Gift, Phone, MessageSquare, Calendar, Package, RefreshCcw } from 'lucide-react';
 import { User } from '../types';
+import { fetchUserProfile } from '../services/api';
 
-interface ProfilePageProps {
-  user: User | null;
-}
+const ProfilePage: React.FC = () => {
+   const [user, setUser] = useState<User | null>(null);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState('');
 
-const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
-  if (!user) {
-    return (
-      <div className="pt-32 pb-20 min-h-screen bg-stone-50 flex items-center justify-center">
-         <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-stone-200">
-           <h2 className="text-2xl font-bold mb-4">Please Sign In</h2>
-           <p className="text-stone-600 mb-6">You need to be logged in to view your profile.</p>
-           <NavLink to="/" className="text-orange-600 font-bold hover:underline">Go Home</NavLink>
+   useEffect(() => {
+      // For demo, get email from localStorage (replace with real auth context/session)
+      const email = localStorage.getItem('userEmail');
+      if (!email) {
+         setLoading(false);
+         setUser(null);
+         return;
+      }
+      fetchUserProfile(email)
+         .then(profile => {
+            setUser(profile);
+            setLoading(false);
+         })
+         .catch(err => {
+            setError('Could not load profile.');
+            setLoading(false);
+         });
+   }, []);
+
+   if (loading) {
+      return <div className="pt-32 pb-20 min-h-screen bg-stone-50 flex items-center justify-center"><div>Loading profile...</div></div>;
+   }
+   if (error) {
+      return <div className="pt-32 pb-20 min-h-screen bg-stone-50 flex items-center justify-center"><div>{error}</div></div>;
+   }
+   if (!user) {
+      return (
+         <div className="pt-32 pb-20 min-h-screen bg-stone-50 flex items-center justify-center">
+             <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-stone-200">
+                <h2 className="text-2xl font-bold mb-4">Please Sign In</h2>
+                <p className="text-stone-600 mb-6">You need to be logged in to view your profile.</p>
+                <NavLink to="/" className="text-orange-600 font-bold hover:underline">Go Home</NavLink>
+             </div>
          </div>
-      </div>
-    );
-  }
+      );
+   }
 
-  const nextRewardPoints = 1000;
-  const progress = (user.loyaltyPoints / nextRewardPoints) * 100;
+   const nextRewardPoints = 1000;
+   const progress = (user.loyaltyPoints / nextRewardPoints) * 100;
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-stone-50">
