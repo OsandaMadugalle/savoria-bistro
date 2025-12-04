@@ -79,23 +79,21 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
     }
   };
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate account creation
-    const newUser: User = {
-      id: `u-${Date.now()}`,
-      name: signupName,
-      email: signupEmail,
-      phone: signupPhone,
-      loyaltyPoints: 0,
-      memberSince: new Date().getFullYear().toString(),
-      tier: 'Bronze',
-      role: 'customer',
-      history: []
-    };
-    onLogin(newUser);
-    setIsLoginModalOpen(false);
-    navigate('/profile');
+    try {
+      const newUser = await import('../services/api').then(mod => mod.registerUser({
+        name: signupName,
+        email: signupEmail,
+        phone: signupPhone,
+        password: signupPassword
+      }));
+      onLogin(newUser);
+      setIsLoginModalOpen(false);
+      navigate('/profile');
+    } catch (err) {
+      setLoginError('Signup failed. Please try again.');
+    }
   };
 
   return (

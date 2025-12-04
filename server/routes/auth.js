@@ -31,6 +31,7 @@ router.post('/signup', async (req, res) => {
     // Default role is customer. Admin/Staff must be created via DB or seeded for security.
     const user = new User({ name, email, password: hashedPassword, phone, role: 'customer' });
     await user.save();
+    console.log('✅ User created:', user.email);
     
     const userResponse = user.toObject();
     delete userResponse.password;
