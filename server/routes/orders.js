@@ -35,12 +35,26 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get Single Order
+// Get Single Order (by orderId or _id)
 router.get('/:id', async (req, res) => {
   try {
-    const order = await Order.findOne({ orderId: req.params.id });
+    let order = await Order.findOne({ orderId: req.params.id });
+    if (!order) {
+      // Try by MongoDB _id
+      order = await Order.findById(req.params.id);
+    }
     if (!order) return res.status(404).json({ message: 'Order not found' });
     res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get all orders for a user
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const orders = await Order.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    res.json(orders);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -50,11 +64,16 @@ router.get('/:id', async (req, res) => {
 router.put('/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
-    const order = await Order.findOneAndUpdate(
-      { orderId: req.params.id }, 
-      { status }, 
+    let order = await Order.findOneAndUpdate(
+      { orderId: req.params.id },
+      { status },
       { new: true }
     );
+    if (!order) {
+      // Try by MongoDB _id
+      order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    }
+    if (!order) return res.status(404).json({ message: 'Order not found' });
     res.json(order);
   } catch (err) {
     res.status(400).json({ message: err.message });

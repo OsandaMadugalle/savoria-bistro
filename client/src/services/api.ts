@@ -1,3 +1,15 @@
+// Fetch single order by orderId
+export const fetchOrderById = async (orderId: string): Promise<Order | null> => {
+  const res = await fetch(`${API_URL}/orders/${orderId}`);
+  if (!res.ok) return null;
+  return await res.json();
+};
+// Fetch all orders for a user (customer-side tracking)
+export const fetchUserOrders = async (userId: string): Promise<Order[]> => {
+  const res = await fetch(`${API_URL}/orders/user/${userId}`);
+  if (!res.ok) throw new Error('Failed to fetch user orders');
+  return await res.json();
+};
 export const updateUserProfile = async (email: string, updates: Partial<User>): Promise<User> => {
   const res = await fetch(`${API_URL}/auth/me?email=${encodeURIComponent(email)}`, {
     method: 'PUT',
@@ -104,4 +116,14 @@ export const fetchReservations = async (): Promise<ReservationData[]> => {
     const res = await fetch(`${API_URL}/reservations`);
     return await res.json();
   } catch (e) { return []; }
+};
+
+// Update reservation status (complete/cancel)
+export const updateReservationStatus = async (reservationId: string, action: 'complete' | 'cancel'): Promise<void> => {
+  const res = await fetch(`${API_URL}/reservations/${reservationId}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action })
+  });
+  if (!res.ok) throw new Error('Failed to update reservation status');
 };

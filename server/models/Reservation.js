@@ -8,6 +8,7 @@ const reservationSchema = new mongoose.Schema({
   time: String,
   guests: Number,
   notes: String,
+  status: { type: String, default: 'Pending' }, // Pending, Completed, Cancelled
   createdAt: { type: Date, default: Date.now }
 });
 

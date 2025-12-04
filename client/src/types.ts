@@ -50,8 +50,9 @@ export interface OrderHistoryItem {
 }
 
 export interface Order {
+  _id?: string;
   orderId: string;
-  items: { name: string; quantity: number }[];
+  items: { name: string; quantity: number; price?: number }[];
   total: number;
   status: 'Confirmed' | 'Preparing' | 'Quality Check' | 'Ready' | 'Delivered';
   createdAt: string;

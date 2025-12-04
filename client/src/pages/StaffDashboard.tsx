@@ -13,6 +13,9 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
   const [reservations, setReservations] = useState<ReservationData[]>([]);
   const [activeTab, setActiveTab] = useState<'kitchen' | 'reservations'>('kitchen');
   const [loading, setLoading] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [reservationActionLoading, setReservationActionLoading] = useState<string | null>(null); // reservation id
+  const [reservationActionError, setReservationActionError] = useState<string | null>(null);
   
   // Login State
   const [email, setEmail] = useState('');
@@ -56,10 +59,16 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
   };
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    setStatusError(null);
     // Optimistic update
-    setOrders(prev => prev.map(o => o.orderId === orderId ? { ...o, status: newStatus as any } : o));
-    await updateOrderStatus(orderId, newStatus);
-    loadData(); // Re-fetch to ensure sync
+    setOrders(prev => prev.map(o => (o.orderId === orderId || o._id === orderId) ? { ...o, status: newStatus as any } : o));
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      await loadData(); // Re-fetch to ensure sync
+    } catch (err) {
+      setStatusError('Failed to update order status. Please try again.');
+      await loadData(); // Revert optimistic update
+    }
   };
 
   const getNextStatus = (current: string) => {
@@ -69,6 +78,21 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
       case 'Quality Check': return 'Ready';
       case 'Ready': return 'Delivered';
       default: return null;
+    }
+  };
+
+  // Reservation actions (if backend supports status)
+  const handleReservationAction = async (reservationId: string, action: 'complete' | 'cancel') => {
+    setReservationActionLoading(reservationId);
+    setReservationActionError(null);
+    try {
+      // Call the actual API function
+      await import('../services/api').then(api => api.updateReservationStatus(reservationId, action));
+      await loadData();
+    } catch (err) {
+      setReservationActionError('Failed to update reservation.');
+    } finally {
+      setReservationActionLoading(null);
     }
   };
 
@@ -129,7 +153,15 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
   // --- DASHBOARD ---
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-4">
+    <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-4 relative">
+      {loading && (
+        <div className="absolute inset-0 bg-black/10 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center">
+            <RefreshCcw size={32} className="animate-spin text-orange-600 mb-2" />
+            <span className="text-stone-700 font-bold">Loading...</span>
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-serif font-bold text-stone-900 flex items-center gap-3">
@@ -155,11 +187,13 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
              Reservations
            </button>
         </div>
-
+        {statusError && (
+          <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium">{statusError}</div>
+        )}
         {activeTab === 'kitchen' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
              {orders.filter(o => o.status !== 'Delivered').map(order => (
-               <div key={order.orderId} className="bg-white rounded-xl shadow-md overflow-hidden border border-stone-200 flex flex-col animate-in fade-in zoom-in-95">
+               <div key={order._id || order.orderId} className="bg-white rounded-xl shadow-md overflow-hidden border border-stone-200 flex flex-col animate-in fade-in zoom-in-95">
                   <div className={`p-4 text-white flex justify-between items-center ${
                       order.status === 'Confirmed' ? 'bg-red-500' : 
                       order.status === 'Preparing' ? 'bg-orange-500' : 
@@ -182,62 +216,91 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
                      </ul>
                   </div>
                   <div className="p-4 bg-stone-50 border-t border-stone-100">
-                     {getNextStatus(order.status) && (
-                        <button 
-                           onClick={() => handleStatusUpdate(order.orderId, getNextStatus(order.status)!)}
-                           className="w-full py-2 bg-stone-900 text-white rounded-lg font-bold hover:bg-stone-800 transition-colors"
-                        >
-                           Mark {getNextStatus(order.status)}
-                        </button>
-                     )}
+                    {getNextStatus(order.status) && (
+                      <button 
+                        onClick={() => handleStatusUpdate(order._id || order.orderId, getNextStatus(order.status)!)}
+                        className="w-full py-2 bg-stone-900 text-white rounded-lg font-bold hover:bg-stone-800 transition-colors"
+                        disabled={loading}
+                      >
+                        Mark {getNextStatus(order.status)}
+                      </button>
+                    )}
                   </div>
                </div>
              ))}
              {orders.filter(o => o.status !== 'Delivered').length === 0 && (
-                <div className="col-span-full text-center py-20 text-stone-500">
-                   <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
-                   <h3 className="text-xl font-bold">All caught up!</h3>
-                   <p>No active orders in the queue.</p>
-                </div>
+               <div className="col-span-full text-center py-20 text-stone-500">
+                 <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
+                 <h3 className="text-xl font-bold">All caught up!</h3>
+                 <p>No active orders in the queue.</p>
+               </div>
              )}
           </div>
-        ) : (
-           <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+              {reservationActionError && (
+               <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium">{reservationActionError}</div>
+              )}
               <table className="w-full text-left">
-                 <thead className="bg-stone-50 border-b border-stone-200">
-                    <tr>
-                       <th className="p-4 font-bold text-stone-600 text-sm">Date & Time</th>
-                       <th className="p-4 font-bold text-stone-600 text-sm">Guest Name</th>
-                       <th className="p-4 font-bold text-stone-600 text-sm">Party Size</th>
-                       <th className="p-4 font-bold text-stone-600 text-sm">Contact</th>
-                       <th className="p-4 font-bold text-stone-600 text-sm">Notes</th>
+                <thead className="bg-stone-50 border-b border-stone-200">
+                  <tr>
+                    <th className="p-4 font-bold text-stone-600 text-sm">Date & Time</th>
+                    <th className="p-4 font-bold text-stone-600 text-sm">Guest Name</th>
+                    <th className="p-4 font-bold text-stone-600 text-sm">Party Size</th>
+                    <th className="p-4 font-bold text-stone-600 text-sm">Contact</th>
+                    <th className="p-4 font-bold text-stone-600 text-sm">Notes</th>
+                    <th className="p-4 font-bold text-stone-600 text-sm">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {reservations.map((res) => (
+                    <tr key={res._id || res.id || res.date + res.time} className="hover:bg-stone-50">
+                      <td className="p-4 text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-orange-500" />
+                          {res.date} at {res.time}
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm font-bold text-stone-900">{res.name}</td>
+                      <td className="p-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Utensils size={14} className="text-stone-400" /> {res.guests}
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-stone-600">{res.phone}</td>
+                      <td className="p-4 text-sm text-stone-500 italic">{res.notes || '-'}</td>
+                      <td className="p-4 text-sm">
+                       {/* Only show actions if reservation is not completed/cancelled */}
+                       {res.status !== 'Completed' && res.status !== 'Cancelled' && (
+                        <div className="flex gap-2">
+                          <button
+                           className="px-3 py-1 rounded-lg bg-green-600 text-white font-bold text-xs disabled:opacity-50"
+                           disabled={reservationActionLoading === (res._id || res.id) || loading}
+                           onClick={() => handleReservationAction(res._id || res.id, 'complete')}
+                          >
+                           {reservationActionLoading === (res._id || res.id) ? '...' : 'Mark Completed'}
+                          </button>
+                          <button
+                           className="px-3 py-1 rounded-lg bg-red-600 text-white font-bold text-xs disabled:opacity-50"
+                           disabled={reservationActionLoading === (res._id || res.id) || loading}
+                           onClick={() => handleReservationAction(res._id || res.id, 'cancel')}
+                          >
+                           {reservationActionLoading === (res._id || res.id) ? '...' : 'Cancel'}
+                          </button>
+                        </div>
+                       )}
+                       {(res.status === 'Completed' || res.status === 'Cancelled') && (
+                        <span className={`px-3 py-1 rounded-lg font-bold text-xs ${res.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{res.status}</span>
+                       )}
+                      </td>
                     </tr>
-                 </thead>
-                 <tbody className="divide-y divide-stone-100">
-                    {reservations.map((res, i) => (
-                       <tr key={i} className="hover:bg-stone-50">
-                          <td className="p-4 text-sm font-medium">
-                             <div className="flex items-center gap-2">
-                                <Calendar size={14} className="text-orange-500" />
-                                {res.date} at {res.time}
-                             </div>
-                          </td>
-                          <td className="p-4 text-sm font-bold text-stone-900">{res.name}</td>
-                          <td className="p-4 text-sm">
-                             <div className="flex items-center gap-1">
-                                <Utensils size={14} className="text-stone-400" /> {res.guests}
-                             </div>
-                          </td>
-                          <td className="p-4 text-sm text-stone-600">{res.phone}</td>
-                          <td className="p-4 text-sm text-stone-500 italic">{res.notes || '-'}</td>
-                       </tr>
-                    ))}
-                 </tbody>
+                  ))}
+                </tbody>
               </table>
               {reservations.length === 0 && (
-                 <div className="p-12 text-center text-stone-500">No upcoming reservations found.</div>
+                <div className="p-12 text-center text-stone-500">No upcoming reservations found.</div>
               )}
-           </div>
+            </div>
         )}
       </div>
     </div>

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw } from 'lucide-react';
-import { User } from '../types';
-import { fetchUserProfile, updateUserProfile } from '../services/api';
+import { User, Order } from '../types';
+import { fetchUserProfile, updateUserProfile, fetchUserOrders } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const ProfilePage: React.FC = () => {
 
@@ -17,6 +18,9 @@ const ProfilePage: React.FC = () => {
    const [editLoading, setEditLoading] = useState(false);
    const [editError, setEditError] = useState('');
    const [confirmTouched, setConfirmTouched] = useState(false);
+   const [orders, setOrders] = useState<Order[]>([]);
+   const [ordersLoading, setOrdersLoading] = useState(true);
+   const navigate = useNavigate();
 
    useEffect(() => {
       if (editing) {
@@ -34,6 +38,7 @@ const ProfilePage: React.FC = () => {
       if (!email) {
          setLoading(false);
          setUser(null);
+         setOrdersLoading(false);
          return;
       }
       fetchUserProfile(email)
@@ -41,10 +46,22 @@ const ProfilePage: React.FC = () => {
             setUser(profile);
             setEditData({ name: profile.name, email: profile.email, phone: profile.phone, password: '', confirmPassword: '' });
             setLoading(false);
+            // Fetch user's orders
+                  const userId = profile.id ? profile.id : (profile._id ? profile._id : '');
+                  if (userId) {
+                     fetchUserOrders(userId)
+                        .then(setOrders)
+                        .catch(() => setOrders([]))
+                        .finally(() => setOrdersLoading(false));
+                  } else {
+                     setOrders([]);
+                     setOrdersLoading(false);
+                  }
          })
          .catch(() => {
             setError('Could not load profile.');
             setLoading(false);
+            setOrdersLoading(false);
          });
    }, []);
 
@@ -270,29 +287,37 @@ const ProfilePage: React.FC = () => {
                    <button className="text-sm text-orange-600 font-medium hover:underline">View All</button>
                 </div>
                 <div className="divide-y divide-stone-100">
-                   {user.history.map(order => (
-                      <div key={order.id} className="p-6 hover:bg-stone-50 transition-colors flex flex-col sm:flex-row gap-4 justify-between items-center">
+                   {ordersLoading ? (
+                     <div className="p-6 text-center text-stone-500">Loading orders...</div>
+                   ) : orders.length === 0 ? (
+                     <div className="p-6 text-center text-stone-500">No orders found.</div>
+                   ) : (
+                     orders.map(order => (
+                       <div key={order._id || order.orderId} className="p-6 hover:bg-stone-50 transition-colors flex flex-col sm:flex-row gap-4 justify-between items-center">
                          <div className="flex items-start gap-4 flex-1">
                             <div className="bg-orange-50 p-3 rounded-full text-orange-600">
                                <Package size={20} />
                             </div>
                             <div>
                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-bold text-stone-900">Order {order.id}</span>
-                                  <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] uppercase font-bold rounded-full">{order.status}</span>
+                                  <span className="font-bold text-stone-900">Order {order.orderId}</span>
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{order.status}</span>
                                </div>
-                               <p className="text-xs text-stone-500 mb-1">{order.date}</p>
-                               <p className="text-sm text-stone-600">{order.items.join(', ')}</p>
+                               <p className="text-xs text-stone-500 mb-1">{new Date(order.createdAt).toLocaleString()}</p>
+                               <p className="text-sm text-stone-600">{order.items.map(i => i.name).join(', ')}</p>
                             </div>
                          </div>
                          <div className="text-right flex flex-col items-end gap-2">
                             <span className="font-bold text-stone-900">${order.total.toFixed(2)}</span>
-                            <button className="flex items-center gap-1 text-xs font-bold text-orange-600 border border-orange-200 px-3 py-1.5 rounded-full hover:bg-orange-50 transition-colors">
-                               <RefreshCcw size={12} /> Reorder
+                            <button className="flex items-center gap-1 text-xs font-bold text-orange-600 border border-orange-200 px-3 py-1.5 rounded-full hover:bg-orange-50 transition-colors"
+                              onClick={() => navigate(`/tracker?orderId=${order.orderId}`)}
+                            >
+                               <RefreshCcw size={12} /> Track
                             </button>
                          </div>
-                      </div>
-                   ))}
+                       </div>
+                     ))
+                   )}
                 </div>
              </div>
           </div>

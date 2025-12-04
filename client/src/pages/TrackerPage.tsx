@@ -1,30 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, CheckCircle, ChefHat, Search, Bike, Package } from 'lucide-react';
+import { fetchOrderById } from '../services/api';
+
+
+const statusToStep: Record<string, number> = {
+   'Confirmed': 0,
+   'Preparing': 1,
+   'Quality Check': 2,
+   'Ready': 3,
+   'Delivered': 3,
+};
 
 const TrackerPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const [orderId, setOrderId] = useState(searchParams.get('orderId') || '');
-  const [isTracking, setIsTracking] = useState(!!searchParams.get('demo'));
-  const [trackingStep, setTrackingStep] = useState(0);
+   const [searchParams] = useSearchParams();
+   const [orderId, setOrderId] = useState(searchParams.get('orderId') || '');
+   const [isTracking, setIsTracking] = useState(!!searchParams.get('orderId'));
+   const [trackingStep, setTrackingStep] = useState(0);
+   const [orderStatus, setOrderStatus] = useState<string>('');
+   const [orderError, setOrderError] = useState('');
+   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (isTracking) {
-      setTrackingStep(0);
-      const times = [3000, 8000, 13000];
-      const timers: ReturnType<typeof setTimeout>[] = [];
-      
-      timers.push(setTimeout(() => setTrackingStep(1), times[0]));
-      timers.push(setTimeout(() => setTrackingStep(2), times[1]));
-      timers.push(setTimeout(() => setTrackingStep(3), times[2]));
+   useEffect(() => {
+      if (isTracking && orderId) {
+         let cancelled = false;
+         const pollOrder = async () => {
+            const order = await fetchOrderById(orderId);
+            if (!order) {
+               setOrderError('Order not found.');
+               return;
+            }
+            setOrderStatus(order.status);
+            setTrackingStep(statusToStep[order.status] ?? 0);
+            if (order.status !== 'Delivered' && !cancelled) {
+               pollRef.current = setTimeout(pollOrder, 4000);
+            }
+         };
+         pollOrder();
+         return () => {
+            cancelled = true;
+            if (pollRef.current) clearTimeout(pollRef.current);
+         };
+      }
+   }, [isTracking, orderId]);
 
-      return () => timers.forEach(clearTimeout);
-    }
-  }, [isTracking]);
-
-  const handleTrack = (e: React.FormEvent) => {
+  const handleTrack = async (e: React.FormEvent) => {
      e.preventDefault();
      if(orderId.trim()) {
+        setOrderError('');
         setIsTracking(true);
      }
   };
@@ -45,7 +68,7 @@ const TrackerPage: React.FC = () => {
                     <ArrowRight className="rotate-180" size={16} /> Back
                  </button>
                  <h2 className="text-3xl font-serif font-bold mb-2">Order Status</h2>
-                 <p className="text-stone-400">Order #{orderId || '8834'} • Est. Time: {trackingStep === 3 ? 'Now' : '15 mins'}</p>
+                 <p className="text-stone-400">Order #{orderId || '8834'} • Status: {orderStatus || 'Loading...'}</p>
               </div>
               <div className="p-8">
                  <div className="flex justify-center mb-12">
@@ -80,12 +103,14 @@ const TrackerPage: React.FC = () => {
                  </div>
 
                  <div className="mt-12 text-center">
-                    {trackingStep === 3 ? (
+                    {orderError ? (
+                      <div className="p-4 bg-red-50 text-red-600 rounded-lg inline-block">{orderError}</div>
+                    ) : trackingStep === 3 ? (
                         <div className="p-4 bg-green-50 text-green-700 rounded-lg inline-block">
                            <p className="font-bold">Enjoy your meal! 🍽️</p>
                         </div>
                     ) : (
-                       <p className="text-stone-500 text-sm animate-pulse">Updating status automatically...</p>
+                       <p className="text-stone-500 text-sm animate-pulse">Waiting for status update...</p>
                     )}
                  </div>
               </div>
