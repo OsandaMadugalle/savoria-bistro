@@ -19,20 +19,23 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const handleCheckout = async () => {
+    if (!user) return;
     setIsProcessing(true);
-    
     // Create order object to send to backend
     const orderData = {
-        userId: user ? user.id : null,
-        items: cart.map(i => ({ itemId: i.id, name: i.name, quantity: i.quantity, price: i.price })),
-        total: total
+      userId: user.id,
+      items: cart.map(i => ({ itemId: i.id, name: i.name, quantity: i.quantity, price: i.price })),
+      total: total
     };
-
-    const { orderId } = await createOrder(orderData);
-    
-    clearCart();
-    setIsProcessing(false);
-    navigate(`/tracker?demo=true&orderId=${orderId}`);
+    try {
+      const { orderId } = await createOrder(orderData);
+      clearCart();
+      navigate(`/tracker?demo=true&orderId=${orderId}`);
+    } catch (err) {
+      // Optionally show error to user
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // --- Cart Empty View ---
@@ -61,7 +64,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
         <div className="md:col-span-2 space-y-4">
           <h1 className="text-2xl font-bold text-stone-900 mb-6">Your Order</h1>
           {cart.map(item => (
-            <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex gap-4 items-center">
+            <div key={item._id || item.id || item.name} className="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex gap-4 items-center">
               <img src={item.image} alt={item.name} className="w-20 h-20 rounded-lg object-cover bg-stone-200" />
               <div className="flex-1">
                 <div className="flex justify-between mb-1">
@@ -112,10 +115,13 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
                </div>
             )}
 
+            {!user && (
+              <div className="mb-4 text-center text-red-500 text-sm font-semibold">You must be logged in to place an order.</div>
+            )}
             <button 
               onClick={handleCheckout}
-              disabled={isProcessing}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg transition-colors flex justify-center items-center gap-2"
+              disabled={isProcessing || !user}
+              className={`w-full font-bold py-3 rounded-lg transition-colors flex justify-center items-center gap-2 ${!user ? 'bg-stone-300 text-stone-500 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-200'}`}
             >
               {isProcessing ? 'Processing...' : 'Proceed to Checkout'}
             </button>

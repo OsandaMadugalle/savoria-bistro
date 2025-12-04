@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, Shield, ChefHat, Eye, EyeOff } from 'lucide-react';
 import { CartItem, User } from '../types';
 import { loginUser } from '../services/api';
@@ -52,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-  const location = useLocation();
+  // Removed unused 'location' variable
   const navigate = useNavigate();
 
   const navLinks = [
@@ -82,13 +82,15 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
     setIsLoggingIn(true);
     try {
       const loggedInUser = await loginUser(loginEmail, loginPassword);
-      onLogin(loggedInUser);
-      localStorage.setItem('userEmail', loggedInUser.email);
+      // Ensure user.id is set for downstream logic
+      const userWithId = { ...loggedInUser, id: String(loggedInUser._id || loggedInUser.id) };
+      onLogin(userWithId);
+      localStorage.setItem('userEmail', userWithId.email);
       setIsLoginModalOpen(false);
       // Role-based Redirect
-      if (loggedInUser.role === 'admin') {
+      if (userWithId.role === 'admin') {
         navigate('/admin');
-      } else if (loggedInUser.role === 'staff') {
+      } else if (userWithId.role === 'staff') {
         navigate('/staff');
       } else {
         // Redirect customer to Home page after signin

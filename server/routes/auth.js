@@ -37,6 +37,18 @@ router.get('/me', async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     const userResponse = user.toObject();
     delete userResponse.password;
+
+    // Fetch recent orders for this user
+    const Order = require('../models/Order');
+    const orders = await Order.find({ userId: user._id }).sort({ createdAt: -1 }).limit(5);
+    userResponse.history = orders.map(order => ({
+      id: order.orderId,
+      date: order.createdAt,
+      items: order.items.map(i => i.name),
+      total: order.total,
+      status: order.status
+    }));
+
     res.json(userResponse);
   } catch (err) {
     res.status(500).json({ message: err.message });

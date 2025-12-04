@@ -136,7 +136,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
           <div className="grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {filteredItems.map(item => (
               <div 
-                key={item.id} 
+                key={item._id || item.id || item.name} 
                 onClick={() => setSelectedItem(item)}
                 className="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex gap-4 hover:shadow-lg hover:border-orange-100 transition-all cursor-pointer group"
               >

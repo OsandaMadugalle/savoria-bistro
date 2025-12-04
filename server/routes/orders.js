@@ -5,7 +5,13 @@ const Order = require('../models/Order');
 // Create Order
 router.post('/', async (req, res) => {
   try {
-    const newOrder = new Order(req.body);
+    // Require userId for order
+    if (!req.body.userId) {
+      return res.status(400).json({ message: 'User must be logged in to place an order.' });
+    }
+    // Generate unique orderId
+    const orderId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+    const newOrder = new Order({ ...req.body, orderId });
     await newOrder.save();
     res.status(201).json(newOrder);
   } catch (err) {
