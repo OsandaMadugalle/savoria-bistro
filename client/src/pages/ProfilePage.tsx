@@ -1,16 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Trophy, ChefHat, Gift, Phone, MessageSquare, Calendar, Package, RefreshCcw } from 'lucide-react';
+import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw } from 'lucide-react';
 import { User } from '../types';
-import { fetchUserProfile } from '../services/api';
+import { fetchUserProfile, updateUserProfile } from '../services/api';
 
 const ProfilePage: React.FC = () => {
+
+   // All hooks must be called unconditionally and at the top level
    const [user, setUser] = useState<User | null>(null);
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState('');
+   const [editing, setEditing] = useState(false);
+   const [editData, setEditData] = useState<{ name: string; email: string; phone: string; password: string; confirmPassword: string }>({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+   const [showPassword, setShowPassword] = useState(false);
+   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+   const [editLoading, setEditLoading] = useState(false);
+   const [editError, setEditError] = useState('');
+   const [confirmTouched, setConfirmTouched] = useState(false);
 
    useEffect(() => {
-      // For demo, get email from localStorage (replace with real auth context/session)
+      if (editing) {
+         document.body.classList.add('overflow-hidden');
+      } else {
+         document.body.classList.remove('overflow-hidden');
+      }
+      return () => {
+         document.body.classList.remove('overflow-hidden');
+      };
+   }, [editing]);
+
+   useEffect(() => {
       const email = localStorage.getItem('userEmail');
       if (!email) {
          setLoading(false);
@@ -20,14 +39,68 @@ const ProfilePage: React.FC = () => {
       fetchUserProfile(email)
          .then(profile => {
             setUser(profile);
+            setEditData({ name: profile.name, email: profile.email, phone: profile.phone, password: '', confirmPassword: '' });
             setLoading(false);
          })
-         .catch(err => {
+         .catch(() => {
             setError('Could not load profile.');
             setLoading(false);
          });
    }, []);
 
+   const nextRewardPoints = 1000;
+   const progress = user ? (user.loyaltyPoints / nextRewardPoints) * 100 : 0;
+
+   // Edit profile handlers
+   const handleEditClick = () => {
+      setEditing(true);
+      setEditError('');
+   };
+
+   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      if (name === 'password') {
+         setEditData(prev => ({
+            ...prev,
+            password: value,
+            confirmPassword: confirmTouched ? prev.confirmPassword : value
+         }));
+      } else if (name === 'confirmPassword') {
+         setConfirmTouched(true);
+         setEditData(prev => ({ ...prev, confirmPassword: value }));
+      } else {
+         setEditData(prev => ({ ...prev, [name]: value }));
+      }
+   };
+
+   const handleEditCancel = () => {
+      setEditing(false);
+      setEditError('');
+      if (user) setEditData({ name: user.name, email: user.email, phone: user.phone, password: '', confirmPassword: '' });
+      setConfirmTouched(false);
+   };
+
+   const handleEditSave = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setEditError('');
+      if (editData.password && editData.password !== editData.confirmPassword) {
+         setEditError('Passwords do not match.');
+         return;
+      }
+      setEditLoading(true);
+      try {
+         const { confirmPassword, ...submitData } = editData;
+         const updated = await updateUserProfile(user!.email, submitData);
+         setUser(updated);
+         setEditing(false);
+      } catch (err) {
+         setEditError('Failed to update profile.');
+      } finally {
+         setEditLoading(false);
+      }
+   };
+
+   // Conditional rendering must use state, not hooks
    if (loading) {
       return <div className="pt-32 pb-20 min-h-screen bg-stone-50 flex items-center justify-center"><div>Loading profile...</div></div>;
    }
@@ -45,9 +118,6 @@ const ProfilePage: React.FC = () => {
          </div>
       );
    }
-
-   const nextRewardPoints = 1000;
-   const progress = (user.loyaltyPoints / nextRewardPoints) * 100;
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-stone-50">
@@ -92,23 +162,104 @@ const ProfilePage: React.FC = () => {
              </div>
 
              {/* Personal Info Snippet */}
-             <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                <h3 className="font-bold text-lg mb-4">Account Details</h3>
-                <div className="space-y-3 text-sm text-stone-600">
-                   <div className="flex items-center gap-3">
-                      <Phone size={16} className="text-orange-500" />
-                      <span>{user.phone}</span>
-                   </div>
-                   <div className="flex items-center gap-3">
-                      <MessageSquare size={16} className="text-orange-500" />
-                      <span>{user.email}</span>
-                   </div>
-                   <div className="flex items-center gap-3">
-                      <Calendar size={16} className="text-orange-500" />
-                      <span>Member since {user.memberSince}</span>
-                   </div>
-                </div>
-             </div>
+                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+                        <h3 className="font-bold text-lg mb-4">Account Details</h3>
+                        <div className="space-y-3 text-sm text-stone-600">
+                           <div className="flex items-center gap-3">
+                              <Phone size={16} className="text-orange-500" />
+                              <span>{user.phone}</span>
+                           </div>
+                           <div className="flex items-center gap-3">
+                              <MessageSquare size={16} className="text-orange-500" />
+                              <span>{user.email}</span>
+                           </div>
+                        </div>
+                        <button
+                           onClick={handleEditClick}
+                           className="mt-6 bg-orange-600 text-white px-6 py-2 rounded-xl font-bold w-full"
+                        >
+                           Edit Profile
+                        </button>
+                     </div>
+                     {/* Modal for editing profile */}
+                     {editing && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative">
+                              <button
+                                 onClick={handleEditCancel}
+                                 className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-600 transition-colors z-10"
+                              >
+                                 ✕
+                              </button>
+                              <div className="p-8">
+                                 <h2 className="text-2xl font-serif font-bold text-stone-900 mb-4">Edit Profile</h2>
+                                 <form onSubmit={handleEditSave} className="space-y-4">
+                                    <div>
+                                       <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Name</label>
+                                       <input name="name" value={editData.name} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" required />
+                                    </div>
+                                    <div>
+                                       <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Email</label>
+                                       <input name="email" value={editData.email} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" required />
+                                    </div>
+                                    <div>
+                                       <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Phone</label>
+                                       <input name="phone" value={editData.phone} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" required />
+                                    </div>
+                                    <div>
+                                       <label className="block text-xs font-bold uppercase text-stone-500 mb-1">New Password</label>
+                                       <div className="relative">
+                                          <input
+                                             name="password"
+                                             type={showPassword ? 'text' : 'password'}
+                                             value={editData.password}
+                                             onChange={handleEditChange}
+                                             className="w-full border rounded-xl px-3 py-2 pr-10"
+                                             placeholder="Leave blank to keep current password"
+                                          />
+                                          <button
+                                             type="button"
+                                             onClick={() => setShowPassword((prev) => !prev)}
+                                             className="absolute right-3 top-2 text-stone-400 hover:text-orange-600 focus:outline-none"
+                                             tabIndex={-1}
+                                             aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                          >
+                                             {showPassword ? '🙈' : '👁️'}
+                                          </button>
+                                       </div>
+                                    </div>
+                                    <div>
+                                       <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Confirm Password</label>
+                                       <div className="relative">
+                                          <input
+                                             name="confirmPassword"
+                                             type={showConfirmPassword ? 'text' : 'password'}
+                                             value={editData.confirmPassword}
+                                             onChange={handleEditChange}
+                                             className="w-full border rounded-xl px-3 py-2 pr-10"
+                                             placeholder="Retype new password"
+                                          />
+                                          <button
+                                             type="button"
+                                             onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                             className="absolute right-3 top-2 text-stone-400 hover:text-orange-600 focus:outline-none"
+                                             tabIndex={-1}
+                                             aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                          >
+                                             {showConfirmPassword ? '🙈' : '👁️'}
+                                          </button>
+                                       </div>
+                                    </div>
+                                    {editError && <div className="text-red-500 text-xs text-center">{editError}</div>}
+                                    <div className="flex gap-2 mt-2 justify-center">
+                                       <button type="submit" disabled={editLoading} className="bg-orange-600 text-white px-6 py-2 rounded-xl font-bold">{editLoading ? 'Saving...' : 'Save Changes'}</button>
+                                       <button type="button" onClick={handleEditCancel} className="bg-stone-200 text-stone-700 px-6 py-2 rounded-xl font-bold">Cancel</button>
+                                    </div>
+                                 </form>
+                              </div>
+                           </div>
+                        </div>
+                     )}
           </div>
 
           {/* Right Column: Order History */}

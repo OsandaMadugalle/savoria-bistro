@@ -1,3 +1,12 @@
+export const updateUserProfile = async (email: string, updates: Partial<User>): Promise<User> => {
+  const res = await fetch(`${API_URL}/auth/me?email=${encodeURIComponent(email)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates)
+  });
+  if (!res.ok) throw new Error('Profile update failed');
+  return await res.json();
+};
 // --- PROFILE API ---
 export const fetchUserProfile = async (email: string): Promise<User> => {
   const res = await fetch(`${API_URL}/auth/me?email=${encodeURIComponent(email)}`);

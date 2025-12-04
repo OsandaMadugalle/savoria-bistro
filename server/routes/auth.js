@@ -3,6 +3,31 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
+// Update current user profile (via email query param)
+router.put('/me', async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ message: 'Email required' });
+    const updates = { ...req.body };
+    // Only hash and update password if provided and not blank
+    if (updates.password && updates.password.trim() !== '') {
+      const bcrypt = require('bcryptjs');
+      updates.password = await bcrypt.hash(updates.password, 10);
+    } else {
+      delete updates.password;
+    }
+    // Don't allow role change here
+    delete updates.role;
+    const user = await User.findOneAndUpdate({ email }, updates, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    res.json(userResponse);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Get current user profile (simple: via email query param)
 router.get('/me', async (req, res) => {
   try {
