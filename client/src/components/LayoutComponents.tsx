@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, Shield, ChefHat } from 'lucide-react';
+import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, Shield, ChefHat, Eye, EyeOff } from 'lucide-react';
 import { CartItem, User } from '../types';
 import { loginUser } from '../services/api';
 
@@ -16,11 +16,25 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
   
   // Auth Modal State
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (isLoginModalOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    // Clean up on unmount
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isLoginModalOpen]);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   
   // Login Form State
-  const [loginEmail, setLoginEmail] = useState('alex.j@example.com');
-  const [loginPassword, setLoginPassword] = useState('password');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   
@@ -29,6 +43,11 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
+  const [signupError, setSignupError] = useState('');
+  // Removed duplicate showSignupPassword declaration
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -56,31 +75,41 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    if (!loginEmail || !loginPassword) {
+      setLoginError('Email and password are required.');
+      return;
+    }
     setIsLoggingIn(true);
-    
     try {
-        const loggedInUser = await loginUser(loginEmail, loginPassword);
-        onLogin(loggedInUser);
-        setIsLoginModalOpen(false);
-        
-        // Role-based Redirect
-        if (loggedInUser.role === 'admin') {
-            navigate('/admin');
-        } else if (loggedInUser.role === 'staff') {
-            navigate('/staff');
-        } else {
-            // Regular customer stays on current page or goes to profile
-            if (location.pathname === '/') navigate('/menu');
-        }
-    } catch(err) {
-        setLoginError('Invalid email or password.');
+      const loggedInUser = await loginUser(loginEmail, loginPassword);
+      onLogin(loggedInUser);
+      setIsLoginModalOpen(false);
+      // Role-based Redirect
+      if (loggedInUser.role === 'admin') {
+        navigate('/admin');
+      } else if (loggedInUser.role === 'staff') {
+        navigate('/staff');
+      } else {
+        if (location.pathname === '/') navigate('/menu');
+      }
+    } catch (err) {
+      setLoginError('Invalid email or password.');
     } finally {
-        setIsLoggingIn(false);
+      setIsLoggingIn(false);
     }
   };
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSignupError('');
+    if (!signupPassword || !signupConfirmPassword) {
+      setSignupError('Please enter and confirm your password.');
+      return;
+    }
+    if (signupPassword !== signupConfirmPassword) {
+      setSignupError('Passwords do not match.');
+      return;
+    }
     try {
       const newUser = await import('../services/api').then(mod => mod.registerUser({
         name: signupName,
@@ -92,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
       setIsLoginModalOpen(false);
       navigate('/profile');
     } catch (err) {
-      setLoginError('Signup failed. Please try again.');
+      setSignupError('Signup failed. Please try again.');
     }
   };
 
@@ -282,12 +311,21 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 text-stone-400" size={18} />
                       <input 
-                        type="password" 
+                        type={showPassword ? "text" : "password"}
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        className="w-full pl-10 pr-10 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                         placeholder="••••••••"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-3 top-3 text-stone-400 hover:text-orange-600 focus:outline-none"
+                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
                     </div>
                   </div>
                   <button 
@@ -308,7 +346,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
               ) : (
                 /* SIGN UP FORM */
                 <form onSubmit={handleSignupSubmit} className="space-y-4">
-                   <div>
+                  {signupError && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium">{signupError}</div>}
+                  <div>
                     <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Full Name</label>
                     <div className="relative">
                       <UserIcon className="absolute left-3 top-3 text-stone-400" size={18} />
@@ -336,7 +375,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
                       />
                     </div>
                   </div>
-                   <div>
+                  <div>
                     <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Phone Number</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-3 text-stone-400" size={18} />
@@ -356,12 +395,44 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
                       <Lock className="absolute left-3 top-3 text-stone-400" size={18} />
                       <input 
                         required
-                        type="password" 
+                        type={showSignupPassword ? "text" : "password"}
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                        placeholder="••••••••"
+                        className="w-full pl-10 pr-10 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        placeholder="Create a password"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword((prev) => !prev)}
+                        className="absolute right-3 top-3 text-stone-400 hover:text-orange-600 focus:outline-none"
+                        tabIndex={-1}
+                        aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showSignupPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Confirm Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 text-stone-400" size={18} />
+                      <input 
+                        required
+                        type={showSignupConfirmPassword ? "text" : "password"}
+                        value={signupConfirmPassword}
+                        onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                        className="w-full pl-10 pr-10 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        placeholder="Confirm your password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupConfirmPassword((prev) => !prev)}
+                        className="absolute right-3 top-3 text-stone-400 hover:text-orange-600 focus:outline-none"
+                        tabIndex={-1}
+                        aria-label={showSignupConfirmPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showSignupConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
                     </div>
                   </div>
                   <button 
