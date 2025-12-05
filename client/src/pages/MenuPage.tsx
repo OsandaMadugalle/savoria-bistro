@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, Leaf, Sprout, Wheat, Loader2, ChevronRight, Clock, Flame, Utensils, Info, Plus } from 'lucide-react';
+import { Search, X, Leaf, Sprout, Wheat, Loader2, ChevronRight, Clock, Flame, Utensils, Info, Plus, Zap } from 'lucide-react';
 import { MenuItem } from '../types';
 import { fetchMenu } from '../services/api';
 
@@ -12,6 +12,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'price-low' | 'price-high' | 'popular'>('name');
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,37 +54,65 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
 
   const hasActiveFilters = activeCategory !== 'All' || activeFilters.length > 0 || searchTerm !== '';
 
-  const filteredItems = menuItems.filter(item => {
+  let filteredItems = menuItems.filter(item => {
     const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
     const matchesFilters = activeFilters.length === 0 || activeFilters.every(filter => item.tags.includes(filter));
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesFilters && matchesSearch;
+    const matchesPrice = item.price >= priceRange[0] && item.price <= priceRange[1];
+    return matchesCategory && matchesFilters && matchesSearch && matchesPrice;
   });
 
+  // Apply sorting
+  if (sortBy === 'price-low') {
+    filteredItems = [...filteredItems].sort((a, b) => a.price - b.price);
+  } else if (sortBy === 'price-high') {
+    filteredItems = [...filteredItems].sort((a, b) => b.price - a.price);
+  } else if (sortBy === 'popular') {
+    // Mark some items as popular (can be based on data later)
+    filteredItems = [...filteredItems].sort((a, b) => {
+      const aPopular = a.tags?.includes('Popular') ? 1 : 0;
+      const bPopular = b.tags?.includes('Popular') ? 1 : 0;
+      return bPopular - aPopular;
+    });
+  } else {
+    filteredItems = [...filteredItems].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-stone-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-4">Our Menu</h1>
-          <p className="text-stone-600 max-w-2xl mx-auto">Explore our carefully curated selection of dishes, featuring locally sourced ingredients and bold flavors.</p>
+    <div className="min-h-screen bg-stone-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800 text-white py-16 px-4 pt-24 relative overflow-hidden">
+        <div className="absolute -right-20 -top-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
+        <div className="absolute -left-20 -bottom-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
+        <div className="max-w-7xl mx-auto relative z-10 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Zap size={20} className="text-yellow-300" />
+            <span className="text-sm font-semibold uppercase tracking-wider text-orange-200">Culinary Excellence</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Our Menu</h1>
+          <p className="text-orange-100 max-w-2xl mx-auto text-lg">Explore our carefully curated selection of dishes, featuring locally sourced ingredients and bold flavors crafted with passion.</p>
         </div>
+      </div>
+
+      <div className="pt-0 pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Controls Section */}
-        <div className="flex flex-col items-center gap-6 mb-12">
+        <div className="pt-12 pb-12">
           {/* Search Bar */}
-          <div className="relative w-full max-w-md">
+          <div className="relative w-full max-w-md mx-auto mb-8">
             <Search className="absolute left-4 top-3.5 text-stone-400" size={20} />
             <input 
               type="text" 
               placeholder="Search dishes..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-full border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none shadow-sm text-stone-800 placeholder-stone-400"
+              className="w-full pl-12 pr-4 py-3 rounded-full border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none shadow-sm text-stone-800 placeholder-stone-400 transition-all"
             />
           </div>
 
           {/* Category Tabs */}
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
             {categories.map(cat => (
               <button
                 key={cat}
@@ -98,11 +128,13 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
             ))}
           </div>
 
-          {/* Dietary Filters */}
-          <div className="flex flex-wrap items-center gap-3 bg-white px-6 py-2 rounded-full border border-stone-200 shadow-sm">
-             <span className="text-xs font-bold uppercase text-stone-400 tracking-wider mr-2">Dietary:</span>
-             {dietaryOptions.map(option => (
-               <button
+          {/* Filters Row */}
+          <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-center flex-wrap">
+            {/* Dietary Filters */}
+            <div className="flex flex-wrap items-center gap-3 bg-white px-6 py-2 rounded-full border border-stone-200 shadow-sm">
+              <span className="text-xs font-bold uppercase text-stone-400 tracking-wider mr-2">Dietary:</span>
+              {dietaryOptions.map(option => (
+                <button
                   key={option.label}
                   onClick={() => toggleFilter(option.label)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
@@ -110,21 +142,55 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
                       ? 'bg-green-50 border-green-200 text-green-700'
                       : 'bg-stone-50 border-transparent text-stone-500 hover:bg-stone-100'
                   }`}
-               >
-                 {option.icon}
-                 {option.label}
-               </button>
-             ))}
+                >
+                  {option.icon}
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort Dropdown */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-4 py-2 rounded-full border border-stone-200 bg-white text-stone-700 font-semibold shadow-sm focus:ring-2 focus:ring-orange-500 outline-none cursor-pointer"
+            >
+              <option value="name">Sort by: Name</option>
+              <option value="price-low">Sort by: Price (Low to High)</option>
+              <option value="price-high">Sort by: Price (High to Low)</option>
+              <option value="popular">Sort by: Popular</option>
+            </select>
+
+            {/* Price Range Filter */}
+            <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-stone-200 shadow-sm">
+              <span className="text-xs font-bold uppercase text-stone-400 tracking-wider">Price:</span>
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                value={priceRange[1]}
+                onChange={(e) => setPriceRange([0, parseInt(e.target.value)])}
+                className="w-24 cursor-pointer"
+              />
+              <span className="text-sm font-semibold text-stone-600 whitespace-nowrap">${priceRange[1]}</span>
+            </div>
           </div>
 
           {hasActiveFilters && (
             <button 
               onClick={resetFilters}
-              className="flex items-center gap-2 text-sm text-stone-500 hover:text-orange-600 transition-colors px-4 py-2 hover:bg-stone-100 rounded-full"
+              className="flex items-center gap-2 text-sm text-stone-500 hover:text-orange-600 transition-colors px-4 py-2 hover:bg-stone-100 rounded-full mx-auto mb-8"
             >
               <X size={16} /> Clear All Filters
             </button>
           )}
+
+          {/* Results Count */}
+          <div className="text-center mb-8">
+            <p className="text-stone-600 font-medium">
+              Showing <span className="text-orange-600 font-bold">{filteredItems.length}</span> {filteredItems.length === 1 ? 'dish' : 'dishes'}
+            </p>
+          </div>
         </div>
 
         {/* Menu Grid */}
@@ -133,38 +199,58 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
              <Loader2 size={40} className="animate-spin text-orange-600" />
           </div>
         ) : filteredItems.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-12">
             {filteredItems.map(item => (
               <div 
-                key={item._id || item.id || item.name} 
+                key={item.id || item.name} 
                 onClick={() => setSelectedItem(item)}
-                className="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex gap-4 hover:shadow-lg hover:border-orange-100 transition-all cursor-pointer group"
+                className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden hover:shadow-xl hover:border-orange-200 transition-all cursor-pointer group"
               >
-                <div className="relative overflow-hidden rounded-lg w-28 h-28 flex-shrink-0">
+                {/* Image */}
+                <div className="relative overflow-hidden h-48 bg-stone-200">
                   <img 
                     src={item.image} 
                     alt={item.name} 
-                    className="w-full h-full object-cover bg-stone-200 transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                </div>
-                <div className="flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-bold text-lg text-stone-900 group-hover:text-orange-600 transition-colors">{item.name}</h3>
-                      <span className="font-bold text-orange-600">${item.price}</span>
+                  {/* Badge */}
+                  {item.tags?.includes('Popular') && (
+                    <div className="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                      <Zap size={12} /> Popular
                     </div>
-                    <p className="text-sm text-stone-500 mb-2 line-clamp-2">{item.description}</p>
-                    <div className="flex gap-2">
-                      {item.tags.map(tag => (
-                        <span key={tag} className="text-[10px] uppercase tracking-wider bg-stone-100 text-stone-600 px-2 py-1 rounded-sm">
-                          {tag}
-                        </span>
-                      ))}
+                  )}
+                  {item.tags?.includes("Chef's Special") && (
+                    <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                      ⭐ Chef's Pick
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-bold text-lg text-stone-900 group-hover:text-orange-600 transition-colors">{item.name}</h3>
+                      <p className="text-xs text-stone-400 uppercase tracking-wider">{item.category}</p>
                     </div>
                   </div>
-                  <div className="flex justify-end mt-3">
+                  
+                  <p className="text-sm text-stone-600 mb-3 line-clamp-2">{item.description}</p>
+                  
+                  {/* Tags */}
+                  <div className="flex gap-2 flex-wrap mb-4">
+                    {item.tags?.slice(0, 2).map(tag => (
+                      <span key={tag} className="text-[10px] uppercase tracking-wider bg-stone-100 text-stone-600 px-2 py-1 rounded-sm">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex justify-between items-center pt-4 border-t border-stone-100">
+                    <span className="text-2xl font-bold text-orange-600">${item.price}</span>
                     <span className="text-xs text-orange-600 font-medium group-hover:underline flex items-center gap-1">
-                      View Details <ChevronRight size={12} />
+                      View <ChevronRight size={14} />
                     </span>
                   </div>
                 </div>
@@ -181,6 +267,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
              <button onClick={resetFilters} className="mt-4 text-orange-600 font-medium hover:underline">Clear All Filters</button>
           </div>
         )}
+        </div>
       </div>
 
       {/* Item Detail Modal */}
