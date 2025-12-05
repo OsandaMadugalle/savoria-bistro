@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar } from 'lucide-react';
 import { User, Order, ReservationData } from '../types';
-import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations } from '../services/api';
+import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations, fetchUserReviews } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const ProfilePage: React.FC = () => {
@@ -22,6 +22,8 @@ const ProfilePage: React.FC = () => {
    const [ordersLoading, setOrdersLoading] = useState(true);
    const [reservations, setReservations] = useState<ReservationData[]>([]);
    const [reservationsLoading, setReservationsLoading] = useState(true);
+   const [reviews, setReviews] = useState<any[]>([]);
+   const [reviewsLoading, setReviewsLoading] = useState(true);
    const navigate = useNavigate();
 
    useEffect(() => {
@@ -64,11 +66,18 @@ const ProfilePage: React.FC = () => {
               .then(setReservations)
               .catch(() => setReservations([]))
               .finally(() => setReservationsLoading(false));
+            
+            // Fetch user's reviews
+            fetchUserReviews(profile.email)
+              .then(setReviews)
+              .catch(() => setReviews([]))
+              .finally(() => setReviewsLoading(false));
          })
          .catch(() => {
             setError('Could not load profile.');
             setLoading(false);
             setOrdersLoading(false);
+            setReviewsLoading(false);
          });
    }, []);
 
@@ -357,6 +366,60 @@ const ProfilePage: React.FC = () => {
                             <span className="font-bold text-stone-900">{res.phone}</span>
                             <span className="text-xs text-stone-500">{res.email}</span>
                          </div>
+                       </div>
+                     ))
+                   )}
+                </div>
+             </div>
+
+             <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+                <div className="p-6 border-b border-stone-100 flex justify-between items-center">
+                   <h3 className="font-bold text-xl text-stone-900">My Reviews</h3>
+                   <NavLink to="/reviews" className="text-orange-600 font-bold text-sm hover:underline">
+                      Write a Review →
+                   </NavLink>
+                </div>
+                <div className="divide-y divide-stone-100">
+                   {reviewsLoading ? (
+                     <div className="p-6 text-center text-stone-500">Loading reviews...</div>
+                   ) : reviews.length === 0 ? (
+                     <div className="p-6 text-center text-stone-500">
+                        <p>You haven't written any reviews yet.</p>
+                        <NavLink to="/reviews" className="text-orange-600 font-bold hover:underline mt-2 inline-block">
+                           Share your experience
+                        </NavLink>
+                     </div>
+                   ) : (
+                     reviews.map(review => (
+                       <div key={review._id} className="p-6 hover:bg-stone-50 transition-colors">
+                         <div className="flex justify-between items-start mb-3">
+                            <div>
+                               <p className="text-sm font-semibold text-stone-700 mb-1">{review.title}</p>
+                               <div className="flex text-orange-500 mb-2">
+                                  {[...Array(5)].map((_, i) => (
+                                    <span key={i}>
+                                      {i < review.rating ? '⭐' : '☆'}
+                                    </span>
+                                  ))}
+                               </div>
+                            </div>
+                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
+                              review.status === 'approved' ? 'bg-green-100 text-green-700' :
+                              review.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {review.status}
+                            </span>
+                         </div>
+                         <p className="text-stone-600 text-sm mb-2 line-clamp-2">"{review.text}"</p>
+                         <p className="text-xs text-stone-400">
+                           {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Recently'}
+                         </p>
+                         {review.status === 'rejected' && review.adminNotes && (
+                           <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                             <strong>Admin feedback:</strong> {review.adminNotes}
+                           </div>
+                         )}
                        </div>
                      ))
                    )}
