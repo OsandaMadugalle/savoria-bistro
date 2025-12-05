@@ -15,7 +15,12 @@ const userSchema = new mongoose.Schema({
     items: [String],
     total: Number,
     status: String
-  }]
+  }],
+  permissions: {
+    manageMenu: { type: Boolean, default: false },
+    viewOrders: { type: Boolean, default: false },
+    manageUsers: { type: Boolean, default: false }
+  }
 });
 
 module.exports = mongoose.model('User', userSchema);

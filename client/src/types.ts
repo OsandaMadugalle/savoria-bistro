@@ -70,6 +70,11 @@ export interface User {
   tier: 'Bronze' | 'Silver' | 'Gold';
   role: 'customer' | 'staff' | 'admin' | 'masterAdmin';
   history: OrderHistoryItem[];
+  permissions?: {
+    manageMenu?: boolean;
+    viewOrders?: boolean;
+    manageUsers?: boolean;
+  };
 }
 
 export enum Page {

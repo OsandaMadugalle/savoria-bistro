@@ -92,16 +92,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       };
     // Edit/Delete state and handlers
     const [editUser, setEditUser] = useState<User | null>(null);
-    const [editForm, setEditForm] = useState<{ name: string; email: string; phone?: string; password?: string }>({ name: '', email: '' });
+    const [editForm, setEditForm] = useState<{ name: string; email: string; phone?: string; password?: string; permissions?: { manageMenu?: boolean; viewOrders?: boolean; manageUsers?: boolean } }>({ name: '', email: '' });
     const [editMsg, setEditMsg] = useState('');
 
     const handleEditUser = (u: User) => {
       setEditUser(u);
-      setEditForm({ name: u.name, email: u.email, phone: u.phone || '', password: '' });
+      setEditForm({
+        name: u.name,
+        email: u.email,
+        phone: u.phone || '',
+        password: '',
+        permissions: {
+          manageMenu: u.permissions?.manageMenu || false,
+          viewOrders: u.permissions?.viewOrders || false,
+          manageUsers: u.permissions?.manageUsers || false,
+        },
+      });
     };
 
     const handleEditFormChange = (field: string, value: string) => {
       setEditForm(f => ({ ...f, [field]: value }));
+    };
+    const handlePermissionChange = (perm: string, checked: boolean) => {
+      setEditForm(f => ({
+        ...f,
+        permissions: {
+          ...f.permissions,
+          [perm]: checked,
+        },
+      }));
     };
 
     const handleEditFormSubmit = async (e: React.FormEvent) => {
@@ -109,7 +128,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       setEditMsg('');
       try {
         const { updateUser } = await import('../services/userActionsApi');
-        await updateUser(editForm.email, editForm);
+        const updates = { ...editForm, requesterEmail: user?.email };
+        await updateUser(editForm.email, updates);
         setEditMsg('User updated!');
         setEditUser(null);
         setEditForm({ name: '', email: '' });
@@ -131,7 +151,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       }
     };
   // Removed unused password toggle states
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'roles'>('menu');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -241,6 +261,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <input required type="email" placeholder="Email" className="p-3 rounded border border-stone-200" value={editForm.email} onChange={e => handleEditFormChange('email', e.target.value)} />
               <input placeholder="Phone" className="p-3 rounded border border-stone-200" value={editForm.phone} onChange={e => handleEditFormChange('phone', e.target.value)} />
               <input type="password" placeholder="New Password (optional)" className="p-3 rounded border border-stone-200" value={editForm.password || ''} onChange={e => handleEditFormChange('password', e.target.value)} />
+              {/* Permissions checkboxes for admin/staff */}
+              {(editUser?.role === 'admin' || editUser?.role === 'staff') && (
+                <div className="flex flex-col gap-2 border-t pt-4 mt-2">
+                  <div className="font-bold mb-1">Permissions</div>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={!!editForm.permissions?.manageMenu} onChange={e => handlePermissionChange('manageMenu', e.target.checked)} /> Manage Menu
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={!!editForm.permissions?.viewOrders} onChange={e => handlePermissionChange('viewOrders', e.target.checked)} /> View Orders
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={!!editForm.permissions?.manageUsers} onChange={e => handlePermissionChange('manageUsers', e.target.checked)} /> Manage Users
+                  </label>
+                </div>
+              )}
               <div className="flex gap-2 mt-2">
                 <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg font-bold">Save</button>
                 <button type="button" className="px-4 py-2 bg-stone-300 text-stone-900 rounded-lg font-bold" onClick={() => setEditUser(null)}>Cancel</button>

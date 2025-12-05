@@ -34,7 +34,24 @@ router.put('/update-user', async (req, res) => {
     } else {
       delete updates.password;
     }
-    const user = await User.findOneAndUpdate({ email }, updates, { new: true });
+    // If permissions are present, update them separately
+    let user;
+    if (updates.permissions) {
+      user = await User.findOneAndUpdate(
+        { email },
+        {
+          ...updates,
+          permissions: {
+            manageMenu: !!updates.permissions.manageMenu,
+            viewOrders: !!updates.permissions.viewOrders,
+            manageUsers: !!updates.permissions.manageUsers
+          }
+        },
+        { new: true }
+      );
+    } else {
+      user = await User.findOneAndUpdate({ email }, updates, { new: true });
+    }
     if (!user) return res.status(404).json({ message: 'User not found' });
     await logActivity(requesterEmail, 'Update User', `Updated user: ${email}`);
     const userResponse = user.toObject();
