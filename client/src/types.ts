@@ -28,11 +28,20 @@ export interface ReservationData {
 }
 
 export interface Review {
-  id: string;
-  author: string;
+  _id?: string;
+  id?: string;
+  userId?: string;
+  userEmail?: string;
+  userName: string;
+  author?: string;
+  title?: string;
   rating: number;
   text: string;
-  date: string;
+  image?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  date?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface GalleryItem {

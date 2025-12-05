@@ -181,6 +181,8 @@ export interface Review {
   rating: number;
   title: string;
   text: string;
+  image?: string;
+  cloudinaryId?: string;
   status: 'pending' | 'approved' | 'rejected';
   adminNotes?: string;
   createdAt?: string;

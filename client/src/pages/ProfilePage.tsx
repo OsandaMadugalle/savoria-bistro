@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar } from 'lucide-react';
+import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar, X } from 'lucide-react';
 import { User, Order, ReservationData } from '../types';
 import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations, fetchUserReviews } from '../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,7 @@ const ProfilePage: React.FC = () => {
    const [reservationsLoading, setReservationsLoading] = useState(true);
    const [reviews, setReviews] = useState<any[]>([]);
    const [reviewsLoading, setReviewsLoading] = useState(true);
+   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
    const navigate = useNavigate();
 
    useEffect(() => {
@@ -131,6 +132,16 @@ const ProfilePage: React.FC = () => {
       } finally {
          setEditLoading(false);
       }
+   };
+
+   const openLightbox = (image: string) => {
+      setLightboxImage(image);
+      document.body.classList.add('overflow-hidden');
+   };
+
+   const closeLightbox = () => {
+      setLightboxImage(null);
+      document.body.classList.remove('overflow-hidden');
    };
 
    // Conditional rendering must use state, not hooks
@@ -412,6 +423,23 @@ const ProfilePage: React.FC = () => {
                             </span>
                          </div>
                          <p className="text-stone-600 text-sm mb-2 line-clamp-2">"{review.text}"</p>
+                         {review.image && (
+                           <div className="my-3">
+                             <img 
+                               src={review.image} 
+                               alt="Review" 
+                               className="max-w-xs h-32 object-cover rounded-lg border border-stone-200 cursor-pointer hover:opacity-90 transition-opacity"
+                               onClick={() => openLightbox(review.image)}
+                               onError={(e) => {
+                                 console.error('Image failed to load in profile:', review.image);
+                                 (e.target as HTMLImageElement).style.display = 'none';
+                               }}
+                               onLoad={() => {
+                                 console.log('Profile image loaded for review:', review._id);
+                               }}
+                             />
+                           </div>
+                         )}
                          <p className="text-xs text-stone-400">
                            {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Recently'}
                          </p>
@@ -427,6 +455,31 @@ const ProfilePage: React.FC = () => {
              </div>
           </div>
         </div>
+
+        {/* Image Lightbox */}
+        {lightboxImage && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+            onClick={closeLightbox}
+          >
+            <div 
+              className="relative max-w-4xl max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={closeLightbox}
+                className="absolute -top-10 right-0 text-white hover:text-orange-400 transition-colors"
+              >
+                <X size={32} />
+              </button>
+              <img 
+                src={lightboxImage} 
+                alt="Review fullscreen" 
+                className="max-w-4xl max-h-[85vh] object-contain rounded-lg"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

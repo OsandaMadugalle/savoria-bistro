@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign } from '../services/api';
 import { MenuItem, User, Order } from '../types';
-import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send } from 'lucide-react';
+import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X } from 'lucide-react';
 
 // ===== UTILITY FUNCTIONS =====
 /**
@@ -86,6 +86,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [reviewsError, setReviewsError] = useState('');
   const [reviewMessage, setReviewMessage] = useState('');
   const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // ===== STATE: NEWSLETTER =====
   const [newsletterStats, setNewsletterStats] = useState<{ total: number; active: number; inactive: number; activePercentage: number } | null>(null);
@@ -412,6 +413,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
   }, [users, orders, menuItems, activityLogs]);
+
+  // ===== LIGHTBOX HANDLERS =====
+  const openLightbox = (image: string) => {
+    setLightboxImage(image);
+    document.body.classList.add('overflow-hidden');
+  };
+
+  const closeLightbox = () => {
+    setLightboxImage(null);
+    document.body.classList.remove('overflow-hidden');
+  };
 
   // ===== EFFECTS =====
   // Load promo settings from localStorage on mount
@@ -1271,6 +1283,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
                           <p className="text-stone-700 text-sm mb-4 bg-stone-50 p-3 rounded line-clamp-3">"{review.text}"</p>
 
+                          {review.image && (
+                            <div className="mb-4">
+                              <img 
+                                src={review.image} 
+                                alt="Review" 
+                                className="max-w-sm h-40 object-cover rounded-lg border border-stone-200 cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => openLightbox(review.image)}
+                                onError={(e) => {
+                                  console.error('Admin: Image failed to load:', review.image);
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                                onLoad={() => {
+                                  console.log('Admin: Image loaded for review:', review._id);
+                                }}
+                              />
+                            </div>
+                          )}
+
                           <div className="flex gap-2">
                             {review.status === 'pending' && (
                               <>
@@ -1928,6 +1958,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Lightbox */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={closeLightbox}
+        >
+          <div 
+            className="relative max-w-4xl max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeLightbox}
+              className="absolute -top-10 right-0 text-white hover:text-orange-400 transition-colors"
+            >
+              <X size={32} />
+            </button>
+            <img 
+              src={lightboxImage} 
+              alt="Review fullscreen" 
+              className="max-w-4xl max-h-[85vh] object-contain rounded-lg"
+            />
           </div>
         </div>
       )}
