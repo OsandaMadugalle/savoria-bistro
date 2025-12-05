@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
@@ -6,235 +6,302 @@ import { fetchMenu, fetchAllOrders, addAdmin, addStaff } from '../services/api';
 import { MenuItem, User, Order } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2 } from 'lucide-react';
 
+// ===== UTILITY FUNCTIONS =====
+/**
+ * Generic CSV export utility
+ */
+const exportToCSV = (filename: string, headers: string[], rows: (string | number)[][]): void => {
+  if (rows.length === 0) return;
+  
+  let csv = headers.join(',') + '\n';
+  csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Analytics helpers
+ */
+const getRevenueByDay = (orders: any[]) => {
+  const map: Record<string, number> = {};
+  orders.forEach(o => {
+    const d = new Date(o.createdAt).toLocaleDateString();
+    map[d] = (map[d] || 0) + (o.total || 0);
+  });
+  return Object.entries(map).map(([date, revenue]) => ({ date, revenue: Number(revenue) }));
+};
+
+const getOrdersByDay = (orders: any[]) => {
+  const map: Record<string, number> = {};
+  orders.forEach(o => {
+    const d = new Date(o.createdAt).toLocaleDateString();
+    map[d] = (map[d] || 0) + 1;
+  });
+  return Object.entries(map).map(([date, orders]) => ({ date, orders: Number(orders) }));
+};
+
+const getUsersByDay = (users: any[]) => {
+  const map: Record<string, number> = {};
+  users.forEach(u => {
+    if (!u.memberSince) return;
+    const d = new Date(u.memberSince).toLocaleDateString();
+    map[d] = (map[d] || 0) + 1;
+  });
+  return Object.entries(map).map(([date, users]) => ({ date, users: Number(users) }));
+};
+
+// ===== COMPONENT =====
 interface AdminDashboardProps {
   user: User | null;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
-      // Utility: Export Staff as CSV
-      const exportStaffCSV = () => {
-        const staff = users.filter(u => u.role === 'staff');
-        if (staff.length === 0) return;
-        const headers = ['Name', 'Email', 'Phone'];
-        const rows = staff.map(u => [u.name, u.email, u.phone || '-']);
-        let csv = headers.join(',') + '\n';
-        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'staff.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      };
+  // ===== STATE: EDIT/DELETE =====
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState<{ 
+    name: string; 
+    email: string; 
+    phone?: string; 
+    password?: string; 
+    permissions?: { manageMenu?: boolean; viewOrders?: boolean; manageUsers?: boolean } 
+  }>({ name: '', email: '' });
+  const [editMsg, setEditMsg] = useState('');
 
-      // Utility: Export Customers as CSV
-      const exportCustomersCSV = () => {
-        const customers = users.filter(u => u.role === 'customer');
-        if (customers.length === 0) return;
-        const headers = ['Name', 'Email', 'Phone', 'Loyalty Points', 'Tier', 'Member Since'];
-        const rows = customers.map(u => [u.name, u.email, u.phone || '-', u.loyaltyPoints ?? 0, u.tier ?? '-', u.memberSince ?? '-']);
-        let csv = headers.join(',') + '\n';
-        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'customers.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      };
-
-      // Utility: Export Orders as CSV
-      const exportOrdersCSV = () => {
-        if (orders.length === 0) return;
-        const headers = ['Order ID', 'Date', 'Items', 'Total', 'Status'];
-        const rows = orders.map(order => [
-          order.orderId,
-          new Date(order.createdAt).toLocaleString(),
-          order.items.map(i => `${i.quantity}x ${i.name}`).join(', '),
-          order.total.toFixed(2),
-          order.status
-        ]);
-        let csv = headers.join(',') + '\n';
-        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'orders.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      };
-
-      // Utility: Export Activity Logs as CSV
-      const exportLogsCSV = () => {
-        if (activityLogs.length === 0) return;
-        const headers = ['User Email', 'Action', 'Details', 'Timestamp'];
-        const rows = activityLogs.map(log => [log.userEmail, log.action, log.details, new Date(log.timestamp).toLocaleString()]);
-        let csv = headers.join(',') + '\n';
-        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'activity_logs.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      };
-    // Edit/Delete state and handlers
-    const [editUser, setEditUser] = useState<User | null>(null);
-    const [editForm, setEditForm] = useState<{ name: string; email: string; phone?: string; password?: string; permissions?: { manageMenu?: boolean; viewOrders?: boolean; manageUsers?: boolean } }>({ name: '', email: '' });
-    const [editMsg, setEditMsg] = useState('');
-
-    const handleEditUser = (u: User) => {
-      setEditUser(u);
-      setEditForm({
-        name: u.name,
-        email: u.email,
-        phone: u.phone || '',
-        password: '',
-        permissions: {
-          manageMenu: u.permissions?.manageMenu || false,
-          viewOrders: u.permissions?.viewOrders || false,
-          manageUsers: u.permissions?.manageUsers || false,
-        },
-      });
-    };
-
-    const handleEditFormChange = (field: string, value: string) => {
-      setEditForm(f => ({ ...f, [field]: value }));
-    };
-    const handlePermissionChange = (perm: string, checked: boolean) => {
-      setEditForm(f => ({
-        ...f,
-        permissions: {
-          ...f.permissions,
-          [perm]: checked,
-        },
-      }));
-    };
-
-    const handleEditFormSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setEditMsg('');
-      try {
-        const { updateUser } = await import('../services/userActionsApi');
-        const updates = { ...editForm, requesterEmail: user?.email };
-        await updateUser(editForm.email, updates);
-        setEditMsg('User updated!');
-        setEditUser(null);
-        setEditForm({ name: '', email: '' });
-        loadUsers();
-      } catch (err: any) {
-        setEditMsg(err.message || 'Failed to update user');
-      }
-    };
-
-    const handleDeleteUser = async (u: User) => {
-      if (window.confirm(`Are you sure you want to delete ${u.name}?`)) {
-        try {
-          const { deleteUser } = await import('../services/userActionsApi');
-          await deleteUser(u.email);
-          loadUsers();
-        } catch (err: any) {
-          alert(err.message || 'Failed to delete user');
-        }
-      }
-    };
-  // Removed unused password toggle states
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'roles'>('menu');
+  // ===== STATE: TABS & LISTS =====
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile'>('menu');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
-  const [logsLoading, setLogsLoading] = useState(false);
-  const [logsError, setLogsError] = useState('');
   
-  // Login State
-
-  // Form State
-
-  // Admin/Staff add forms and messages
+  // ===== STATE: FORMS =====
   const [adminForm, setAdminForm] = useState<{ name: string; email: string; password: string; phone?: string }>({ name: '', email: '', password: '', phone: '' });
   const [staffForm, setStaffForm] = useState<{ name: string; email: string; password: string; phone?: string }>({ name: '', email: '', password: '', phone: '' });
   const [adminMsg, setAdminMsg] = useState('');
   const [staffMsg, setStaffMsg] = useState('');
-
-  // User filtering state
+  
+  // ===== STATE: FILTERS & LOADING =====
   const [userSearch, setUserSearch] = useState('');
-  // Order filtering state
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [orderDateFilter, setOrderDateFilter] = useState('');
-  // Log filtering state
   const [logSearch, setLogSearch] = useState('');
   const [logDateFilter, setLogDateFilter] = useState('');
-  // Menu filtering state
   const [menuSearch, setMenuSearch] = useState('');
-  // Customer filtering state
   const [customerSearch, setCustomerSearch] = useState('');
-  // Staff filtering state
   const [staffSearch, setStaffSearch] = useState('');
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState('');
 
+  // ===== HANDLERS: EDIT/DELETE =====
+  const handleEditUser = useCallback((u: User) => {
+    setEditUser(u);
+    setEditForm({
+      name: u.name,
+      email: u.email,
+      phone: u.phone || '',
+      password: '',
+      permissions: {
+        manageMenu: u.permissions?.manageMenu || false,
+        viewOrders: u.permissions?.viewOrders || false,
+        manageUsers: u.permissions?.manageUsers || false,
+      },
+    });
+  }, []);
+
+  const handleEditFormChange = useCallback((field: string, value: string) => {
+    setEditForm(f => ({ ...f, [field]: value }));
+  }, []);
+
+  const handlePermissionChange = useCallback((perm: string, checked: boolean) => {
+    setEditForm(f => ({
+      ...f,
+      permissions: {
+        ...f.permissions,
+        [perm]: checked,
+      },
+    }));
+  }, []);
+
+  const handleEditFormSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditMsg('');
+    try {
+      const { updateUser } = await import('../services/userActionsApi');
+      const updates = { ...editForm, requesterEmail: user?.email };
+      await updateUser(editForm.email, updates);
+      setEditMsg('User updated!');
+      setEditUser(null);
+      setEditForm({ name: '', email: '' });
+      await loadUsers();
+    } catch (err: any) {
+      setEditMsg(err.message || 'Failed to update user');
+    }
+  }, [editForm, user]);
+
+  const handleDeleteUser = useCallback(async (u: User) => {
+    if (window.confirm(`Are you sure you want to delete ${u.name}?`)) {
+      try {
+        const { deleteUser } = await import('../services/userActionsApi');
+        await deleteUser(u.email);
+        await loadUsers?.();
+      } catch (err: any) {
+        alert(err.message || 'Failed to delete user');
+      }
+    }
+  }, []);
+
+  // ===== HANDLERS: CSV EXPORTS =====
+  const handleExportStaffCSV = useCallback(() => {
+    const staff = users.filter(u => u.role === 'staff');
+    const headers = ['Name', 'Email', 'Phone'];
+    const rows = staff.map(u => [u.name, u.email, u.phone || '-'] as (string | number)[]);
+    exportToCSV('staff.csv', headers, rows);
+  }, [users]);
+
+  const handleExportCustomersCSV = useCallback(() => {
+    const customers = users.filter(u => u.role === 'customer');
+    const headers = ['Name', 'Email', 'Phone', 'Loyalty Points', 'Tier', 'Member Since'];
+    const rows = customers.map(u => [u.name, u.email, u.phone || '-', u.loyaltyPoints ?? 0, u.tier ?? '-', u.memberSince ?? '-'] as (string | number)[]);
+    exportToCSV('customers.csv', headers, rows);
+  }, [users]);
+
+  const handleExportOrdersCSV = useCallback(() => {
+    const headers = ['Order ID', 'Date', 'Items', 'Total', 'Status'];
+    const rows = orders.map(order => [
+      order.orderId,
+      new Date(order.createdAt).toLocaleString(),
+      order.items.map(i => `${i.quantity}x ${i.name}`).join(', '),
+      order.total.toFixed(2),
+      order.status
+    ] as (string | number)[]);
+    exportToCSV('orders.csv', headers, rows);
+  }, [orders]);
+
+  const handleExportLogsCSV = useCallback(() => {
+    const headers = ['User Email', 'Action', 'Details', 'Timestamp'];
+    const rows = activityLogs.map(log => [log.userEmail, log.action, log.details, new Date(log.timestamp).toLocaleString()] as (string | number)[]);
+    exportToCSV('activity_logs.csv', headers, rows);
+  }, [activityLogs]);
+
+  // ===== DATA LOADING =====
+  const loadData = useCallback(async () => {
+    const [menuData, ordersData] = await Promise.all([fetchMenu(), fetchAllOrders()]);
+    setMenuItems(menuData);
+    setOrders(ordersData);
+  }, []);
+
+  const loadUsers = useCallback(async () => {
+    try {
+      const { fetchAllUsers } = await import('../services/usersApi');
+      const allUsers = await fetchAllUsers();
+      setUsers(allUsers);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    }
+  }, []);
+
+  // ===== HANDLERS: FORM SUBMISSIONS =====
+  const handleAddAdmin = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminMsg('');
+    try {
+      await addAdmin({ ...adminForm, requesterEmail: user?.email } as any);
+      setAdminMsg('Admin added!');
+      setAdminForm({ name: '', email: '', password: '', phone: '' });
+      await loadUsers();
+      setTimeout(() => setAdminMsg(''), 3000);
+    } catch (err: any) {
+      setAdminMsg(err.message || 'Failed to add admin');
+    }
+  }, [adminForm, user, loadUsers]);
+
+  const handleAddStaff = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStaffMsg('');
+    try {
+      await addStaff({ ...staffForm, requesterEmail: user?.email } as any);
+      setStaffMsg('Staff added!');
+      setStaffForm({ name: '', email: '', password: '', phone: '' });
+      await loadUsers();
+      setTimeout(() => setStaffMsg(''), 3000);
+    } catch (err: any) {
+      setStaffMsg(err.message || 'Failed to add staff');
+    }
+  }, [staffForm, user, loadUsers]);
+
+  // ===== HANDLERS: MASTER ADMIN OPERATIONS =====
+  const handleRefreshData = useCallback(async () => {
+    try {
+      await Promise.all([loadData(), loadUsers()]);
+      alert('Data refreshed successfully!');
+    } catch (err: any) {
+      alert('Failed to refresh data');
+    }
+  }, [loadData, loadUsers]);
+
+  const handleBulkDeleteStaff = useCallback(async () => {
+    const count = users.filter(u => u.role === 'staff').length;
+    if (!count) {
+      alert('No staff members to delete');
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete all ${count} staff members? This action cannot be undone.`)) {
+      try {
+        const { deleteUser } = await import('../services/userActionsApi');
+        const staff = users.filter(u => u.role === 'staff');
+        await Promise.all(staff.map(s => deleteUser(s.email)));
+        await loadUsers();
+        alert(`Successfully deleted ${count} staff members`);
+      } catch (err: any) {
+        alert('Failed to delete staff members');
+      }
+    }
+  }, [users, loadUsers]);
+
+  const handleGenerateSystemReport = useCallback(() => {
+    const report = {
+      generatedAt: new Date().toLocaleString(),
+      totalUsers: users.length,
+      admins: users.filter(u => u.role === 'admin').length,
+      staff: users.filter(u => u.role === 'staff').length,
+      customers: users.filter(u => u.role === 'customer').length,
+      totalOrders: orders.length,
+      totalRevenue: orders.reduce((sum, o) => sum + (o.total || 0), 0),
+      menuItems: menuItems.length,
+      activityLogsCount: activityLogs.length,
+    };
+    
+    const csv = Object.entries(report)
+      .map(([key, value]) => `${key},${value}`)
+      .join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `system-report-${new Date().getTime()}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  }, [users, orders, menuItems, activityLogs]);
+
+  // ===== EFFECTS =====
   useEffect(() => {
     if (user && (user.role === 'admin' || user.role === 'staff' || user.role === 'masterAdmin')) {
       loadData();
       loadUsers();
     }
-  }, [user]);
-
-    const loadData = async () => {
-      const [menuData, ordersData] = await Promise.all([fetchMenu(), fetchAllOrders()]);
-      setMenuItems(menuData);
-      setOrders(ordersData);
-    };
-
-    const loadUsers = async () => {
-      try {
-        const { fetchAllUsers } = await import('../services/usersApi');
-        const allUsers = await fetchAllUsers();
-        setUsers(allUsers);
-      } catch (err) {
-        // Optionally handle error
-      }
-    };
-
-    async function handleAddAdmin(e: React.FormEvent) {
-      e.preventDefault();
-      setAdminMsg('');
-      try {
-        await addAdmin({ ...adminForm, requesterEmail: user?.email } as any);
-        setAdminMsg('Admin added!');
-        setAdminForm({ name: '', email: '', password: '', phone: '' });
-        await loadUsers();
-        setTimeout(() => setAdminMsg(''), 3000);
-      } catch (err: any) {
-        setAdminMsg(err.message || 'Failed to add admin');
-      }
-    }
-
-    async function handleAddStaff(e: React.FormEvent) {
-      e.preventDefault();
-      setStaffMsg('');
-      try {
-        await addStaff({ ...staffForm, requesterEmail: user?.email } as any);
-        setStaffMsg('Staff added!');
-        setStaffForm({ name: '', email: '', password: '', phone: '' });
-        await loadUsers();
-        setTimeout(() => setStaffMsg(''), 3000);
-      } catch (err: any) {
-        setStaffMsg(err.message || 'Failed to add staff');
-      }
-    }
+  }, [user, loadData, loadUsers]);
 
   useEffect(() => {
     if (user && user.role === 'masterAdmin' && activeTab === 'logs') {
@@ -288,24 +355,156 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       {/* Master Admin Panel */}
       {user && user.role === 'masterAdmin' ? (
         <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-4">
-          <div className="max-w-5xl mx-auto">
-            <h1 className="text-3xl font-serif font-bold text-stone-900 flex items-center gap-3 mb-8">
-              <LayoutDashboard className="text-orange-600" /> Master Admin Panel
-            </h1>
-            <div className="mb-8 flex gap-4">
-              <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'addAdmin' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('addAdmin')}>Admin</button>
-              <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'addStaff' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('addStaff')}>Staff</button>
-              <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'customers' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('customers')}>Customers</button>
-              <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'menu' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('menu')}>Menu</button>
-              <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'orders' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('orders')}>Orders</button>
-              <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'analytics' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('analytics')}>Analytics</button>
-              <button
-                className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'logs' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`}
-                onClick={() => setActiveTab('logs')}
-              >
-                Activity Logs
-              </button>
+          <div className="max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-serif font-bold text-stone-900 flex items-center gap-3 mb-2">
+                <LayoutDashboard className="text-orange-600" size={32} /> Master Admin Panel
+              </h1>
+              <p className="text-stone-600">Manage all system resources, staff, analytics, and configurations</p>
             </div>
+
+            {/* Quick Stats Overview */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white rounded-lg p-4 border border-stone-200 shadow-sm">
+                <div className="text-2xl font-bold text-stone-900">{users.length}</div>
+                <div className="text-xs text-stone-600 mt-1">👥 Total Users</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-stone-200 shadow-sm">
+                <div className="text-2xl font-bold text-orange-600">{users.filter(u => u.role === 'admin').length + users.filter(u => u.role === 'staff').length}</div>
+                <div className="text-xs text-stone-600 mt-1">👨‍💼 Staff Members</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-stone-200 shadow-sm">
+                <div className="text-2xl font-bold text-blue-600">{orders.length}</div>
+                <div className="text-xs text-stone-600 mt-1">📦 Total Orders</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-stone-200 shadow-sm">
+                <div className="text-2xl font-bold text-green-600">${orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</div>
+                <div className="text-xs text-stone-600 mt-1">💰 Total Revenue</div>
+              </div>
+            </div>
+
+            {/* Main Layout with Vertical Sidebar */}
+            <div className="flex gap-6">
+              {/* Left Vertical Sidebar */}
+              <div className="w-56 flex-shrink-0">
+                <div className="sticky top-28 bg-white rounded-xl shadow-sm border border-stone-200 p-4 space-y-2">
+                  <h3 className="text-xs font-bold uppercase text-stone-500 px-2 mb-3">Navigation</h3>
+                  
+                  {/* Staff Management */}
+                  <div>
+                    <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Staff</p>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addAdmin' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('addAdmin')}
+                    >
+                      👨‍💼 Admins
+                    </button>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addStaff' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('addStaff')}
+                    >
+                      👥 Staff
+                    </button>
+                  </div>
+
+                  <div className="border-t border-stone-200"></div>
+
+                  {/* Customer Management */}
+                  <div>
+                    <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Customers</p>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'customers' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('customers')}
+                    >
+                      👤 All Customers
+                    </button>
+                  </div>
+
+                  <div className="border-t border-stone-200"></div>
+
+                  {/* Business Management */}
+                  <div>
+                    <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Business</p>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'menu' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('menu')}
+                    >
+                      🍽️ Menu
+                    </button>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'orders' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('orders')}
+                    >
+                      📦 Orders
+                    </button>
+                  </div>
+
+                  <div className="border-t border-stone-200"></div>
+
+                  {/* Analytics & Monitoring */}
+                  <div>
+                    <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Insights</p>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'analytics' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('analytics')}
+                    >
+                      📊 Analytics
+                    </button>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'logs' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                      onClick={() => setActiveTab('logs')}
+                    >
+                      📋 Logs
+                    </button>
+                  </div>
+
+                  <div className="border-t border-stone-200"></div>
+
+                  {/* Profile */}
+                  <div>
+                    <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Account</p>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'profile' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                      onClick={() => setActiveTab('profile')}
+                    >
+                      👤 My Profile
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Content Area */}
+              <div className="flex-1 min-w-0">
+            <div className="bg-gradient-to-r from-orange-600 to-orange-500 rounded-xl shadow-lg p-4 mb-8 text-white">
+              <div className="flex flex-wrap gap-3 items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-lg">Bistro Operations</h3>
+                  <p className="text-orange-100 text-sm">Manage staff, orders, menu, and business reports</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button 
+                    onClick={handleRefreshData}
+                    className="px-4 py-2 bg-white text-orange-600 rounded-lg font-bold hover:bg-orange-50 transition-colors"
+                  >
+                    🔄 Refresh Data
+                  </button>
+                  <button 
+                    onClick={handleGenerateSystemReport}
+                    className="px-4 py-2 bg-white text-orange-600 rounded-lg font-bold hover:bg-orange-50 transition-colors"
+                  >
+                    📄 Business Report
+                  </button>
+                  <button 
+                    onClick={handleBulkDeleteStaff}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition-colors"
+                  >
+                    🗑️ Remove All Staff
+                  </button>
+                </div>
+              </div>
+            </div>
+
                 {/* Analytics Tab: Summary Stats and Charts */}
                 {activeTab === 'analytics' && (
                   <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mb-6 animate-in fade-in slide-in-from-bottom-2">
@@ -391,7 +590,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                 <span>Customers</span>
                                 <button
                                   className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
-                                  onClick={() => exportCustomersCSV()}
+                                  onClick={handleExportCustomersCSV}
                                 >
                                   Export CSV
                                 </button>
@@ -439,7 +638,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 <div>
                   <div className="mb-4 bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                     <h2 className="text-xl font-bold mb-2">Add Admin</h2>
-                    <form onSubmit={handleAddAdmin} className="flex flex-wrap gap-4 items-end">
+                    <form onSubmit={e => handleAddAdmin(e)} className="flex flex-wrap gap-4 items-end">
                       <input required placeholder="Name" className="p-3 rounded border border-stone-200 min-w-[140px]" value={adminForm.name} onChange={e => setAdminForm(f => ({...f, name: e.target.value}))} />
                       <input required type="email" placeholder="Email" className="p-3 rounded border border-stone-200 min-w-[180px]" value={adminForm.email} onChange={e => setAdminForm(f => ({...f, email: e.target.value}))} />
                       <input required type="password" placeholder="Password" className="p-3 rounded border border-stone-200 min-w-[180px]" value={adminForm.password} onChange={e => setAdminForm(f => ({...f, password: e.target.value}))} />
@@ -503,7 +702,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 <div>
                   <div className="mb-4 bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                     <h2 className="text-xl font-bold mb-2">Add Staff</h2>
-                    <form onSubmit={handleAddStaff} className="flex flex-wrap gap-4 items-end">
+                    <form onSubmit={e => handleAddStaff(e)} className="flex flex-wrap gap-4 items-end">
                       <input required placeholder="Name" className="p-3 rounded border border-stone-200 min-w-[140px]" value={staffForm.name} onChange={e => setStaffForm(f => ({...f, name: e.target.value}))} />
                       <input required type="email" placeholder="Email" className="p-3 rounded border border-stone-200 min-w-[180px]" value={staffForm.email} onChange={e => setStaffForm(f => ({...f, email: e.target.value}))} />
                       <input required type="password" placeholder="Password" className="p-3 rounded border border-stone-200 min-w-[180px]" value={staffForm.password} onChange={e => setStaffForm(f => ({...f, password: e.target.value}))} />
@@ -521,7 +720,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <span>Staff</span>
                       <button
                         className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
-                        onClick={() => exportStaffCSV()}
+                        onClick={handleExportStaffCSV}
                       >
                         Export CSV
                       </button>
@@ -648,7 +847,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     </div>
                     <button
                       className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
-                      onClick={() => exportOrdersCSV()}
+                      onClick={handleExportOrdersCSV}
                     >
                       Export CSV
                     </button>
@@ -721,7 +920,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     <span>System Activity Logs</span>
                     <button
                       className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
-                      onClick={() => exportLogsCSV()}
+                      onClick={handleExportLogsCSV}
                     >
                       Export CSV
                     </button>
@@ -794,6 +993,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   )}
                 </div>
               )}
+              {activeTab === 'profile' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <h2 className="text-xl font-bold mb-6">My Profile</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="text-sm font-bold text-stone-600">Name</label>
+                      <p className="text-lg text-stone-900 mt-1">{user?.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold text-stone-600">Email</label>
+                      <p className="text-lg text-stone-900 mt-1">{user?.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold text-stone-600">Phone</label>
+                      <p className="text-lg text-stone-900 mt-1">{user?.phone || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold text-stone-600">Role</label>
+                      <p className="text-lg text-orange-600 font-bold mt-1 capitalize">{user?.role}</p>
+                    </div>
+                  </div>
+                  <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-blue-800">
+                      <strong>Master Admin Access:</strong> You have full control over the bistro management system including staff management, menu configuration, order tracking, customer management, and system analytics.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+              </div>
             </div>
           </div>
         </div>
@@ -913,32 +1142,3 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   );
 }
 export default AdminDashboard;
-
-// --- Analytics Data Helpers ---
-function getRevenueByDay(orders: any[]) {
-  const map: Record<string, number> = {};
-  orders.forEach(o => {
-    const d = new Date(o.createdAt).toLocaleDateString();
-    map[d] = (map[d] || 0) + (o.total || 0);
-  });
-  return Object.entries(map).map(([date, revenue]) => ({ date, revenue: Number(revenue) }));
-}
-
-function getOrdersByDay(orders: any[]) {
-  const map: Record<string, number> = {};
-  orders.forEach(o => {
-    const d = new Date(o.createdAt).toLocaleDateString();
-    map[d] = (map[d] || 0) + 1;
-  });
-  return Object.entries(map).map(([date, orders]) => ({ date, orders: Number(orders) }));
-}
-
-function getUsersByDay(users: any[]) {
-  const map: Record<string, number> = {};
-  users.forEach(u => {
-    if (!u.memberSince) return;
-    const d = new Date(u.memberSince).toLocaleDateString();
-    map[d] = (map[d] || 0) + 1;
-  });
-  return Object.entries(map).map(([date, users]) => ({ date, users: Number(users) }));
-}

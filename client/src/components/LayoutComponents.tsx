@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, Shield, ChefHat, Eye, EyeOff } from 'lucide-react';
+import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, ChefHat, Eye, EyeOff } from 'lucide-react';
 import { CartItem, User } from '../types';
 import { loginUser } from '../services/api';
 
@@ -97,7 +97,9 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
       onLogin(userWithId);
       localStorage.setItem('userEmail', userWithId.email);
       setIsLoginModalOpen(false);
-      if (userWithId.role === 'admin') {
+      if (userWithId.role === 'masterAdmin') {
+        navigate('/admin');
+      } else if (userWithId.role === 'admin') {
         navigate('/admin');
       } else if (userWithId.role === 'staff') {
         navigate('/staff');
@@ -158,6 +160,244 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
 
   return (
     <>
+      {/* Show Admin Navbar for Master Admin and Admin */}
+      {user && (user.role === 'masterAdmin' || user.role === 'admin') ? (
+        <AdminNavbar user={user} onLogout={onLogout} />
+      ) : (
+        /* Show Regular Customer Navbar */
+        <CustomerNavbar 
+          cart={cart} 
+          user={user} 
+          onLogin={onLogin} 
+          onLogout={onLogout} 
+          isLoginModalOpen={isLoginModalOpen}
+          setIsLoginModalOpen={setIsLoginModalOpen}
+          authMode={authMode}
+          setAuthMode={setAuthMode}
+          loginEmail={loginEmail}
+          setLoginEmail={setLoginEmail}
+          loginPassword={loginPassword}
+          setLoginPassword={setLoginPassword}
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+          loginError={loginError}
+          setLoginError={setLoginError}
+          isLoggingIn={isLoggingIn}
+          setIsLoggingIn={setIsLoggingIn}
+          signupName={signupName}
+          setSignupName={setSignupName}
+          signupEmail={signupEmail}
+          setSignupEmail={setSignupEmail}
+          signupPhone={signupPhone}
+          setSignupPhone={setSignupPhone}
+          signupPassword={signupPassword}
+          setSignupPassword={setSignupPassword}
+          signupConfirmPassword={signupConfirmPassword}
+          setSignupConfirmPassword={setSignupConfirmPassword}
+          showSignupPassword={showSignupPassword}
+          setShowSignupPassword={setShowSignupPassword}
+          showSignupConfirmPassword={showSignupConfirmPassword}
+          setShowSignupConfirmPassword={setShowSignupConfirmPassword}
+          signupError={signupError}
+          setSignupError={setSignupError}
+          handleLoginSubmit={handleLoginSubmit}
+          handleSignupSubmit={handleSignupSubmit}
+        />
+      )}
+    </>
+  );
+};
+
+// Admin Navbar Component - For Master Admin and Admin users
+const AdminNavbar: React.FC<{ user: User; onLogout: () => void }> = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    onLogout();
+    navigate('/');
+    setIsUserMenuOpen(false);
+  };
+
+  return (
+    <nav className="fixed top-0 left-0 w-full bg-gradient-to-r from-stone-900 to-orange-900 border-b border-orange-700 z-40 shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-20">
+          {/* Logo */}
+          <div className="flex-shrink-0 flex items-center">
+            <NavLink to="/" className="text-2xl font-serif font-bold text-white tracking-tight">
+              Savoria<span className="text-orange-400">.</span>
+            </NavLink>
+            <span className="ml-3 px-3 py-1 bg-orange-600 text-white text-xs font-bold rounded-full">
+              {user.role === 'masterAdmin' ? 'Master Admin' : 'Admin'}
+            </span>
+          </div>
+
+          {/* Admin Nav Links */}
+          <div className="hidden md:flex items-center space-x-2">
+            <NavLink
+              to="/admin"
+              className={({ isActive }) => `px-4 py-2 rounded-lg font-medium transition-all ${isActive ? 'bg-orange-600 text-white' : 'text-orange-100 hover:bg-stone-800'}`}
+            >
+              Dashboard
+            </NavLink>
+            <NavLink
+              to="/staff"
+              className={({ isActive }) => `px-4 py-2 rounded-lg font-medium transition-all ${isActive ? 'bg-orange-600 text-white' : 'text-orange-100 hover:bg-stone-800'}`}
+            >
+              Staff Portal
+            </NavLink>
+          </div>
+
+          {/* User Menu */}
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-medium transition-all"
+              >
+                <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-900 font-bold text-sm">
+                  {user.name.charAt(0)}
+                </div>
+                <span className="hidden sm:block text-sm">{user.name.split(' ')[0]}</span>
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-stone-200 py-2 animate-in fade-in slide-in-from-top-2 z-50">
+                  <div className="px-4 py-3 border-b border-stone-100">
+                    <p className="text-sm font-bold text-stone-900">{user.name}</p>
+                    <p className="text-xs text-stone-500">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut size={16} /> Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+// Customer Navbar Component - For regular customers and staff
+interface CustomerNavbarProps {
+  cart: CartItem[];
+  user: User | null;
+  onLogin: (user: User) => void;
+  onLogout: () => void;
+  isLoginModalOpen: boolean;
+  setIsLoginModalOpen: (value: boolean) => void;
+  authMode: 'signin' | 'signup';
+  setAuthMode: (mode: 'signin' | 'signup') => void;
+  loginEmail: string;
+  setLoginEmail: (value: string) => void;
+  loginPassword: string;
+  setLoginPassword: (value: string) => void;
+  showPassword: boolean;
+  setShowPassword: (value: boolean) => void;
+  loginError: string;
+  setLoginError: (value: string) => void;
+  isLoggingIn: boolean;
+  setIsLoggingIn: (value: boolean) => void;
+  signupName: string;
+  setSignupName: (value: string) => void;
+  signupEmail: string;
+  setSignupEmail: (value: string) => void;
+  signupPhone: string;
+  setSignupPhone: (value: string) => void;
+  signupPassword: string;
+  setSignupPassword: (value: string) => void;
+  signupConfirmPassword: string;
+  setSignupConfirmPassword: (value: string) => void;
+  showSignupPassword: boolean;
+  setShowSignupPassword: (value: boolean) => void;
+  showSignupConfirmPassword: boolean;
+  setShowSignupConfirmPassword: (value: boolean) => void;
+  signupError: string;
+  setSignupError: (value: string) => void;
+  handleLoginSubmit: (e: React.FormEvent) => Promise<void>;
+  handleSignupSubmit: (e: React.FormEvent) => Promise<void>;
+}
+
+const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
+  cart,
+  user,
+  onLogin,
+  onLogout,
+  isLoginModalOpen,
+  setIsLoginModalOpen,
+  authMode,
+  setAuthMode,
+  loginEmail,
+  setLoginEmail,
+  loginPassword,
+  setLoginPassword,
+  showPassword,
+  setShowPassword,
+  loginError,
+  setLoginError,
+  isLoggingIn,
+  setIsLoggingIn,
+  signupName,
+  setSignupName,
+  signupEmail,
+  setSignupEmail,
+  signupPhone,
+  setSignupPhone,
+  signupPassword,
+  setSignupPassword,
+  signupConfirmPassword,
+  setSignupConfirmPassword,
+  showSignupPassword,
+  setShowSignupPassword,
+  showSignupConfirmPassword,
+  setShowSignupConfirmPassword,
+  signupError,
+  setSignupError,
+  handleLoginSubmit,
+  handleSignupSubmit,
+}) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (isLoginModalOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isLoginModalOpen]);
+
+  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  const navLinks = [
+    { path: '/', label: 'Home' },
+    { path: '/menu', label: 'Menu' },
+    { path: '/gallery', label: 'Gallery' },
+    { path: '/tracker', label: 'Track Order' },
+  ];
+
+  const closeMenu = () => setIsMobileMenuOpen(false);
+
+  const openAuthModal = (mode: 'signin' | 'signup') => {
+    setAuthMode(mode);
+    setLoginError('');
+    setIsLoginModalOpen(true);
+    closeMenu();
+  };
+
+  return (
+    <>
       <nav className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-md border-b border-stone-200 z-40 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
@@ -208,10 +448,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
                         </NavLink>
                         
                         {/* Role Based Links */}
-                            {(user.role === 'admin' || user.role === 'masterAdmin') && (
-                              <NavLink to="/admin" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"><Shield size={16} /> Admin Dashboard</NavLink>
-                            )}
-                            {(user.role === 'staff' || user.role === 'admin' || user.role === 'masterAdmin') && (
+                            {(user.role === 'staff') && (
                               <NavLink to="/staff" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"><ChefHat size={16} /> Staff Portal</NavLink>
                             )}
 
@@ -283,8 +520,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
                 {user ? (
                   <>
                      <NavLink to="/profile" onClick={closeMenu} className="block px-3 py-3 rounded-md text-base font-medium text-stone-700 hover:bg-stone-50">My Profile ({user.name})</NavLink>
-                     {(user.role === 'admin' || user.role === 'masterAdmin') && <NavLink to="/admin" onClick={closeMenu} className="block px-3 py-3 rounded-md text-base font-medium text-stone-700 hover:bg-stone-50">Admin Dashboard</NavLink>}
-                     {(user.role === 'staff' || user.role === 'admin' || user.role === 'masterAdmin') && <NavLink to="/staff" onClick={closeMenu} className="block px-3 py-3 rounded-md text-base font-medium text-stone-700 hover:bg-stone-50">Staff Portal</NavLink>}
+                     {(user.role === 'staff') && <NavLink to="/staff" onClick={closeMenu} className="block px-3 py-3 rounded-md text-base font-medium text-stone-700 hover:bg-stone-50">Staff Portal</NavLink>}
                      <button onClick={() => { onLogout(); closeMenu(); }} className="block w-full text-left px-3 py-3 rounded-md text-base font-medium text-red-600 hover:bg-red-50">Sign Out</button>
                   </>
                 ) : (

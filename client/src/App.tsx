@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Navbar, Footer } from './components/LayoutComponents';
 
 // Pages
@@ -26,6 +26,31 @@ const ScrollToTop = () => {
     window.scrollTo(0, 0);
   }, [pathname]);
   return null;
+};
+
+// Protected Route Component - Only customers can access
+const ProtectedCustomerRoute: React.FC<{ element: React.ReactElement; user: User | null }> = ({ element, user }) => {
+  // Allow only customers (no role or role === 'customer')
+  if (user && (user.role === 'admin' || user.role === 'masterAdmin' || user.role === 'staff')) {
+    return <Navigate to="/admin" replace />;
+  }
+  return element;
+};
+
+// Protected Route Component - Only staff can access
+const ProtectedStaffRoute: React.FC<{ element: React.ReactElement; user: User | null }> = ({ element, user }) => {
+  if (!user || (user.role !== 'staff' && user.role !== 'admin' && user.role !== 'masterAdmin')) {
+    return <Navigate to="/" replace />;
+  }
+  return element;
+};
+
+// Protected Route Component - Only admin/masterAdmin can access
+const ProtectedAdminRoute: React.FC<{ element: React.ReactElement; user: User | null }> = ({ element, user }) => {
+  if (!user || (user.role !== 'admin' && user.role !== 'masterAdmin')) {
+    return <Navigate to="/" replace />;
+  }
+  return element;
 };
 
 const App: React.FC = () => {
@@ -72,24 +97,22 @@ const App: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<MenuPage addToCart={addToCart} />} />
             <Route path="/gallery" element={<GalleryPage />} />
-            <Route path="/reservation" element={<ReservationPage user={user} />} />
-            <Route path="/order" element={
-              <OrderPage 
-                cart={cart} 
-                updateQuantity={updateQuantity} 
-                removeFromCart={removeFromCart} 
-                clearCart={clearCart} 
-                user={user}
-              />
-            } />
-            <Route path="/tracker" element={<TrackerPage />} />
-            <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/profile" element={<ProfilePage user={user} />} />
+            <Route path="/reviews" element={<ReviewsPage />} />
             
-            {/* Protected Dashboard Routes */}
-            <Route path="/admin" element={<AdminDashboard user={user} onLogin={handleLogin} />} />
-            <Route path="/staff" element={<StaffDashboard user={user} onLogin={handleLogin} />} />
+            {/* Customer-only routes - staff/admin/masterAdmin redirected to /admin */}
+            <Route path="/reservation" element={<ProtectedCustomerRoute element={<ReservationPage user={user} />} user={user} />} />
+            <Route path="/order" element={<ProtectedCustomerRoute element={<OrderPage cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} clearCart={clearCart} user={user} />} user={user} />} />
+            <Route path="/tracker" element={<ProtectedCustomerRoute element={<TrackerPage />} user={user} />} />
+            
+            {/* Profile route - accessible to all authenticated users */}
+            <Route path="/profile" element={<ProfilePage />} />
+            
+            {/* Protected Dashboard Routes - admin and masterAdmin only */}
+            <Route path="/admin" element={<ProtectedAdminRoute element={<AdminDashboard user={user} />} user={user} />} />
+            
+            {/* Protected Staff Portal - staff, admin, masterAdmin */}
+            <Route path="/staff" element={<ProtectedStaffRoute element={<StaffDashboard user={user} onLogin={handleLogin} />} user={user} />} />
             
             {/* 404 Route */}
             <Route path="*" element={<NotFoundPage />} />
