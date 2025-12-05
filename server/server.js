@@ -13,6 +13,7 @@ const reservationRoutes = require('./routes/reservations');
 const authRoutes = require('./routes/auth');
 const reviewRoutes = require('./routes/reviews');
 const galleryRoutes = require('./routes/gallery');
+const newsletterRoutes = require('./routes/newsletter');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +30,7 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api', galleryRoutes);
+app.use('/api', newsletterRoutes);
 
 
 // Database Connection

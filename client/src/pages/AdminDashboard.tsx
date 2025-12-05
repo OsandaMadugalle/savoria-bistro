@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
-import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage } from '../services/api';
+import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers } from '../services/api';
 import { MenuItem, User, Order } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload } from 'lucide-react';
 
@@ -76,7 +76,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [editMsg, setEditMsg] = useState('');
 
   // ===== STATE: TABS & LISTS =====
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter'>('menu');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -86,6 +86,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [reviewsError, setReviewsError] = useState('');
   const [reviewMessage, setReviewMessage] = useState('');
   const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+
+  // ===== STATE: NEWSLETTER =====
+  const [newsletterStats, setNewsletterStats] = useState<{ total: number; active: number; inactive: number; activePercentage: number } | null>(null);
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState<any[]>([]);
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [newsletterError, setNewsletterError] = useState('');
+  const [newsletterSearch, setNewsletterSearch] = useState('');
   
   // ===== STATE: FORMS =====
   const [adminForm, setAdminForm] = useState<{ name: string; email: string; password: string; phone?: string }>({ name: '', email: '', password: '', phone: '' });
@@ -354,6 +361,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     }
   }, [activeTab, loadGalleryImages]);
 
+  useEffect(() => {
+    if (activeTab === 'newsletter') {
+      setNewsletterLoading(true);
+      setNewsletterError('');
+      Promise.all([getNewsletterStats(), getNewsletterSubscribers()])
+        .then(([stats, subscribers]) => {
+          setNewsletterStats(stats);
+          setNewsletterSubscribers(subscribers);
+        })
+        .catch(err => setNewsletterError(err.message || 'Failed to fetch newsletter data'))
+        .finally(() => setNewsletterLoading(false));
+    }
+  }, [activeTab]);
+
   return (
     <div>
       {/* Edit Modal (always rendered at top level) */}
@@ -503,6 +524,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       onClick={() => setActiveTab('gallery')}
                     >
                       🖼️ Gallery
+                    </button>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'newsletter' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('newsletter')}
+                    >
+                      📧 Newsletter
                     </button>
                   </div>
 
@@ -1351,6 +1378,88 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
                   {!Array.isArray(galleryImages) || galleryImages.length === 0 && (
                     <p className="text-center py-8 text-stone-600">No images yet. Upload one to get started!</p>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'newsletter' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <h2 className="text-xl font-bold mb-6">Newsletter Management</h2>
+
+                  {newsletterLoading ? (
+                    <p className="text-center py-8 text-stone-600">Loading newsletter data...</p>
+                  ) : newsletterError ? (
+                    <p className="text-center py-8 text-red-600">Error: {newsletterError}</p>
+                  ) : (
+                    <>
+                      {/* Statistics Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-blue-600 text-sm font-bold">Total Subscribers</p>
+                          <p className="text-3xl font-bold text-blue-700">{newsletterStats?.total || 0}</p>
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <p className="text-green-600 text-sm font-bold">Active</p>
+                          <p className="text-3xl font-bold text-green-700">{newsletterStats?.active || 0}</p>
+                        </div>
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <p className="text-red-600 text-sm font-bold">Inactive</p>
+                          <p className="text-3xl font-bold text-red-700">{newsletterStats?.inactive || 0}</p>
+                        </div>
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                          <p className="text-purple-600 text-sm font-bold">Active Rate</p>
+                          <p className="text-3xl font-bold text-purple-700">{Math.round(newsletterStats?.activePercentage || 0)}%</p>
+                        </div>
+                      </div>
+
+                      {/* Subscribers Search */}
+                      <div className="mb-4">
+                        <input
+                          type="text"
+                          placeholder="Search subscribers by email..."
+                          value={newsletterSearch}
+                          onChange={(e) => setNewsletterSearch(e.target.value)}
+                          className="w-full px-3 py-2 border border-stone-300 rounded-lg"
+                        />
+                      </div>
+
+                      {/* Subscribers Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-stone-100 border-b border-stone-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left font-bold">Email</th>
+                              <th className="px-4 py-3 text-left font-bold">Name</th>
+                              <th className="px-4 py-3 text-left font-bold">Subscribed</th>
+                              <th className="px-4 py-3 text-left font-bold">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-200">
+                            {(newsletterSubscribers || [])
+                              .filter((sub: any) => !newsletterSearch || sub.email.toLowerCase().includes(newsletterSearch.toLowerCase()))
+                              .map((subscriber: any, idx: number) => (
+                                <tr key={idx} className="hover:bg-stone-50">
+                                  <td className="px-4 py-3">{subscriber.email}</td>
+                                  <td className="px-4 py-3">{subscriber.name || '—'}</td>
+                                  <td className="px-4 py-3 text-xs text-stone-600">{new Date(subscriber.subscribedAt).toLocaleDateString()}</td>
+                                  <td className="px-4 py-3">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                                      subscriber.isActive 
+                                        ? 'bg-green-100 text-green-700' 
+                                        : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {subscriber.isActive ? 'Active' : 'Inactive'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                        {(!newsletterSubscribers || newsletterSubscribers.length === 0) && (
+                          <p className="text-center py-8 text-stone-600">No subscribers yet.</p>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               )}

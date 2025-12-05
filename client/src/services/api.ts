@@ -313,3 +313,40 @@ export const deleteGalleryImage = async (imageId: string): Promise<void> => {
   });
   if (!res.ok) throw new Error('Failed to delete image');
 };
+
+// Newsletter API functions
+export const subscribeNewsletter = async (email: string, name?: string): Promise<{ message: string }> => {
+  const res = await fetch(`${API_URL}/newsletter/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, name })
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to subscribe to newsletter');
+  }
+  return res.json();
+};
+
+export const unsubscribeNewsletter = async (email: string): Promise<{ message: string }> => {
+  const res = await fetch(`${API_URL}/newsletter/unsubscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!res.ok) throw new Error('Failed to unsubscribe from newsletter');
+  return res.json();
+};
+
+export const getNewsletterStats = async (): Promise<{ total: number; active: number; inactive: number; activePercentage: number }> => {
+  const res = await fetch(`${API_URL}/newsletter/stats`);
+  if (!res.ok) throw new Error('Failed to fetch newsletter stats');
+  return res.json();
+};
+
+export const getNewsletterSubscribers = async (): Promise<Array<{ email: string; name?: string; subscribedAt: string; isActive: boolean }>> => {
+  const res = await fetch(`${API_URL}/newsletter/subscribers`);
+  if (!res.ok) throw new Error('Failed to fetch newsletter subscribers');
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.data || [];
+};
