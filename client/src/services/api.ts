@@ -171,3 +171,92 @@ export const updateReservationStatus = async (reservationId: string, action: 'co
   });
   if (!res.ok) throw new Error('Failed to update reservation status');
 };
+
+// --- REVIEW API ---
+export interface Review {
+  _id?: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  rating: number;
+  title: string;
+  text: string;
+  status: 'pending' | 'approved' | 'rejected';
+  adminNotes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Get approved reviews only (for customers)
+export const fetchApprovedReviews = async (): Promise<Review[]> => {
+  try {
+    const res = await fetch(`${API_URL}/reviews/approved`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
+};
+
+// Get all reviews (for admin)
+export const fetchAllReviews = async (): Promise<Review[]> => {
+  try {
+    const res = await fetch(`${API_URL}/reviews/all`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
+};
+
+// Get pending reviews (for admin moderation)
+export const fetchPendingReviews = async (): Promise<Review[]> => {
+  try {
+    const res = await fetch(`${API_URL}/reviews/pending`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
+};
+
+// Get user's own reviews
+export const fetchUserReviews = async (userEmail: string): Promise<Review[]> => {
+  try {
+    const res = await fetch(`${API_URL}/reviews/user/${encodeURIComponent(userEmail)}`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
+};
+
+// Submit a new review
+export const submitReview = async (review: Omit<Review, '_id' | 'createdAt' | 'updatedAt'>): Promise<Review> => {
+  const res = await fetch(`${API_URL}/reviews`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(review)
+  });
+  if (!res.ok) throw new Error('Failed to submit review');
+  return await res.json();
+};
+
+// Update review status (approve/reject - admin)
+export const updateReviewStatus = async (reviewId: string, status: 'approved' | 'rejected', adminNotes: string = ''): Promise<Review> => {
+  const res = await fetch(`${API_URL}/reviews/${reviewId}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, adminNotes })
+  });
+  if (!res.ok) throw new Error('Failed to update review status');
+  return await res.json();
+};
+
+// Delete review (admin)
+export const deleteReview = async (reviewId: string): Promise<void> => {
+  const res = await fetch(`${API_URL}/reviews/${reviewId}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error('Failed to delete review');
+};

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
-import { fetchMenu, fetchAllOrders, addAdmin, addStaff } from '../services/api';
+import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview } from '../services/api';
 import { MenuItem, User, Order } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2 } from 'lucide-react';
 
@@ -76,11 +76,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [editMsg, setEditMsg] = useState('');
 
   // ===== STATE: TABS & LISTS =====
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews'>('menu');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [allReviews, setAllReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState('');
+  const [reviewMessage, setReviewMessage] = useState('');
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   
   // ===== STATE: FORMS =====
   const [adminForm, setAdminForm] = useState<{ name: string; email: string; password: string; phone?: string }>({ name: '', email: '', password: '', phone: '' });
@@ -316,6 +321,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     }
   }, [user, activeTab]);
 
+  useEffect(() => {
+    if (activeTab === 'reviews') {
+      setReviewsLoading(true);
+      setReviewsError('');
+      fetchAllReviews()
+        .then(setAllReviews)
+        .catch(err => setReviewsError(err.message || 'Failed to fetch reviews'))
+        .finally(() => setReviewsLoading(false));
+    }
+  }, [activeTab]);
+
   return (
     <div>
       {/* Edit Modal (always rendered at top level) */}
@@ -437,6 +453,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       onClick={() => setActiveTab('orders')}
                     >
                       📦 Orders
+                    </button>
+                  </div>
+
+                  <div className="border-t border-stone-200"></div>
+
+                  {/* Reviews & Feedback */}
+                  <div>
+                    <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Feedback</p>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all relative ${activeTab === 'reviews' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('reviews')}
+                    >
+                      ⭐ Reviews
+                      {allReviews.filter((r: any) => r.status === 'pending').length > 0 && (
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                          {allReviews.filter((r: any) => r.status === 'pending').length}
+                        </span>
+                      )}
                     </button>
                   </div>
 
@@ -990,6 +1024,140 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         )}
                       </tbody>
                     </table>
+                  )}
+                </div>
+              )}
+              {activeTab === 'reviews' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mt-4">
+                  <h2 className="text-xl font-bold mb-4">Review Management</h2>
+                  
+                  {/* Filter Buttons */}
+                  <div className="flex gap-2 mb-6 flex-wrap">
+                    <button
+                      onClick={() => setReviewFilter('all')}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reviewFilter === 'all' ? 'bg-orange-600 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                      }`}
+                    >
+                      📋 All ({allReviews.length})
+                    </button>
+                    <button
+                      onClick={() => setReviewFilter('pending')}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reviewFilter === 'pending' ? 'bg-orange-600 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                      }`}
+                    >
+                      ⏳ Pending ({allReviews.filter((r: any) => r.status === 'pending').length})
+                    </button>
+                    <button
+                      onClick={() => setReviewFilter('approved')}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reviewFilter === 'approved' ? 'bg-orange-600 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                      }`}
+                    >
+                      ✓ Approved ({allReviews.filter((r: any) => r.status === 'approved').length})
+                    </button>
+                    <button
+                      onClick={() => setReviewFilter('rejected')}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        reviewFilter === 'rejected' ? 'bg-orange-600 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                      }`}
+                    >
+                      ✕ Rejected ({allReviews.filter((r: any) => r.status === 'rejected').length})
+                    </button>
+                  </div>
+                  
+                  {reviewsLoading ? (
+                    <div className="text-center py-8">Loading reviews...</div>
+                  ) : reviewsError ? (
+                    <div className="bg-red-100 text-red-700 p-4 rounded-lg">{reviewsError}</div>
+                  ) : allReviews.filter((r: any) => reviewFilter === 'all' || r.status === reviewFilter).length === 0 ? (
+                    <div className="text-center py-8 text-stone-500">No {reviewFilter} reviews</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {allReviews.filter((r: any) => reviewFilter === 'all' || r.status === reviewFilter).map((review: any) => (
+                        <div key={review._id} className="border border-stone-200 rounded-lg p-4 hover:bg-stone-50 transition-colors">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-stone-900">{review.userName}</span>
+                                <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Pending</span>
+                              </div>
+                              <p className="text-sm font-semibold text-stone-700 mb-1">{review.title}</p>
+                              <p className="text-xs text-stone-500 mb-2">
+                                {review.userEmail} • {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Unknown date'}
+                              </p>
+                              <div className="flex text-orange-500 mb-2">
+                                {[...Array(5)].map((_, i) => (
+                                  <span key={i}>
+                                    {i < review.rating ? '⭐' : '☆'}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <p className="text-stone-700 text-sm mb-4 bg-stone-50 p-3 rounded line-clamp-3">"{review.text}"</p>
+
+                          <div className="flex gap-2">
+                            {review.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await updateReviewStatus(review._id, 'approved', '');
+                                      setAllReviews(allReviews.map((r: any) => r._id === review._id ? {...r, status: 'approved'} : r));
+                                      setReviewMessage('Review approved!');
+                                      setTimeout(() => setReviewMessage(''), 3000);
+                                    } catch (err: any) {
+                                      alert('Failed to approve review');
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded font-medium text-sm transition-colors"
+                                >
+                                  ✓ Approve
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await updateReviewStatus(review._id, 'rejected', 'Rejected by admin');
+                                      setAllReviews(allReviews.map((r: any) => r._id === review._id ? {...r, status: 'rejected'} : r));
+                                      setReviewMessage('Review rejected!');
+                                      setTimeout(() => setReviewMessage(''), 3000);
+                                    } catch (err: any) {
+                                      alert('Failed to reject review');
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded font-medium text-sm transition-colors"
+                                >
+                                  ✕ Reject
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await deleteReview(review._id);
+                                  setAllReviews(allReviews.filter((r: any) => r._id !== review._id));
+                                  setReviewMessage('Review deleted!');
+                                  setTimeout(() => setReviewMessage(''), 3000);
+                                } catch (err: any) {
+                                  alert('Failed to delete review');
+                                }
+                              }}
+                              className="flex items-center gap-1 bg-stone-400 hover:bg-stone-500 text-white px-3 py-2 rounded font-medium text-sm transition-colors ml-auto"
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {reviewMessage && (
+                    <div className="mt-4 bg-green-100 text-green-700 p-3 rounded-lg text-sm">
+                      {reviewMessage}
+                    </div>
                   )}
                 </div>
               )}

@@ -61,6 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
     { path: '/gallery', label: 'Gallery' },
     { path: '/reservation', label: 'Reservations' },
     { path: '/tracker', label: 'Track Order' },
+    { path: '/reviews', label: 'Reviews' },
   ];
 
   const closeMenu = () => setIsMobileMenuOpen(false);
@@ -385,6 +386,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
     { path: '/menu', label: 'Menu' },
     { path: '/gallery', label: 'Gallery' },
     { path: '/tracker', label: 'Track Order' },
+    { path: '/reviews', label: 'Reviews' },
   ];
 
   const closeMenu = () => setIsMobileMenuOpen(false);

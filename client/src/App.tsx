@@ -98,7 +98,7 @@ const App: React.FC = () => {
             <Route path="/menu" element={<MenuPage addToCart={addToCart} />} />
             <Route path="/gallery" element={<GalleryPage />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/reviews" element={<ReviewsPage />} />
+            <Route path="/reviews" element={<ReviewsPage user={user} />} />
             
             {/* Customer-only routes - staff/admin/masterAdmin redirected to /admin */}
             <Route path="/reservation" element={<ProtectedCustomerRoute element={<ReservationPage user={user} />} user={user} />} />
