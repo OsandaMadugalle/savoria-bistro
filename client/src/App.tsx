@@ -96,7 +96,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<MenuPage addToCart={addToCart} />} />
-            <Route path="/gallery" element={<GalleryPage />} />
+            <Route path="/gallery" element={<GalleryPage user={user} />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/reviews" element={<ReviewsPage user={user} />} />
             

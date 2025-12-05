@@ -260,3 +260,56 @@ export const deleteReview = async (reviewId: string): Promise<void> => {
   });
   if (!res.ok) throw new Error('Failed to delete review');
 };
+
+// --- GALLERY API ---
+export interface GalleryImage {
+  _id?: string;
+  caption: string;
+  category: string;
+  src: string; // base64 or URL
+  uploadedBy: string;
+  uploadedByName: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Get all gallery images
+export const fetchGalleryImages = async (): Promise<GalleryImage[]> => {
+  try {
+    const res = await fetch(`${API_URL}/gallery`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
+};
+
+// Upload new gallery image (admin)
+export const uploadGalleryImage = async (image: { caption: string; category: string; imageBase64: string; uploadedBy: string; uploadedByName: string }): Promise<GalleryImage> => {
+  const res = await fetch(`${API_URL}/gallery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(image)
+  });
+  if (!res.ok) throw new Error('Failed to upload image');
+  return await res.json();
+};
+
+// Update gallery image
+export const updateGalleryImage = async (imageId: string, updates: Partial<GalleryImage>): Promise<GalleryImage> => {
+  const res = await fetch(`${API_URL}/gallery/${imageId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates)
+  });
+  if (!res.ok) throw new Error('Failed to update image');
+  return await res.json();
+};
+
+// Delete gallery image (admin)
+export const deleteGalleryImage = async (imageId: string): Promise<void> => {
+  const res = await fetch(`${API_URL}/gallery/${imageId}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error('Failed to delete image');
+};

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
-import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview } from '../services/api';
+import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage } from '../services/api';
 import { MenuItem, User, Order } from '../types';
-import { LayoutDashboard, Plus, Trash2, Edit2 } from 'lucide-react';
+import { LayoutDashboard, Plus, Trash2, Edit2, Upload } from 'lucide-react';
 
 // ===== UTILITY FUNCTIONS =====
 /**
@@ -76,7 +76,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [editMsg, setEditMsg] = useState('');
 
   // ===== STATE: TABS & LISTS =====
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery'>('menu');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -105,6 +105,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [staffSearch, setStaffSearch] = useState('');
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState('');
+
+  // ===== STATE: GALLERY =====
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [showGalleryUpload, setShowGalleryUpload] = useState(false);
+  const [galleryUploadForm, setGalleryUploadForm] = useState({ caption: '', category: '', file: null as File | null });
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [galleryMessage, setGalleryMessage] = useState('');
 
   // ===== HANDLERS: EDIT/DELETE =====
   const handleEditUser = useCallback((u: User) => {
@@ -211,6 +218,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       setUsers(allUsers);
     } catch (err) {
       console.error('Failed to fetch users:', err);
+    }
+  }, []);
+
+  const loadGalleryImages = useCallback(async () => {
+    try {
+      const images = await fetchGalleryImages();
+      setGalleryImages(images);
+    } catch (err) {
+      console.error('Failed to fetch gallery:', err);
     }
   }, []);
 
@@ -331,6 +347,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         .finally(() => setReviewsLoading(false));
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'gallery') {
+      loadGalleryImages();
+    }
+  }, [activeTab, loadGalleryImages]);
 
   return (
     <div>
@@ -471,6 +493,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           {allReviews.filter((r: any) => r.status === 'pending').length}
                         </span>
                       )}
+                    </button>
+                  </div>
+
+                  {/* Gallery Management */}
+                  <div>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'gallery' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('gallery')}
+                    >
+                      🖼️ Gallery
                     </button>
                   </div>
 
@@ -1187,6 +1219,139 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <strong>Master Admin Access:</strong> You have full control over the bistro management system including staff management, menu configuration, order tracking, customer management, and system analytics.
                     </p>
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'gallery' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold">Gallery Management</h2>
+                    <button 
+                      onClick={() => setShowGalleryUpload(!showGalleryUpload)}
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2"
+                    >
+                      <Upload size={18} /> Upload Image
+                    </button>
+                  </div>
+
+                  {showGalleryUpload && (
+                    <div className="mb-6 p-4 bg-stone-50 border border-stone-200 rounded-lg">
+                      <h3 className="font-bold mb-4">Upload New Image</h3>
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!galleryUploadForm.caption || !galleryUploadForm.category || !galleryUploadForm.file) {
+                          setGalleryMessage('All fields required');
+                          return;
+                        }
+                        try {
+                          setGalleryUploading(true);
+                          const reader = new FileReader();
+                          reader.onload = async (event) => {
+                            const base64 = event.target?.result as string;
+                            await uploadGalleryImage({
+                              caption: galleryUploadForm.caption,
+                              category: galleryUploadForm.category,
+                              imageBase64: base64,
+                              uploadedBy: user?.email || '',
+                              uploadedByName: user?.name || ''
+                            });
+                            setGalleryUploadForm({ caption: '', category: '', file: null });
+                            setShowGalleryUpload(false);
+                            setGalleryMessage('Image uploaded successfully!');
+                            loadGalleryImages();
+                            setTimeout(() => setGalleryMessage(''), 3000);
+                          };
+                          reader.readAsDataURL(galleryUploadForm.file);
+                        } catch (error) {
+                          setGalleryMessage('Failed to upload image');
+                        } finally {
+                          setGalleryUploading(false);
+                        }
+                      }} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-bold mb-1">Caption</label>
+                          <input 
+                            type="text"
+                            value={galleryUploadForm.caption}
+                            onChange={(e) => setGalleryUploadForm({...galleryUploadForm, caption: e.target.value})}
+                            placeholder="e.g., Main Dining Area"
+                            className="w-full px-3 py-2 border border-stone-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold mb-1">Category</label>
+                          <input 
+                            type="text"
+                            value={galleryUploadForm.category}
+                            onChange={(e) => setGalleryUploadForm({...galleryUploadForm, category: e.target.value})}
+                            placeholder="e.g., Ambiance, Food, Staff"
+                            className="w-full px-3 py-2 border border-stone-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold mb-1">Image File</label>
+                          <input 
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setGalleryUploadForm({...galleryUploadForm, file: e.target.files?.[0] || null})}
+                            className="w-full px-3 py-2 border border-stone-300 rounded-lg"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            type="button"
+                            onClick={() => setShowGalleryUpload(false)}
+                            className="flex-1 px-4 py-2 border border-stone-300 rounded-lg hover:bg-stone-50"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            type="submit"
+                            disabled={galleryUploading}
+                            className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-stone-400 text-white rounded-lg font-bold"
+                          >
+                            {galleryUploading ? 'Uploading...' : 'Upload'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {galleryMessage && (
+                    <div className="fixed top-4 right-4 px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg shadow-lg z-40 animate-in fade-in slide-in-from-top-2">
+                      {galleryMessage}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.isArray(galleryImages) && galleryImages.map((img: any) => (
+                      <div key={img._id} className="border border-stone-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                        <img src={img.src} alt={img.caption} className="w-full h-32 object-cover" />
+                        <div className="p-3">
+                          <p className="font-bold text-stone-900">{img.caption}</p>
+                          <p className="text-xs text-stone-600">{img.category}</p>
+                          <button 
+                            onClick={() => {
+                              if (window.confirm('Delete this image?')) {
+                                deleteGalleryImage(img._id).then(() => {
+                                  loadGalleryImages();
+                                  setGalleryMessage('✓ Image deleted!');
+                                  setTimeout(() => setGalleryMessage(''), 2000);
+                                });
+                              }
+                            }}
+                            className="mt-3 w-full px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded font-bold flex items-center justify-center gap-1"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {!Array.isArray(galleryImages) || galleryImages.length === 0 && (
+                    <p className="text-center py-8 text-stone-600">No images yet. Upload one to get started!</p>
+                  )}
                 </div>
               )}
             </div>
