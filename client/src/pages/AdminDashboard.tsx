@@ -149,6 +149,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [adminMsg, setAdminMsg] = useState('');
   const [staffMsg, setStaffMsg] = useState('');
 
+  // User filtering state
+  const [userSearch, setUserSearch] = useState('');
+  // Order filtering state
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [orderDateFilter, setOrderDateFilter] = useState('');
+  // Log filtering state
+  const [logSearch, setLogSearch] = useState('');
+  const [logDateFilter, setLogDateFilter] = useState('');
+  // Menu filtering state
+  const [menuSearch, setMenuSearch] = useState('');
+  // Customer filtering state
+  const [customerSearch, setCustomerSearch] = useState('');
+  // Staff filtering state
+  const [staffSearch, setStaffSearch] = useState('');
+
   useEffect(() => {
     if (user && (user.role === 'admin' || user.role === 'staff' || user.role === 'masterAdmin')) {
       loadData();
@@ -345,6 +361,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                   Export CSV
                                 </button>
                               </h2>
+                              <div className="flex gap-2 mb-4 flex-wrap">
+                                <input
+                                  type="text"
+                                  className="p-2 border rounded min-w-[160px]"
+                                  placeholder="Search name, email, phone..."
+                                  value={customerSearch}
+                                  onChange={e => setCustomerSearch(e.target.value)}
+                                />
+                              </div>
                               <table className="w-full text-left border-collapse">
                                 <thead>
                                   <tr className="bg-stone-100">
@@ -357,7 +382,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {users.filter(u => u.role === 'customer').map((u, idx) => (
+                                  {users.filter(u => u.role === 'customer').filter(u =>
+                                    [u.name, u.email, u.phone].join(' ').toLowerCase().includes(customerSearch.toLowerCase())
+                                  ).map((u, idx) => (
                                     <tr key={u.email || idx} className="border-b">
                                       <td className="p-2">{u.name}</td>
                                       <td className="p-2">{u.email}</td>
@@ -391,28 +418,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     )}
                   </div>
                   <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                    <h2 className="text-xl font-bold mb-2">Admins</h2>
+                    <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
+                      <span>Admins</span>
+                    </h2>
+                    <div className="flex gap-2 mb-4 flex-wrap">
+                      <input
+                        type="text"
+                        className="p-2 border rounded min-w-[160px]"
+                        placeholder="Search name, email, phone..."
+                        value={userSearch}
+                        onChange={e => setUserSearch(e.target.value)}
+                      />
+                    </div>
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-stone-100">
                           <th className="p-2">Name</th>
                           <th className="p-2">Email</th>
                           <th className="p-2">Phone</th>
+                          <th className="p-2">Role</th>
                           <th className="p-2">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {users.filter(u => u.role === 'admin').map((u, idx) => (
-                          <tr key={u.email || idx} className="border-b">
-                            <td className="p-2">{u.name}</td>
-                            <td className="p-2">{u.email}</td>
-                            <td className="p-2">{u.phone || '-'}</td>
-                            <td className="p-2">
-                              <button className="text-blue-600 mr-2" onClick={() => handleEditUser(u)}>Edit</button>
-                              <button className="text-red-600" onClick={() => handleDeleteUser(u)}>Delete</button>
-                            </td>
-                          </tr>
-                        ))}
+                        {users
+                          .filter(u => u.role === 'admin')
+                          .filter(u =>
+                            [u.name, u.email, u.phone].join(' ').toLowerCase().includes(userSearch.toLowerCase())
+                          )
+                          .map((u, idx) => (
+                            <tr key={u.email || idx} className="border-b">
+                              <td className="p-2">{u.name}</td>
+                              <td className="p-2">{u.email}</td>
+                              <td className="p-2">{u.phone || '-'}</td>
+                              <td className="p-2">{u.role}</td>
+                              <td className="p-2">
+                                <button className="text-blue-600 mr-2" onClick={() => handleEditUser(u)}>Edit</button>
+                                <button className="text-red-600" onClick={() => handleDeleteUser(u)}>Delete</button>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </div>
@@ -446,6 +491,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         Export CSV
                       </button>
                     </h2>
+                    <div className="flex gap-2 mb-4 flex-wrap">
+                      <input
+                        type="text"
+                        className="p-2 border rounded min-w-[160px]"
+                        placeholder="Search name, email, phone..."
+                        value={staffSearch}
+                        onChange={e => setStaffSearch(e.target.value)}
+                      />
+                    </div>
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-stone-100">
@@ -456,7 +510,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.filter(u => u.role === 'staff').map((u, idx) => (
+                        {users.filter(u => u.role === 'staff').filter(u =>
+                          [u.name, u.email, u.phone].join(' ').toLowerCase().includes(staffSearch.toLowerCase())
+                        ).map((u, idx) => (
                           <tr key={u.email || idx} className="border-b">
                             <td className="p-2">{u.name}</td>
                             <td className="p-2">{u.email}</td>
@@ -480,6 +536,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <Plus size={18} /> Add Dish
                     </button>
                   </div>
+                  <div className="flex gap-2 mb-4 px-6 pt-4 flex-wrap">
+                    <input
+                      type="text"
+                      className="p-2 border rounded min-w-[160px]"
+                      placeholder="Search dish, category..."
+                      value={menuSearch}
+                      onChange={e => setMenuSearch(e.target.value)}
+                    />
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-stone-200">
                       <thead className="bg-stone-50">
@@ -492,7 +557,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-100 text-sm">
-                        {menuItems.map((item, idx) => (
+                        {menuItems.filter(item =>
+                          item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
+                          item.category.toLowerCase().includes(menuSearch.toLowerCase())
+                        ).map((item, idx) => (
                           <tr key={item.id || idx} className="hover:bg-stone-50">
                             <td className="p-4 font-bold text-stone-900">{item.name}</td>
                             <td className="p-4 text-stone-600">{item.category}</td>
@@ -516,7 +584,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               )}
               {activeTab === 'orders' && (
                 <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                  <div className="flex justify-end p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4">
+                    <div className="flex gap-2 flex-wrap">
+                      <input
+                        type="text"
+                        className="p-2 border rounded min-w-[140px]"
+                        placeholder="Search order ID, item..."
+                        value={orderSearch}
+                        onChange={e => setOrderSearch(e.target.value)}
+                      />
+                      <input
+                        type="date"
+                        className="p-2 border rounded"
+                        value={orderDateFilter}
+                        onChange={e => setOrderDateFilter(e.target.value)}
+                      />
+                      <select
+                        className="p-2 border rounded"
+                        value={orderStatusFilter}
+                        onChange={e => setOrderStatusFilter(e.target.value)}
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </div>
                     <button
                       className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
                       onClick={() => exportOrdersCSV()}
@@ -536,25 +630,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-100 text-sm">
-                        {orders.map((order, idx) => (
-                          <tr key={order.orderId || idx} className="hover:bg-stone-50">
-                            <td className="p-4 font-mono font-bold text-stone-900">#{order.orderId}</td>
-                            <td className="p-4 text-stone-600">{new Date(order.createdAt).toLocaleDateString()} <span className="text-xs text-stone-400">{new Date(order.createdAt).toLocaleTimeString()}</span></td>
-                            <td className="p-4">
-                              <p className="text-stone-900 font-medium truncate max-w-xs">{order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
-                            </td>
-                            <td className="p-4 font-bold text-stone-900">${order.total.toFixed(2)}</td>
-                            <td className="p-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
-                                order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
-                                order.status === 'Confirmed' ? 'bg-red-100 text-red-700' :
-                                'bg-orange-100 text-orange-700'
-                              }`}>
-                                {order.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {orders
+                          .filter(order => {
+                            // Status filter
+                            if (orderStatusFilter !== 'all' && order.status !== orderStatusFilter) return false;
+                            // Date filter
+                            if (orderDateFilter) {
+                              const orderDate = new Date(order.createdAt);
+                              const filterDate = new Date(orderDateFilter);
+                              if (
+                                orderDate.getFullYear() !== filterDate.getFullYear() ||
+                                orderDate.getMonth() !== filterDate.getMonth() ||
+                                orderDate.getDate() !== filterDate.getDate()
+                              ) return false;
+                            }
+                            // Search filter
+                            const search = orderSearch.toLowerCase();
+                            return (
+                              String(order.orderId).toLowerCase().includes(search) ||
+                              order.items.some(i => i.name.toLowerCase().includes(search))
+                            );
+                          })
+                          .map((order, idx) => (
+                            <tr key={order.orderId || idx} className="hover:bg-stone-50">
+                              <td className="p-4 font-mono font-bold text-stone-900">#{order.orderId}</td>
+                              <td className="p-4 text-stone-600">{new Date(order.createdAt).toLocaleDateString()} <span className="text-xs text-stone-400">{new Date(order.createdAt).toLocaleTimeString()}</span></td>
+                              <td className="p-4">
+                                <p className="text-stone-900 font-medium truncate max-w-xs">{order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
+                              </td>
+                              <td className="p-4 font-bold text-stone-900">${order.total.toFixed(2)}</td>
+                              <td className="p-4">
+                                <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                                  order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
+                                  order.status === 'Confirmed' ? 'bg-red-100 text-red-700' :
+                                  'bg-orange-100 text-orange-700'
+                                }`}>
+                                  {order.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
                         {orders.length === 0 && (
                           <tr>
                             <td colSpan={5} className="p-8 text-center text-stone-500">No orders found.</td>
@@ -576,6 +691,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       Export CSV
                     </button>
                   </h2>
+                  <div className="flex gap-2 mb-4 flex-wrap">
+                    <input
+                      type="text"
+                      className="p-2 border rounded min-w-[160px]"
+                      placeholder="Search email, action, details..."
+                      value={logSearch}
+                      onChange={e => setLogSearch(e.target.value)}
+                    />
+                    <input
+                      type="date"
+                      className="p-2 border rounded"
+                      value={logDateFilter}
+                      onChange={e => setLogDateFilter(e.target.value)}
+                    />
+                  </div>
                   {logsLoading ? (
                     <div>Loading logs...</div>
                   ) : logsError ? (
@@ -591,14 +721,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {activityLogs.map((log, idx) => (
-                          <tr key={log._id || idx} className="border-b">
-                            <td className="p-2">{log.userEmail}</td>
-                            <td className="p-2">{log.action}</td>
-                            <td className="p-2">{log.details}</td>
-                            <td className="p-2">{new Date(log.timestamp).toLocaleString()}</td>
-                          </tr>
-                        ))}
+                        {activityLogs
+                          .filter(log => {
+                            // Date filter
+                            if (logDateFilter) {
+                              const logDate = new Date(log.timestamp);
+                              const filterDate = new Date(logDateFilter);
+                              if (
+                                logDate.getFullYear() !== filterDate.getFullYear() ||
+                                logDate.getMonth() !== filterDate.getMonth() ||
+                                logDate.getDate() !== filterDate.getDate()
+                              ) return false;
+                            }
+                            // Search filter
+                            const search = logSearch.toLowerCase();
+                            return (
+                              log.userEmail?.toLowerCase().includes(search) ||
+                              log.action?.toLowerCase().includes(search) ||
+                              log.details?.toLowerCase().includes(search)
+                            );
+                          })
+                          .map((log, idx) => (
+                            <tr key={log._id || idx} className="border-b">
+                              <td className="p-2">{log.userEmail}</td>
+                              <td className="p-2">{log.action}</td>
+                              <td className="p-2">{log.details}</td>
+                              <td className="p-2">{new Date(log.timestamp).toLocaleString()}</td>
+                            </tr>
+                          ))}
                         {activityLogs.length === 0 && (
                           <tr>
                             <td colSpan={4} className="p-8 text-center text-stone-500">No logs found.</td>
@@ -631,6 +781,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <Plus size={18} /> Add Dish
                     </button>
                   </div>
+                  <div className="flex gap-2 mb-4 px-6 pt-4 flex-wrap">
+                    <input
+                      type="text"
+                      className="p-2 border rounded min-w-[160px]"
+                      placeholder="Search dish, category..."
+                      value={menuSearch}
+                      onChange={e => setMenuSearch(e.target.value)}
+                    />
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-stone-200">
                       <thead className="bg-stone-50">
@@ -643,7 +802,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-100 text-sm">
-                        {menuItems.map(item => (
+                        {menuItems.filter(item =>
+                          item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
+                          item.category.toLowerCase().includes(menuSearch.toLowerCase())
+                        ).map(item => (
                           <tr key={item.id} className="hover:bg-stone-50">
                             <td className="p-4 font-bold text-stone-900">{item.name}</td>
                             <td className="p-4 text-stone-600">{item.category}</td>
