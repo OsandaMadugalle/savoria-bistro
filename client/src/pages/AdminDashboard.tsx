@@ -9,6 +9,85 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
+      // Utility: Export Staff as CSV
+      const exportStaffCSV = () => {
+        const staff = users.filter(u => u.role === 'staff');
+        if (staff.length === 0) return;
+        const headers = ['Name', 'Email', 'Phone'];
+        const rows = staff.map(u => [u.name, u.email, u.phone || '-']);
+        let csv = headers.join(',') + '\n';
+        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'staff.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+
+      // Utility: Export Customers as CSV
+      const exportCustomersCSV = () => {
+        const customers = users.filter(u => u.role === 'customer');
+        if (customers.length === 0) return;
+        const headers = ['Name', 'Email', 'Phone', 'Loyalty Points', 'Tier', 'Member Since'];
+        const rows = customers.map(u => [u.name, u.email, u.phone || '-', u.loyaltyPoints ?? 0, u.tier ?? '-', u.memberSince ?? '-']);
+        let csv = headers.join(',') + '\n';
+        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'customers.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+
+      // Utility: Export Orders as CSV
+      const exportOrdersCSV = () => {
+        if (orders.length === 0) return;
+        const headers = ['Order ID', 'Date', 'Items', 'Total', 'Status'];
+        const rows = orders.map(order => [
+          order.orderId,
+          new Date(order.createdAt).toLocaleString(),
+          order.items.map(i => `${i.quantity}x ${i.name}`).join(', '),
+          order.total.toFixed(2),
+          order.status
+        ]);
+        let csv = headers.join(',') + '\n';
+        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'orders.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+
+      // Utility: Export Activity Logs as CSV
+      const exportLogsCSV = () => {
+        if (activityLogs.length === 0) return;
+        const headers = ['User Email', 'Action', 'Details', 'Timestamp'];
+        const rows = activityLogs.map(log => [log.userEmail, log.action, log.details, new Date(log.timestamp).toLocaleString()]);
+        let csv = headers.join(',') + '\n';
+        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'activity_logs.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
     // Edit/Delete state and handlers
     const [editUser, setEditUser] = useState<User | null>(null);
     const [editForm, setEditForm] = useState<{ name: string; email: string; phone?: string; password?: string }>({ name: '', email: '' });
@@ -17,7 +96,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const handleEditUser = (u: User) => {
       setEditUser(u);
       setEditForm({ name: u.name, email: u.email, phone: u.phone || '', password: '' });
-      setEditMsg('');
+    const [users, setUsers] = useState<User[]>([]); // List of users
+    const [activityLogs, setActivityLogs] = useState<any[]>([]);
+    const [logsLoading, setLogsLoading] = useState(false);
+    const [logsError, setLogsError] = useState('');
+    
+    // Utility: Export Admins as CSV
+    const exportAdminsCSV = () => {
+        const admins = users.filter(u => u.role === 'admin');
+        if (admins.length === 0) return;
+        const headers = ['Name', 'Email', 'Phone'];
+        const rows = admins.map(u => [u.name, u.email, u.phone || '-']);
+        let csv = headers.join(',') + '\n';
+        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'admins.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
     };
 
     const handleEditFormChange = (field: string, value: string) => {
@@ -178,7 +279,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           {/* Customers Tab: List Customers */}
                           {activeTab === 'customers' && (
                             <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                              <h2 className="text-xl font-bold mb-2">Customers</h2>
+                              <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
+                                <span>Customers</span>
+                                <button
+                                  className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
+                                  onClick={() => exportCustomersCSV()}
+                                >
+                                  Export CSV
+                                </button>
+                              </h2>
                               <table className="w-full text-left border-collapse">
                                 <thead>
                                   <tr className="bg-stone-100">
@@ -271,7 +380,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     )}
                   </div>
                   <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                    <h2 className="text-xl font-bold mb-2">Staff</h2>
+                    <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
+                      <span>Staff</span>
+                      <button
+                        className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
+                        onClick={() => exportStaffCSV()}
+                      >
+                        Export CSV
+                      </button>
+                    </h2>
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-stone-100">
@@ -342,6 +459,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               )}
               {activeTab === 'orders' && (
                 <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex justify-end p-4">
+                    <button
+                      className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
+                      onClick={() => exportOrdersCSV()}
+                    >
+                      Export CSV
+                    </button>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-stone-200">
                       <thead className="bg-stone-50">
@@ -385,7 +510,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               )}
               {activeTab === 'logs' && user?.role === 'masterAdmin' && (
                 <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mt-4">
-                  <h2 className="text-xl font-bold mb-2">System Activity Logs</h2>
+                  <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
+                    <span>System Activity Logs</span>
+                    <button
+                      className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
+                      onClick={() => exportLogsCSV()}
+                    >
+                      Export CSV
+                    </button>
+                  </h2>
                   {logsLoading ? (
                     <div>Loading logs...</div>
                   ) : logsError ? (
