@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
-import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers } from '../services/api';
+import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign } from '../services/api';
 import { MenuItem, User, Order } from '../types';
-import { LayoutDashboard, Plus, Trash2, Edit2, Upload } from 'lucide-react';
+import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send } from 'lucide-react';
 
 // ===== UTILITY FUNCTIONS =====
 /**
@@ -93,6 +93,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [newsletterLoading, setNewsletterLoading] = useState(false);
   const [newsletterError, setNewsletterError] = useState('');
   const [newsletterSearch, setNewsletterSearch] = useState('');
+  const [showCampaignForm, setShowCampaignForm] = useState(false);
+  const [campaignContent, setCampaignContent] = useState('');
+  const [campaignSubject, setCampaignSubject] = useState('');
+  const [campaignSending, setCampaignSending] = useState(false);
+  const [campaignMessage, setCampaignMessage] = useState('');
   
   // ===== STATE: FORMS =====
   const [adminForm, setAdminForm] = useState<{ name: string; email: string; password: string; phone?: string }>({ name: '', email: '', password: '', phone: '' });
@@ -1384,7 +1389,81 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
               {activeTab === 'newsletter' && (
                 <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                  <h2 className="text-xl font-bold mb-6">Newsletter Management</h2>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold">Newsletter Management</h2>
+                    <button
+                      onClick={() => setShowCampaignForm(!showCampaignForm)}
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2"
+                    >
+                      <Send size={18} /> Send Campaign
+                    </button>
+                  </div>
+
+                  {showCampaignForm && (
+                    <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                      <h3 className="font-bold mb-4">Send Newsletter Campaign</h3>
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!campaignContent.trim()) {
+                          setCampaignMessage('Newsletter content is required');
+                          return;
+                        }
+                        try {
+                          setCampaignSending(true);
+                          const result = await sendNewsletterCampaign(campaignContent, campaignSubject);
+                          setCampaignMessage(`✅ Campaign sent: ${result.sent} emails sent, ${result.failed} failed`);
+                          setCampaignContent('');
+                          setCampaignSubject('');
+                          setTimeout(() => setCampaignMessage(''), 5000);
+                        } catch (error) {
+                          setCampaignMessage(`❌ Error: ${error instanceof Error ? error.message : 'Failed to send campaign'}`);
+                        } finally {
+                          setCampaignSending(false);
+                        }
+                      }} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-bold mb-1">Subject (Optional)</label>
+                          <input
+                            type="text"
+                            value={campaignSubject}
+                            onChange={(e) => setCampaignSubject(e.target.value)}
+                            placeholder="Newsletter subject line"
+                            className="w-full px-3 py-2 border border-stone-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold mb-1">Campaign Content</label>
+                          <textarea
+                            value={campaignContent}
+                            onChange={(e) => setCampaignContent(e.target.value)}
+                            placeholder="Enter your newsletter content (HTML or plain text)"
+                            className="w-full px-3 py-2 border border-stone-300 rounded-lg h-32"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowCampaignForm(false)}
+                            className="flex-1 px-4 py-2 border border-stone-300 rounded-lg hover:bg-stone-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={campaignSending}
+                            className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-stone-400 text-white rounded-lg font-bold flex items-center justify-center gap-2"
+                          >
+                            <Send size={16} /> {campaignSending ? 'Sending...' : 'Send Campaign'}
+                          </button>
+                        </div>
+                        {campaignMessage && (
+                          <div className={`p-3 rounded-lg text-sm font-medium ${campaignMessage.includes('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {campaignMessage}
+                          </div>
+                        )}
+                      </form>
+                    </div>
+                  )}
 
                   {newsletterLoading ? (
                     <p className="text-center py-8 text-stone-600">Loading newsletter data...</p>

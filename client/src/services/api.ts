@@ -350,3 +350,16 @@ export const getNewsletterSubscribers = async (): Promise<Array<{ email: string;
   const data = await res.json();
   return Array.isArray(data) ? data : data.data || [];
 };
+
+export const sendNewsletterCampaign = async (content: string, subject?: string): Promise<{ message: string; sent: number; failed: number; total: number }> => {
+  const res = await fetch(`${API_URL}/newsletter/send-campaign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, subject })
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to send newsletter campaign');
+  }
+  return res.json();
+};
