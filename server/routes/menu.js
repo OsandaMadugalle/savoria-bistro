@@ -15,6 +15,12 @@ router.post('/', async (req, res) => {
   try {
     const newItem = new MenuItem(req.body);
     await newItem.save();
+      // Log menu item addition
+      const { requesterEmail } = req.body;
+      if (requesterEmail) {
+        const { logActivity } = require('../routes/auth');
+        await logActivity(requesterEmail, 'Add Menu Item', `Added menu item: ${newItem.name}`);
+      }
     res.status(201).json(newItem);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -31,6 +37,12 @@ router.put('/:id', async (req, res) => {
     if (!updatedItem) {
       return res.status(404).json({ message: 'Item not found' });
     }
+      // Log menu item edit
+      const { requesterEmail } = req.body;
+      if (requesterEmail) {
+        const { logActivity } = require('../routes/auth');
+        await logActivity(requesterEmail, 'Edit Menu Item', `Edited menu item: ${updatedItem.name}`);
+      }
     res.json(updatedItem);
   } catch (err) {
     res.status(400).json({ message: err.message });

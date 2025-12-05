@@ -51,10 +51,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       }
     };
   // Removed unused password toggle states
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs'>('menu');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState('');
   
   // Login State
 
@@ -96,6 +99,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         await addAdmin({ ...adminForm, requesterEmail: user?.email } as any);
         setAdminMsg('Admin added!');
         setAdminForm({ name: '', email: '', password: '', phone: '' });
+        await loadUsers();
+        setTimeout(() => setAdminMsg(''), 3000);
       } catch (err: any) {
         setAdminMsg(err.message || 'Failed to add admin');
       }
@@ -108,11 +113,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         await addStaff({ ...staffForm, requesterEmail: user?.email } as any);
         setStaffMsg('Staff added!');
         setStaffForm({ name: '', email: '', password: '', phone: '' });
+        await loadUsers();
+        setTimeout(() => setStaffMsg(''), 3000);
       } catch (err: any) {
         setStaffMsg(err.message || 'Failed to add staff');
       }
     }
-  // ...existing code...
+
+  useEffect(() => {
+    if (user && user.role === 'masterAdmin' && activeTab === 'logs') {
+      setLogsLoading(true);
+      setLogsError('');
+      import('../services/userActionsApi').then(({ fetchActivityLogs }) => {
+        fetchActivityLogs(user.email)
+          .then(setActivityLogs)
+          .catch(err => setLogsError(err.message || 'Failed to fetch logs'))
+          .finally(() => setLogsLoading(false));
+      });
+    }
+  }, [user, activeTab]);
 
   return (
     <div>
@@ -148,6 +167,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'customers' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('customers')}>Customers</button>
               <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'menu' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('menu')}>Menu</button>
               <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'orders' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('orders')}>Orders</button>
+              {/* Add tab for Activity Logs */}
+              <button
+                className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'logs' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`}
+                onClick={() => setActiveTab('logs')}
+              >
+                Activity Logs
+              </button>
             </div>
                           {/* Customers Tab: List Customers */}
                           {activeTab === 'customers' && (
@@ -165,8 +191,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {users.filter(u => u.role === 'customer').map(u => (
-                                    <tr key={u.email} className="border-b">
+                                  {users.filter(u => u.role === 'customer').map((u, idx) => (
+                                    <tr key={u.email || idx} className="border-b">
                                       <td className="p-2">{u.name}</td>
                                       <td className="p-2">{u.email}</td>
                                       <td className="p-2">{u.phone || '-'}</td>
@@ -192,7 +218,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <input placeholder="Phone" className="p-3 rounded border border-stone-200 min-w-[140px]" value={adminForm.phone} onChange={e => setAdminForm(f => ({...f, phone: e.target.value}))} />
                       <button type="submit" className="px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Admin</button>
                     </form>
-                    {adminMsg && <span className="ml-4 text-sm font-medium text-green-600">{adminMsg}</span>}
+                    {adminMsg && (
+                      <div className="w-full my-2 p-3 rounded-lg font-bold text-center" style={{ background: '#ffeaea', color: '#d32f2f', border: '2px solid #d32f2f' }}>
+                        {adminMsg}
+                      </div>
+                    )}
                   </div>
                   <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                     <h2 className="text-xl font-bold mb-2">Admins</h2>
@@ -206,8 +236,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.filter(u => u.role === 'admin').map(u => (
-                          <tr key={u.email} className="border-b">
+                        {users.filter(u => u.role === 'admin').map((u, idx) => (
+                          <tr key={u.email || idx} className="border-b">
                             <td className="p-2">{u.name}</td>
                             <td className="p-2">{u.email}</td>
                             <td className="p-2">{u.phone || '-'}</td>
@@ -234,7 +264,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <input placeholder="Phone" className="p-3 rounded border border-stone-200 min-w-[140px]" value={staffForm.phone} onChange={e => setStaffForm(f => ({...f, phone: e.target.value}))} />
                       <button type="submit" className="px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Staff</button>
                     </form>
-                    {staffMsg && <span className="ml-4 text-sm font-medium text-green-600">{staffMsg}</span>}
+                    {staffMsg && (
+                      <div className="w-full my-2 p-3 rounded-lg font-bold text-center" style={{ background: '#ffeaea', color: '#d32f2f', border: '2px solid #d32f2f' }}>
+                        {staffMsg}
+                      </div>
+                    )}
                   </div>
                   <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                     <h2 className="text-xl font-bold mb-2">Staff</h2>
@@ -248,8 +282,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.filter(u => u.role === 'staff').map(u => (
-                          <tr key={u.email} className="border-b">
+                        {users.filter(u => u.role === 'staff').map((u, idx) => (
+                          <tr key={u.email || idx} className="border-b">
                             <td className="p-2">{u.name}</td>
                             <td className="p-2">{u.email}</td>
                             <td className="p-2">{u.phone || '-'}</td>
@@ -284,8 +318,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-100 text-sm">
-                        {menuItems.map(item => (
-                          <tr key={item.id} className="hover:bg-stone-50">
+                        {menuItems.map((item, idx) => (
+                          <tr key={item.id || idx} className="hover:bg-stone-50">
                             <td className="p-4 font-bold text-stone-900">{item.name}</td>
                             <td className="p-4 text-stone-600">{item.category}</td>
                             <td className="p-4 font-bold text-stone-900">${item.price}</td>
@@ -320,8 +354,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-100 text-sm">
-                        {orders.map(order => (
-                          <tr key={order.orderId} className="hover:bg-stone-50">
+                        {orders.map((order, idx) => (
+                          <tr key={order.orderId || idx} className="hover:bg-stone-50">
                             <td className="p-4 font-mono font-bold text-stone-900">#{order.orderId}</td>
                             <td className="p-4 text-stone-600">{new Date(order.createdAt).toLocaleDateString()} <span className="text-xs text-stone-400">{new Date(order.createdAt).toLocaleTimeString()}</span></td>
                             <td className="p-4">
@@ -347,6 +381,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       </tbody>
                     </table>
                   </div>
+                </div>
+              )}
+              {activeTab === 'logs' && user?.role === 'masterAdmin' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mt-4">
+                  <h2 className="text-xl font-bold mb-2">System Activity Logs</h2>
+                  {logsLoading ? (
+                    <div>Loading logs...</div>
+                  ) : logsError ? (
+                    <div style={{ color: 'red' }}>{logsError}</div>
+                  ) : (
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-stone-100">
+                          <th className="p-2">User Email</th>
+                          <th className="p-2">Action</th>
+                          <th className="p-2">Details</th>
+                          <th className="p-2">Timestamp</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activityLogs.map((log, idx) => (
+                          <tr key={log._id || idx} className="border-b">
+                            <td className="p-2">{log.userEmail}</td>
+                            <td className="p-2">{log.action}</td>
+                            <td className="p-2">{log.details}</td>
+                            <td className="p-2">{new Date(log.timestamp).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                        {activityLogs.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="p-8 text-center text-stone-500">No logs found.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               )}
             </div>

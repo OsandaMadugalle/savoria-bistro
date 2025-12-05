@@ -2,12 +2,31 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const ActivityLog = require('../models/ActivityLog');
+
+// Log an activity (call this in admin actions)
+async function logActivity(userEmail, action, details = '') {
+  try {
+    await ActivityLog.create({ userEmail, action, details });
+  } catch (err) {
+    console.error('Activity log error:', err);
+  }
+}
+
+// Get all activity logs (masterAdmin only)
+router.get('/activity-logs', requireRole(['masterAdmin'], true), async (req, res) => {
+  try {
+    const logs = await ActivityLog.find().sort({ timestamp: -1 }).limit(100);
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 // Update user (admin/staff)
 router.put('/update-user', async (req, res) => {
   try {
-    const { email, updates } = req.body;
+    const { email, updates, requesterEmail } = req.body;
     if (!email) return res.status(400).json({ message: 'Email required' });
-    // Don't allow role change here
     if (updates.role) delete updates.role;
     if (updates.password && updates.password.trim() !== '') {
       const bcrypt = require('bcryptjs');
@@ -17,6 +36,7 @@ router.put('/update-user', async (req, res) => {
     }
     const user = await User.findOneAndUpdate({ email }, updates, { new: true });
     if (!user) return res.status(404).json({ message: 'User not found' });
+    await logActivity(requesterEmail, 'Update User', `Updated user: ${email}`);
     const userResponse = user.toObject();
     delete userResponse.password;
     res.json(userResponse);
@@ -28,7 +48,7 @@ router.put('/update-user', async (req, res) => {
 // Delete user (admin/staff)
 router.delete('/delete-user', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, requesterEmail } = req.body;
     if (!email) return res.status(400).json({ message: 'Email required' });
     const user = await User.findOneAndDelete({ email });
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -44,9 +64,14 @@ router.delete('/delete-user', async (req, res) => {
 // Only one router instance should be used, declared at the top of the file
 
 // Middleware to check role
-function requireRole(roles) {
+function requireRole(roles, allowQuery = false) {
   return async (req, res, next) => {
-    const { requesterEmail } = req.body;
+    let requesterEmail;
+    if (allowQuery && req.method === 'GET') {
+      requesterEmail = req.query.requesterEmail;
+    } else {
+      requesterEmail = req.body.requesterEmail;
+    }
     if (!requesterEmail) return res.status(403).json({ message: 'Requester email required' });
     const requester = await User.findOne({ email: requesterEmail });
     if (!requester || !roles.includes(requester.role)) {
@@ -59,12 +84,13 @@ function requireRole(roles) {
 // MasterAdmin adds new admin
 router.post('/add-admin', requireRole(['masterAdmin']), async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, requesterEmail } = req.body;
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: 'User already exists' });
+    if (existingUser) return res.status(409).json({ message: 'User already exists. Please use a different email.' });
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, password: hashedPassword, phone, role: 'admin' });
     await user.save();
+    await logActivity(requesterEmail, 'Add Admin', `Added admin: ${email}`);
     const userResponse = user.toObject();
     delete userResponse.password;
     res.status(201).json(userResponse);
@@ -76,12 +102,13 @@ router.post('/add-admin', requireRole(['masterAdmin']), async (req, res) => {
 // Admin or MasterAdmin adds new staff
 router.post('/add-staff', requireRole(['admin', 'masterAdmin']), async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, requesterEmail } = req.body;
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: 'User already exists' });
+    if (existingUser) return res.status(409).json({ message: 'User already exists. Please use a different email.' });
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, password: hashedPassword, phone, role: 'staff' });
     await user.save();
+    await logActivity(requesterEmail, 'Add Staff', `Added staff: ${email}`);
     const userResponse = user.toObject();
     delete userResponse.password;
     res.status(201).json(userResponse);

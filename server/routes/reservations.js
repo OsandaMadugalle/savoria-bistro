@@ -16,6 +16,12 @@ router.post('/', async (req, res) => {
   try {
     const reservation = new Reservation(req.body);
     await reservation.save();
+    // Log reservation creation
+    const { requesterEmail } = req.body;
+    if (requesterEmail) {
+      const { logActivity } = require('../routes/auth');
+      await logActivity(requesterEmail, 'Add Reservation', `Created reservation for: ${reservation.name}`);
+    }
     res.status(201).json({ message: 'Reservation confirmed', reservation });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -36,6 +42,12 @@ router.put('/:id/status', async (req, res) => {
       { new: true }
     );
     if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
+    // Log reservation status update
+    const { requesterEmail } = req.body;
+    if (requesterEmail) {
+      const { logActivity } = require('../routes/auth');
+      await logActivity(requesterEmail, 'Update Reservation', `Reservation ${reservation._id} status changed to ${status}`);
+    }
     res.json({ message: 'Reservation updated', reservation });
   } catch (err) {
     res.status(500).json({ message: err.message });

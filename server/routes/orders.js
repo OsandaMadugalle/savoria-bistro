@@ -19,6 +19,12 @@ router.post('/', async (req, res) => {
     const pointsEarned = Math.floor(newOrder.total * 10);
     await User.findByIdAndUpdate(newOrder.userId, { $inc: { loyaltyPoints: pointsEarned } });
 
+    // Log order creation
+    const { requesterEmail } = req.body;
+    if (requesterEmail) {
+      const { logActivity } = require('../routes/auth');
+      await logActivity(requesterEmail, 'Add Order', `Created order: ${newOrder.orderId}`);
+    }
     res.status(201).json(newOrder);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -74,6 +80,12 @@ router.put('/:id/status', async (req, res) => {
       order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
     }
     if (!order) return res.status(404).json({ message: 'Order not found' });
+    // Log order status update
+    const { requesterEmail } = req.body;
+    if (requesterEmail) {
+      const { logActivity } = require('../routes/auth');
+      await logActivity(requesterEmail, 'Update Order', `Order ${order.orderId || order._id} status changed to ${status}`);
+    }
     res.json(order);
   } catch (err) {
     res.status(400).json({ message: err.message });
