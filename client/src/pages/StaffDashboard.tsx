@@ -36,7 +36,7 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
   };
 
   useEffect(() => {
-    if (user && (user.role === 'staff' || user.role === 'admin')) {
+    if (user && (user.role === 'staff' || user.role === 'admin' || user.role === 'masterAdmin')) {
       loadData();
       const interval = setInterval(loadData, 30000); // Poll every 30s
       return () => clearInterval(interval);

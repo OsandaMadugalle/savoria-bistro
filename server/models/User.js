@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   phone: String,
   loyaltyPoints: { type: Number, default: 0 },
   tier: { type: String, enum: ['Bronze', 'Silver', 'Gold'], default: 'Bronze' },
-  role: { type: String, enum: ['customer', 'staff', 'admin'], default: 'customer' },
+  role: { type: String, enum: ['customer', 'staff', 'admin', 'masterAdmin'], default: 'customer' },
   memberSince: { type: String, default: () => new Date().getFullYear().toString() },
   history: [{
     orderId: String,

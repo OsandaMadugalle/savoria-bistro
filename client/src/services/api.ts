@@ -79,6 +79,33 @@ export const deleteMenuItem = async (id: string): Promise<void> => {
 };
 
 // --- AUTH API ---
+// Add Admin (masterAdmin only)
+export const addAdmin = async (adminData: { name: string; email: string; password: string; phone?: string }): Promise<User> => {
+  const res = await fetch(`${API_URL}/auth/add-admin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(adminData)
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Failed to add admin');
+  }
+  return await res.json();
+};
+
+// Add Staff (admin or masterAdmin)
+export const addStaff = async (staffData: { name: string; email: string; password: string; phone?: string; requesterEmail?: string }): Promise<User> => {
+  const res = await fetch(`${API_URL}/auth/add-staff`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(staffData)
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Failed to add staff');
+  }
+  return await res.json();
+};
 export const loginUser = async (email: string, password: string): Promise<User> => {
   const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',

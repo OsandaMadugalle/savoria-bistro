@@ -68,7 +68,7 @@ export interface User {
   loyaltyPoints: number;
   memberSince: string;
   tier: 'Bronze' | 'Silver' | 'Gold';
-  role: 'customer' | 'staff' | 'admin';
+  role: 'customer' | 'staff' | 'admin' | 'masterAdmin';
   history: OrderHistoryItem[];
 }
 

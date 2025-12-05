@@ -208,12 +208,12 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
                         </NavLink>
                         
                         {/* Role Based Links */}
-                        {user.role === 'admin' && (
-                             <NavLink to="/admin" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"><Shield size={16} /> Admin Dashboard</NavLink>
-                        )}
-                        {(user.role === 'staff' || user.role === 'admin') && (
-                             <NavLink to="/staff" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"><ChefHat size={16} /> Staff Portal</NavLink>
-                        )}
+                            {(user.role === 'admin' || user.role === 'masterAdmin') && (
+                              <NavLink to="/admin" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"><Shield size={16} /> Admin Dashboard</NavLink>
+                            )}
+                            {(user.role === 'staff' || user.role === 'admin' || user.role === 'masterAdmin') && (
+                              <NavLink to="/staff" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"><ChefHat size={16} /> Staff Portal</NavLink>
+                            )}
 
                         <button 
                           onClick={() => { onLogout(); setIsUserMenuOpen(false); navigate('/'); }}
@@ -283,8 +283,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
                 {user ? (
                   <>
                      <NavLink to="/profile" onClick={closeMenu} className="block px-3 py-3 rounded-md text-base font-medium text-stone-700 hover:bg-stone-50">My Profile ({user.name})</NavLink>
-                     {user.role === 'admin' && <NavLink to="/admin" onClick={closeMenu} className="block px-3 py-3 rounded-md text-base font-medium text-stone-700 hover:bg-stone-50">Admin Dashboard</NavLink>}
-                     {(user.role === 'staff' || user.role === 'admin') && <NavLink to="/staff" onClick={closeMenu} className="block px-3 py-3 rounded-md text-base font-medium text-stone-700 hover:bg-stone-50">Staff Portal</NavLink>}
+                     {(user.role === 'admin' || user.role === 'masterAdmin') && <NavLink to="/admin" onClick={closeMenu} className="block px-3 py-3 rounded-md text-base font-medium text-stone-700 hover:bg-stone-50">Admin Dashboard</NavLink>}
+                     {(user.role === 'staff' || user.role === 'admin' || user.role === 'masterAdmin') && <NavLink to="/staff" onClick={closeMenu} className="block px-3 py-3 rounded-md text-base font-medium text-stone-700 hover:bg-stone-50">Staff Portal</NavLink>}
                      <button onClick={() => { onLogout(); closeMenu(); }} className="block w-full text-left px-3 py-3 rounded-md text-base font-medium text-red-600 hover:bg-red-50">Sign Out</button>
                   </>
                 ) : (
