@@ -1,9 +1,68 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Star, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Star, ChevronRight, Clock, Users, Award, Zap, Check } from 'lucide-react';
 import { REVIEWS } from '../constants';
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState({ customers: 0, dishes: 0, awards: 0 });
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  
+  // Promo code state - get from localStorage or use default
+  const [offerEnabled, setOfferEnabled] = useState(true);
+  const [activePromos, setActivePromos] = useState<any[]>([]);
+  
+  const DEFAULT_PROMOS = [
+    { id: 1, code: 'SAVORIA20', discount: 20, active: true },
+    { id: 2, code: 'SAVE10', discount: 10, active: true },
+  ];
+
+  useEffect(() => {
+    // Load promo settings from localStorage
+    const storedEnabled = localStorage.getItem('offerEnabled');
+    if (storedEnabled !== null) {
+      setOfferEnabled(JSON.parse(storedEnabled));
+    }
+    
+    const storedPromos = localStorage.getItem('activePromos');
+    if (storedPromos) {
+      try {
+        const promos = JSON.parse(storedPromos);
+        // Filter only active promos
+        const active = promos.filter((p: any) => p.active);
+        setActivePromos(active.length > 0 ? active : DEFAULT_PROMOS.filter(p => p.active));
+      } catch (err) {
+        // Fallback to default
+        setActivePromos(DEFAULT_PROMOS.filter(p => p.active));
+      }
+    } else {
+      setActivePromos(DEFAULT_PROMOS.filter(p => p.active));
+    }
+    
+    // Animate stats on load
+    const animateStats = () => {
+      let customers = 0, dishes = 0, awards = 0;
+      const interval = setInterval(() => {
+        if (customers < 5000) customers += 250;
+        if (dishes < 50) dishes += 2;
+        if (awards < 12) awards += 0.6;
+        setStats({ customers: Math.min(customers, 5000), dishes: Math.min(dishes, 50), awards: Math.min(awards, 12) });
+        if (customers >= 5000 && dishes >= 50 && awards >= 12) clearInterval(interval);
+      }, 50);
+    };
+    animateStats();
+  }, []);
+
+  const handleClaimOffer = (code: string) => {
+    // Copy promo code to clipboard
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+    
+    // Navigate to menu after a short delay
+    setTimeout(() => navigate('/menu'), 500);
+  };
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -30,6 +89,80 @@ const Home: React.FC = () => {
             <NavLink to="/reservation" className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 text-white px-8 py-4 rounded-full font-semibold transition-all">
               Book a Table
             </NavLink>
+          </div>
+        </div>
+      </section>
+
+      {/* Special Offers Section */}
+      {offerEnabled && activePromos.length > 0 ? (
+        <section className="py-12 px-6 md:px-12 bg-stone-50">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-2 mb-2 justify-center">
+              <Zap size={20} className="text-orange-600" />
+              <span className="text-sm font-semibold uppercase tracking-wider text-orange-600">Limited Time Offers</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-center mb-8 text-stone-900">Exclusive Deals</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {activePromos.map((promo) => (
+                <div key={promo.id} className="bg-gradient-to-br from-orange-500 to-red-600 text-white p-6 md:p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow">
+                  <div className="flex flex-col justify-between h-full">
+                    <div>
+                      <div className="text-5xl md:text-6xl font-bold mb-2">{promo.discount}%</div>
+                      <h3 className="text-xl md:text-2xl font-serif font-bold">Off Your Order</h3>
+                      <p className="text-orange-100 mt-3">Use promo code:</p>
+                      <p className="font-mono font-bold text-white text-xl bg-black/20 px-3 py-2 rounded mt-2 inline-block">{promo.code}</p>
+                      <p className="text-orange-50 text-sm mt-4">Valid for dine-in, takeout, or delivery</p>
+                    </div>
+                    <button 
+                      onClick={() => handleClaimOffer(promo.code)}
+                      className={`mt-6 px-6 py-3 rounded-full font-bold whitespace-nowrap transition-all transform hover:scale-105 flex items-center justify-center gap-2 ${
+                        copiedCode === promo.code 
+                          ? 'bg-green-400 text-stone-900' 
+                          : 'bg-white text-orange-600 hover:bg-stone-100'
+                      }`}
+                    >
+                      {copiedCode === promo.code ? (
+                        <>
+                          <Check size={18} />
+                          Copied!
+                        </>
+                      ) : (
+                        'Claim Offer'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Stats Section with Animation */}
+      <section className="bg-stone-100 py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <Users size={40} className="text-orange-600 mx-auto mb-4" />
+              <div className="text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-2">
+                {Math.round(stats.customers).toLocaleString()}+
+              </div>
+              <p className="text-stone-600">Satisfied Customers</p>
+            </div>
+            <div className="text-center">
+              <Award size={40} className="text-orange-600 mx-auto mb-4" />
+              <div className="text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-2">
+                {Math.round(stats.awards)}
+              </div>
+              <p className="text-stone-600">Awards & Recognition</p>
+            </div>
+            <div className="text-center">
+              <ChevronRight size={40} className="text-orange-600 mx-auto mb-4" />
+              <div className="text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-2">
+                {Math.round(stats.dishes)}
+              </div>
+              <p className="text-stone-600">Signature Dishes</p>
+            </div>
           </div>
         </div>
       </section>
@@ -65,6 +198,72 @@ const Home: React.FC = () => {
                <NavLink to="/gallery" className="inline-flex items-center text-orange-600 font-semibold hover:text-orange-700">
                 View Gallery <ChevronRight size={18} />
               </NavLink>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Dishes Section */}
+      <section className="py-20 bg-white px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-orange-600 font-bold tracking-widest uppercase text-sm mb-2">Menu Highlights</h2>
+            <h3 className="text-4xl font-serif font-bold text-stone-900 mb-4">Chef's Specialties</h3>
+            <p className="text-stone-600 max-w-2xl mx-auto">Handpicked dishes that showcase our culinary excellence and commitment to quality ingredients</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { name: 'Pan-Seared Salmon', desc: 'With lemon butter and roasted vegetables', img: 'https://picsum.photos/400/300?random=1' },
+              { name: 'Beef Wellington', desc: 'Tender filet wrapped in mushroom duxelles', img: 'https://picsum.photos/400/300?random=2' },
+              { name: 'Truffle Risotto', desc: 'Creamy arborio rice with black truffle shavings', img: 'https://picsum.photos/400/300?random=3' },
+            ].map((dish, idx) => (
+              <div key={idx} className="group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2">
+                <div className="relative h-64 overflow-hidden">
+                  <img src={dish.img} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
+                </div>
+                <div className="p-6 bg-stone-50 group-hover:bg-orange-50 transition-colors">
+                  <h4 className="text-xl font-serif font-bold text-stone-900 mb-2">{dish.name}</h4>
+                  <p className="text-stone-600 text-sm mb-4">{dish.desc}</p>
+                  <NavLink to="/menu" className="text-orange-600 font-semibold text-sm hover:text-orange-700 flex items-center gap-1">
+                    Order Now <ChevronRight size={14} />
+                  </NavLink>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Restaurant Info Section */}
+      <section className="py-16 bg-gradient-to-r from-stone-900 to-stone-800 text-white px-4">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
+          <div className="flex gap-4">
+            <Clock size={32} className="text-orange-500 flex-shrink-0" />
+            <div>
+              <h4 className="font-bold text-lg mb-1">Opening Hours</h4>
+              <p className="text-stone-300 text-sm">Mon-Thu: 11am - 10pm</p>
+              <p className="text-stone-300 text-sm">Fri-Sat: 11am - 11pm</p>
+              <p className="text-stone-300 text-sm">Sunday: 10am - 9pm</p>
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <Users size={32} className="text-orange-500 flex-shrink-0" />
+            <div>
+              <h4 className="font-bold text-lg mb-1">Private Events</h4>
+              <p className="text-stone-300 text-sm">Host your special occasions</p>
+              <p className="text-stone-300 text-sm">Customized menus available</p>
+              <NavLink to="/contact" className="text-orange-400 text-sm font-semibold hover:text-orange-300 mt-2 inline-block">
+                Learn More →
+              </NavLink>
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <Award size={32} className="text-orange-500 flex-shrink-0" />
+            <div>
+              <h4 className="font-bold text-lg mb-1">Quality Assured</h4>
+              <p className="text-stone-300 text-sm">Fresh local ingredients</p>
+              <p className="text-stone-300 text-sm">Sustainable sourcing</p>
             </div>
           </div>
         </div>

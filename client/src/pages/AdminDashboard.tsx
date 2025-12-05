@@ -76,7 +76,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [editMsg, setEditMsg] = useState('');
 
   // ===== STATE: TABS & LISTS =====
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter' | 'promos'>('menu');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -124,6 +124,91 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [galleryUploadForm, setGalleryUploadForm] = useState({ caption: '', category: '', file: null as File | null });
   const [galleryUploading, setGalleryUploading] = useState(false);
   const [galleryMessage, setGalleryMessage] = useState('');
+
+  // ===== STATE: PROMOS =====
+  const [promos, setPromos] = useState<any[]>([
+    { id: 1, code: 'SAVORIA20', discount: 20, expiryDate: '2025-12-31', active: true },
+    { id: 2, code: 'SAVE10', discount: 10, expiryDate: '2025-12-31', active: true },
+  ]);
+  const [offerEnabled, setOfferEnabled] = useState(true);
+  const [showPromoForm, setShowPromoForm] = useState(false);
+  const [editingPromoId, setEditingPromoId] = useState<number | null>(null);
+  const [promoForm, setPromoForm] = useState({ code: '', discount: 20, expiryDate: '', active: true });
+  const [promoMessage, setPromoMessage] = useState('');
+  const [promoError, setPromoError] = useState('');
+
+  // ===== HANDLERS: PROMO MANAGEMENT =====
+  const handlePromoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPromoError('');
+    setPromoMessage('');
+
+    if (!promoForm.code.trim()) {
+      setPromoError('Promo code is required');
+      return;
+    }
+
+    let updatedPromos: any[];
+    
+    if (editingPromoId) {
+      // Edit existing promo
+      updatedPromos = promos.map(p => 
+        p.id === editingPromoId 
+          ? { ...p, ...promoForm }
+          : p
+      );
+      setPromoMessage(`✅ Promo code "${promoForm.code}" updated successfully!`);
+      setEditingPromoId(null);
+    } else {
+      // Add new promo
+      const newPromo = {
+        id: Math.max(...promos.map(p => p.id || 0), 0) + 1,
+        ...promoForm
+      };
+      updatedPromos = [...promos, newPromo];
+      setPromoMessage(`✅ Promo code "${promoForm.code}" created successfully!`);
+    }
+
+    setPromos(updatedPromos);
+    // Save to localStorage for syncing with home page
+    localStorage.setItem('activePromos', JSON.stringify(updatedPromos));
+    localStorage.setItem('offerEnabled', JSON.stringify(offerEnabled));
+    
+    setPromoForm({ code: '', discount: 20, expiryDate: '', active: true });
+    setTimeout(() => {
+      setShowPromoForm(false);
+      setPromoMessage('');
+    }, 1500);
+  };
+
+  const handleEditPromo = (promo: any) => {
+    setEditingPromoId(promo.id);
+    setPromoForm(promo);
+    setShowPromoForm(true);
+    setPromoMessage('');
+    setPromoError('');
+  };
+
+  const handleDeletePromo = (id: number) => {
+    if (window.confirm('Are you sure you want to delete this promo code?')) {
+      const deleted = promos.find(p => p.id === id);
+      const updatedPromos = promos.filter(p => p.id !== id);
+      setPromos(updatedPromos);
+      // Update localStorage
+      localStorage.setItem('activePromos', JSON.stringify(updatedPromos));
+      localStorage.setItem('offerEnabled', JSON.stringify(offerEnabled));
+      setPromoMessage(`✅ Promo code "${deleted?.code}" deleted successfully!`);
+      setTimeout(() => setPromoMessage(''), 2000);
+    }
+  };
+
+  const handleCancelPromoForm = () => {
+    setShowPromoForm(false);
+    setEditingPromoId(null);
+    setPromoForm({ code: '', discount: 20, expiryDate: '', active: true });
+    setPromoError('');
+    setPromoMessage('');
+  };
 
   // ===== HANDLERS: EDIT/DELETE =====
   const handleEditUser = useCallback((u: User) => {
@@ -329,6 +414,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   }, [users, orders, menuItems, activityLogs]);
 
   // ===== EFFECTS =====
+  // Load promo settings from localStorage on mount
+  useEffect(() => {
+    const storedPromos = localStorage.getItem('activePromos');
+    if (storedPromos) {
+      try {
+        setPromos(JSON.parse(storedPromos));
+      } catch (err) {
+        // Keep default promos if parsing fails
+      }
+    }
+    
+    const storedOfferEnabled = localStorage.getItem('offerEnabled');
+    if (storedOfferEnabled !== null) {
+      setOfferEnabled(JSON.parse(storedOfferEnabled));
+    }
+  }, []);
+
   useEffect(() => {
     if (user && (user.role === 'admin' || user.role === 'staff' || user.role === 'masterAdmin')) {
       loadData();
@@ -535,6 +637,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       onClick={() => setActiveTab('newsletter')}
                     >
                       📧 Newsletter
+                    </button>
+                    <button 
+                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'promos' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                      onClick={() => setActiveTab('promos')}
+                    >
+                      🎟️ Promo Codes
                     </button>
                   </div>
 
@@ -1539,6 +1647,170 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         )}
                       </div>
                     </>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'promos' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-stone-900">🎟️ Promo Code Management</h2>
+                    <button 
+                      onClick={() => {
+                        if (showPromoForm) {
+                          handleCancelPromoForm();
+                        } else {
+                          setShowPromoForm(true);
+                          setEditingPromoId(null);
+                          setPromoForm({ code: '', discount: 20, expiryDate: '', active: true });
+                        }
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2"
+                    >
+                      <Plus size={18} /> {showPromoForm ? 'Cancel' : 'Add Promo'}
+                    </button>
+                  </div>
+
+                  {/* Offer Section Enable/Disable */}
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-stone-900">Special Offer Section</h3>
+                      <p className="text-sm text-stone-600">Enable or disable the offer banner on the home page</p>
+                    </div>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={offerEnabled}
+                        onChange={(e) => {
+                          setOfferEnabled(e.target.checked);
+                          localStorage.setItem('offerEnabled', JSON.stringify(e.target.checked));
+                        }}
+                        className="w-6 h-6 rounded border-blue-300 cursor-pointer"
+                      />
+                      <span className={`font-bold ${offerEnabled ? 'text-green-600' : 'text-red-600'}`}>
+                        {offerEnabled ? '✓ Enabled' : '✗ Disabled'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {showPromoForm && (
+                    <form 
+                      onSubmit={handlePromoSubmit}
+                      className="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-stone-700 mb-2">Promo Code</label>
+                          <input 
+                            type="text" 
+                            value={promoForm.code}
+                            onChange={(e) => setPromoForm({...promoForm, code: e.target.value.toUpperCase()})}
+                            placeholder="e.g., SAVE10"
+                            className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-stone-700 mb-2">Discount %</label>
+                          <input 
+                            type="number" 
+                            value={promoForm.discount}
+                            onChange={(e) => setPromoForm({...promoForm, discount: parseInt(e.target.value)})}
+                            min="1"
+                            max="100"
+                            className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-stone-700 mb-2">Expiry Date</label>
+                          <input 
+                            type="date" 
+                            value={promoForm.expiryDate}
+                            onChange={(e) => setPromoForm({...promoForm, expiryDate: e.target.value})}
+                            className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={promoForm.active}
+                              onChange={(e) => setPromoForm({...promoForm, active: e.target.checked})}
+                              className="w-4 h-4 rounded border-stone-300"
+                            />
+                            <span className="text-sm font-semibold text-stone-700">Active</span>
+                          </label>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          type="submit"
+                          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold"
+                        >
+                          {editingPromoId ? 'Update Promo' : 'Create Promo'}
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={handleCancelPromoForm}
+                          className="flex-1 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-2 rounded-lg font-bold"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      {promoError && <p className="text-red-600 text-sm mt-2">{promoError}</p>}
+                      {promoMessage && <p className="text-green-600 text-sm mt-2">{promoMessage}</p>}
+                    </form>
+                  )}
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead className="bg-stone-100 border-b border-stone-200">
+                        <tr>
+                          <th className="p-4 font-bold text-stone-900">Code</th>
+                          <th className="p-4 font-bold text-stone-900">Discount</th>
+                          <th className="p-4 font-bold text-stone-900">Expiry Date</th>
+                          <th className="p-4 font-bold text-stone-900">Status</th>
+                          <th className="p-4 font-bold text-stone-900">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 text-sm">
+                        {promos.map((promo) => (
+                          <tr key={promo.id} className="hover:bg-stone-50">
+                            <td className="p-4 font-bold text-stone-900">{promo.code}</td>
+                            <td className="p-4 text-stone-600">{promo.discount}% off</td>
+                            <td className="p-4 text-stone-600">{promo.expiryDate || 'No expiry'}</td>
+                            <td className="p-4">
+                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${promo.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {promo.active ? '✓ Active' : '✗ Inactive'}
+                              </span>
+                            </td>
+                            <td className="p-4 flex gap-2">
+                              <button 
+                                onClick={() => handleEditPromo(promo)}
+                                className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+                              >
+                                <Edit2 size={16} /> Edit
+                              </button>
+                              <button 
+                                onClick={() => handleDeletePromo(promo.id)}
+                                className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center gap-1"
+                              >
+                                <Trash2 size={16} /> Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {promos.length === 0 && (
+                      <p className="text-center py-8 text-stone-600">No promo codes yet. Create one to get started!</p>
+                    )}
+                  </div>
+                  {promoMessage && !showPromoForm && (
+                    <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${promoMessage.includes('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {promoMessage}
+                    </div>
                   )}
                 </div>
               )}
