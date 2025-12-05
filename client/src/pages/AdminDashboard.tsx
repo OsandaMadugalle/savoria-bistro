@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
+} from 'recharts';
 import { fetchMenu, fetchAllOrders, addAdmin, addStaff } from '../services/api';
 import { MenuItem, User, Order } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2 } from 'lucide-react';
-import { Eye, EyeOff } from 'lucide-react';
 
 interface AdminDashboardProps {
   user: User | null;
@@ -96,29 +98,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const handleEditUser = (u: User) => {
       setEditUser(u);
       setEditForm({ name: u.name, email: u.email, phone: u.phone || '', password: '' });
-    const [users, setUsers] = useState<User[]>([]); // List of users
-    const [activityLogs, setActivityLogs] = useState<any[]>([]);
-    const [logsLoading, setLogsLoading] = useState(false);
-    const [logsError, setLogsError] = useState('');
-    
-    // Utility: Export Admins as CSV
-    const exportAdminsCSV = () => {
-        const admins = users.filter(u => u.role === 'admin');
-        if (admins.length === 0) return;
-        const headers = ['Name', 'Email', 'Phone'];
-        const rows = admins.map(u => [u.name, u.email, u.phone || '-']);
-        let csv = headers.join(',') + '\n';
-        csv += rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'admins.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
     };
 
     const handleEditFormChange = (field: string, value: string) => {
@@ -152,7 +131,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       }
     };
   // Removed unused password toggle states
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics'>('menu');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -268,7 +247,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'customers' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('customers')}>Customers</button>
               <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'menu' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('menu')}>Menu</button>
               <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'orders' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('orders')}>Orders</button>
-              {/* Add tab for Activity Logs */}
+              <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'analytics' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('analytics')}>Analytics</button>
               <button
                 className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'logs' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`}
                 onClick={() => setActiveTab('logs')}
@@ -276,6 +255,84 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 Activity Logs
               </button>
             </div>
+                {/* Analytics Tab: Summary Stats and Charts */}
+                {activeTab === 'analytics' && (
+                  <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mb-6 animate-in fade-in slide-in-from-bottom-2">
+                    <h2 className="text-xl font-bold mb-4">Analytics & Statistics</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+                      <div className="bg-orange-50 p-4 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-orange-700">{users.length}</div>
+                        <div className="text-stone-700 mt-1">Total Users</div>
+                      </div>
+                      <div className="bg-orange-50 p-4 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-orange-700">{orders.length}</div>
+                        <div className="text-stone-700 mt-1">Total Orders</div>
+                      </div>
+                      <div className="bg-orange-50 p-4 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-orange-700">${orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</div>
+                        <div className="text-stone-700 mt-1">Total Revenue</div>
+                      </div>
+                      <div className="bg-orange-50 p-4 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-orange-700">{menuItems.length}</div>
+                        <div className="text-stone-700 mt-1">Menu Items</div>
+                      </div>
+                      <div className="bg-orange-50 p-4 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-orange-700">{users.filter(u => u.role === 'admin').length}</div>
+                        <div className="text-stone-700 mt-1">Admins</div>
+                      </div>
+                      <div className="bg-orange-50 p-4 rounded-lg text-center">
+                        <div className="text-3xl font-bold text-orange-700">{users.filter(u => u.role === 'staff').length}</div>
+                        <div className="text-stone-700 mt-1">Staff</div>
+                      </div>
+                    </div>
+
+                    {/* Sales/Revenue by Day Chart */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-2">Sales (Revenue) by Day</h3>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={getRevenueByDay(orders)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="revenue" fill="#ea580c" name="Revenue" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Orders by Day Chart */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-2">Orders by Day</h3>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <LineChart data={getOrdersByDay(orders)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="orders" stroke="#ea580c" name="Orders" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* New Users by Day Chart */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-2">New Users by Day</h3>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <LineChart data={getUsersByDay(users)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="users" stroke="#ea580c" name="New Users" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+
                           {/* Customers Tab: List Customers */}
                           {activeTab === 'customers' && (
                             <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
@@ -659,3 +716,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   );
 }
 export default AdminDashboard;
+
+// --- Analytics Data Helpers ---
+function getRevenueByDay(orders: any[]) {
+  const map: Record<string, number> = {};
+  orders.forEach(o => {
+    const d = new Date(o.createdAt).toLocaleDateString();
+    map[d] = (map[d] || 0) + (o.total || 0);
+  });
+  return Object.entries(map).map(([date, revenue]) => ({ date, revenue: Number(revenue) }));
+}
+
+function getOrdersByDay(orders: any[]) {
+  const map: Record<string, number> = {};
+  orders.forEach(o => {
+    const d = new Date(o.createdAt).toLocaleDateString();
+    map[d] = (map[d] || 0) + 1;
+  });
+  return Object.entries(map).map(([date, orders]) => ({ date, orders: Number(orders) }));
+}
+
+function getUsersByDay(users: any[]) {
+  const map: Record<string, number> = {};
+  users.forEach(u => {
+    if (!u.memberSince) return;
+    const d = new Date(u.memberSince).toLocaleDateString();
+    map[d] = (map[d] || 0) + 1;
+  });
+  return Object.entries(map).map(([date, users]) => ({ date, users: Number(users) }));
+}
