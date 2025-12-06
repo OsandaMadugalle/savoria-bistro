@@ -9,6 +9,7 @@ export interface MenuItem {
   ingredients?: string[];
   calories?: number;
   prepTime?: number;
+  featured?: boolean; // For Chef's Specialties on home page
 }
 
 export interface CartItem extends MenuItem {

@@ -62,6 +62,10 @@ export const addMenuItem = async (item: MenuItem): Promise<MenuItem> => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(item)
   });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to add menu item');
+  }
   return await res.json();
 };
 
@@ -71,11 +75,19 @@ export const updateMenuItem = async (id: string, item: Partial<MenuItem>): Promi
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(item)
   });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to update menu item');
+  }
   return await res.json();
 };
 
 export const deleteMenuItem = async (id: string): Promise<void> => {
-  await fetch(`${API_URL}/menu/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_URL}/menu/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to delete menu item');
+  }
 };
 
 // --- AUTH API ---

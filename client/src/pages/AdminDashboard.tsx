@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
-import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign } from '../services/api';
+import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem } from '../services/api';
 import { MenuItem, User, Order } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X } from 'lucide-react';
 
@@ -116,6 +116,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [menuSearch, setMenuSearch] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [staffSearch, setStaffSearch] = useState('');
+
+  // ===== STATE: MENU MANAGEMENT =====
+  const [showMenuForm, setShowMenuForm] = useState(false);
+  const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+  const [menuForm, setMenuForm] = useState<Partial<MenuItem>>({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+  const [menuMessage, setMenuMessage] = useState('');
+  const [menuError, setMenuError] = useState('');
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState('');
 
@@ -137,6 +144,57 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [promoForm, setPromoForm] = useState({ code: '', discount: 20, expiryDate: '', active: true });
   const [promoMessage, setPromoMessage] = useState('');
   const [promoError, setPromoError] = useState('');
+
+  // ===== HANDLERS: MENU MANAGEMENT =====
+  const handleMenuSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMenuError('');
+    setMenuMessage('');
+
+    if (!menuForm.name?.trim()) {
+      setMenuError('Dish name is required');
+      return;
+    }
+
+    try {
+      if (editingMenuId) {
+        // Update existing menu item
+        await updateMenuItem(editingMenuId, menuForm);
+        setMenuMessage('Dish updated successfully!');
+        const updatedMenu = await fetchMenu();
+        setMenuItems(updatedMenu);
+        setEditingMenuId(null);
+      } else {
+        // Add new menu item
+        await addMenuItem(menuForm as MenuItem);
+        setMenuMessage('Dish added successfully!');
+        const updatedMenu = await fetchMenu();
+        setMenuItems(updatedMenu);
+      }
+      setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+      setTimeout(() => setShowMenuForm(false), 1500);
+    } catch (err: any) {
+      setMenuError(err.message || 'Failed to save dish');
+    }
+  };
+
+  const handleDeleteMenu = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this dish?')) return;
+    try {
+      await deleteMenuItem(id);
+      setMenuMessage('Dish deleted successfully!');
+      const updatedMenu = await fetchMenu();
+      setMenuItems(updatedMenu);
+    } catch (err: any) {
+      setMenuError(err.message || 'Failed to delete dish');
+    }
+  };
+
+  const handleEditMenu = (item: MenuItem) => {
+    setMenuForm(item);
+    setEditingMenuId(item.id);
+    setShowMenuForm(true);
+  };
 
   // ===== HANDLERS: PROMO MANAGEMENT =====
   const handlePromoSubmit = (e: React.FormEvent) => {
@@ -981,56 +1039,137 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 </div>
               )}
               {activeTab === 'menu' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                  <div className="p-6 border-b border-stone-100 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-stone-900">Menu Management</h2>
-                    <button className="bg-stone-900 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-stone-800">
-                      <Plus size={18} /> Add Dish
-                    </button>
-                  </div>
-                  <div className="flex gap-2 mb-4 px-6 pt-4 flex-wrap">
-                    <input
-                      type="text"
-                      className="p-2 border rounded min-w-[160px]"
-                      placeholder="Search dish, category..."
-                      value={menuSearch}
-                      onChange={e => setMenuSearch(e.target.value)}
-                    />
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-stone-200">
-                      <thead className="bg-stone-50">
-                        <tr>
-                          <th className="p-4 text-left font-bold text-stone-700">Dish</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Category</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Price</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Tags</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100 text-sm">
-                        {menuItems.filter(item =>
-                          item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
-                          item.category.toLowerCase().includes(menuSearch.toLowerCase())
-                        ).map((item, idx) => (
-                          <tr key={item.id || idx} className="hover:bg-stone-50">
-                            <td className="p-4 font-bold text-stone-900">{item.name}</td>
-                            <td className="p-4 text-stone-600">{item.category}</td>
-                            <td className="p-4 font-bold text-stone-900">${item.price}</td>
-                            <td className="p-4 text-stone-600">{Array.isArray(item.tags) ? item.tags.join(', ') : item.tags}</td>
-                            <td className="p-4 flex gap-2">
-                              <button className="text-blue-600 hover:underline"><Edit2 size={16} /></button>
-                              <button className="text-red-600 hover:underline"><Trash2 size={16} /></button>
-                            </td>
-                          </tr>
-                        ))}
-                        {menuItems.length === 0 && (
+                <div className="space-y-6">
+                  {showMenuForm && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 animate-in fade-in slide-in-from-bottom-2">
+                      <h3 className="text-lg font-bold text-stone-900 mb-4">{editingMenuId ? 'Edit Dish' : 'Add New Dish'}</h3>
+                      {menuError && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{menuError}</div>}
+                      {menuMessage && <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg text-sm">{menuMessage}</div>}
+                      <form onSubmit={handleMenuSubmit} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            type="text"
+                            placeholder="Dish Name"
+                            value={menuForm.name || ''}
+                            onChange={e => setMenuForm({ ...menuForm, name: e.target.value })}
+                            className="p-2 border rounded"
+                            required
+                          />
+                          <select
+                            value={menuForm.category || 'Main'}
+                            onChange={e => setMenuForm({ ...menuForm, category: e.target.value as any })}
+                            className="p-2 border rounded"
+                          >
+                            <option value="Starter">Starter</option>
+                            <option value="Main">Main</option>
+                            <option value="Dessert">Dessert</option>
+                            <option value="Drink">Drink</option>
+                          </select>
+                        </div>
+                        <textarea
+                          placeholder="Description"
+                          value={menuForm.description || ''}
+                          onChange={e => setMenuForm({ ...menuForm, description: e.target.value })}
+                          className="w-full p-2 border rounded text-sm"
+                          rows={3}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <input
+                            type="number"
+                            placeholder="Price"
+                            step="0.01"
+                            value={menuForm.price || 0}
+                            onChange={e => setMenuForm({ ...menuForm, price: parseFloat(e.target.value) })}
+                            className="p-2 border rounded"
+                            required
+                          />
+                          <input
+                            type="text"
+                            placeholder="Image URL"
+                            value={menuForm.image || ''}
+                            onChange={e => setMenuForm({ ...menuForm, image: e.target.value })}
+                            className="p-2 border rounded"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={menuForm.featured || false}
+                            onChange={e => setMenuForm({ ...menuForm, featured: e.target.checked })}
+                            id="featured"
+                          />
+                          <label htmlFor="featured" className="text-sm">Mark as Featured (Chef's Special)</label>
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="submit" className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700">
+                            {editingMenuId ? 'Update Dish' : 'Add Dish'}
+                          </button>
+                          <button type="button" onClick={() => {
+                            setShowMenuForm(false);
+                            setEditingMenuId(null);
+                            setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+                          }} className="flex-1 bg-stone-300 text-stone-900 px-4 py-2 rounded-lg font-bold hover:bg-stone-400">
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+                  <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                    <div className="p-6 border-b border-stone-100 flex justify-between items-center">
+                      <h2 className="text-xl font-bold text-stone-900">Menu Management</h2>
+                      <button onClick={() => {
+                        setShowMenuForm(!showMenuForm);
+                        setEditingMenuId(null);
+                        setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+                      }} className="bg-stone-900 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-stone-800">
+                        <Plus size={18} /> Add Dish
+                      </button>
+                    </div>
+                    <div className="flex gap-2 mb-4 px-6 pt-4 flex-wrap">
+                      <input
+                        type="text"
+                        className="p-2 border rounded min-w-[160px]"
+                        placeholder="Search dish, category..."
+                        value={menuSearch}
+                        onChange={e => setMenuSearch(e.target.value)}
+                      />
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-stone-200">
+                        <thead className="bg-stone-50">
                           <tr>
-                            <td colSpan={5} className="p-8 text-center text-stone-500">No menu items found.</td>
+                            <th className="p-4 text-left font-bold text-stone-700">Dish</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Category</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Price</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Featured</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Actions</th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 text-sm">
+                          {menuItems.filter(item =>
+                            item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
+                            item.category.toLowerCase().includes(menuSearch.toLowerCase())
+                          ).map((item, idx) => (
+                            <tr key={item.id || idx} className="hover:bg-stone-50">
+                              <td className="p-4 font-bold text-stone-900">{item.name}</td>
+                              <td className="p-4 text-stone-600">{item.category}</td>
+                              <td className="p-4 font-bold text-stone-900">${item.price}</td>
+                              <td className="p-4">{item.featured ? '⭐ Yes' : 'No'}</td>
+                              <td className="p-4 flex gap-2">
+                                <button onClick={() => handleEditMenu(item)} className="text-blue-600 hover:underline"><Edit2 size={16} /></button>
+                                <button onClick={() => handleDeleteMenu(item.id)} className="text-red-600 hover:underline"><Trash2 size={16} /></button>
+                              </td>
+                            </tr>
+                          ))}
+                          {menuItems.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="p-8 text-center text-stone-500">No menu items found.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}

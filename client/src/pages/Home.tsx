@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Star, ChevronRight, Clock, Users, Award, Zap, Check } from 'lucide-react';
-import { fetchApprovedReviews } from '../services/api';
-import { Review } from '../types';
+import { fetchApprovedReviews, fetchMenu } from '../services/api';
+import { Review, MenuItem } from '../types';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ customers: 0, dishes: 0, awards: 0 });
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [featuredDishes, setFeaturedDishes] = useState<MenuItem[]>([]);
   
   // Promo code state - get from localStorage or use default
   const [offerEnabled, setOfferEnabled] = useState(true);
@@ -65,6 +66,19 @@ const Home: React.FC = () => {
       }
     };
     fetchReviews();
+
+    // Fetch featured menu items
+    const loadFeaturedDishes = async () => {
+      try {
+        const menuItems = await fetchMenu();
+        const featured = menuItems.filter((item: MenuItem) => item.featured === true).slice(0, 3);
+        setFeaturedDishes(featured.length > 0 ? featured : []);
+      } catch (err) {
+        console.error('Failed to fetch featured dishes:', err);
+        setFeaturedDishes([]);
+      }
+    };
+    loadFeaturedDishes();
   }, []);
 
   const handleClaimOffer = (code: string) => {
@@ -226,25 +240,46 @@ const Home: React.FC = () => {
             <p className="text-stone-600 max-w-2xl mx-auto">Handpicked dishes that showcase our culinary excellence and commitment to quality ingredients</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { name: 'Pan-Seared Salmon', desc: 'With lemon butter and roasted vegetables', img: 'https://picsum.photos/400/300?random=1' },
-              { name: 'Beef Wellington', desc: 'Tender filet wrapped in mushroom duxelles', img: 'https://picsum.photos/400/300?random=2' },
-              { name: 'Truffle Risotto', desc: 'Creamy arborio rice with black truffle shavings', img: 'https://picsum.photos/400/300?random=3' },
-            ].map((dish, idx) => (
-              <div key={idx} className="group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2">
-                <div className="relative h-64 overflow-hidden">
-                  <img src={dish.img} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
+            {featuredDishes.length > 0 ? (
+              featuredDishes.map((dish: MenuItem, idx: number) => (
+                <div key={idx} className="group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2">
+                  <div className="relative h-64 overflow-hidden">
+                    <img src={dish.image} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
+                  </div>
+                  <div className="p-6 bg-stone-50 group-hover:bg-orange-50 transition-colors">
+                    <h4 className="text-xl font-serif font-bold text-stone-900 mb-2">{dish.name}</h4>
+                    <p className="text-stone-600 text-sm mb-2">{dish.description}</p>
+                    <p className="text-orange-600 font-bold mb-4">${dish.price.toFixed(2)}</p>
+                    <NavLink to="/menu" className="text-orange-600 font-semibold text-sm hover:text-orange-700 flex items-center gap-1">
+                      Order Now <ChevronRight size={14} />
+                    </NavLink>
+                  </div>
                 </div>
-                <div className="p-6 bg-stone-50 group-hover:bg-orange-50 transition-colors">
-                  <h4 className="text-xl font-serif font-bold text-stone-900 mb-2">{dish.name}</h4>
-                  <p className="text-stone-600 text-sm mb-4">{dish.desc}</p>
-                  <NavLink to="/menu" className="text-orange-600 font-semibold text-sm hover:text-orange-700 flex items-center gap-1">
-                    Order Now <ChevronRight size={14} />
-                  </NavLink>
+              ))
+            ) : (
+              // Fallback demo dishes if no featured items
+              [
+                { name: 'Pan-Seared Salmon', desc: 'With lemon butter and roasted vegetables', img: 'https://picsum.photos/400/300?random=1', price: 28 },
+                { name: 'Beef Wellington', desc: 'Tender filet wrapped in mushroom duxelles', img: 'https://picsum.photos/400/300?random=2', price: 35 },
+                { name: 'Truffle Risotto', desc: 'Creamy arborio rice with black truffle shavings', img: 'https://picsum.photos/400/300?random=3', price: 24 },
+              ].map((dish, idx) => (
+                <div key={idx} className="group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2">
+                  <div className="relative h-64 overflow-hidden">
+                    <img src={dish.img} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
+                  </div>
+                  <div className="p-6 bg-stone-50 group-hover:bg-orange-50 transition-colors">
+                    <h4 className="text-xl font-serif font-bold text-stone-900 mb-2">{dish.name}</h4>
+                    <p className="text-stone-600 text-sm mb-2">{dish.desc}</p>
+                    <p className="text-orange-600 font-bold mb-4">${dish.price.toFixed(2)}</p>
+                    <NavLink to="/menu" className="text-orange-600 font-semibold text-sm hover:text-orange-700 flex items-center gap-1">
+                      Order Now <ChevronRight size={14} />
+                    </NavLink>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>
