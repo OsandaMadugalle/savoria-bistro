@@ -116,7 +116,7 @@ const App: React.FC = () => {
             <Route path="/admin" element={<ProtectedAdminRoute element={<AdminDashboard user={user} />} user={user} />} />
             
             {/* Protected Staff Portal - staff, admin, masterAdmin */}
-            <Route path="/staff" element={<ProtectedStaffRoute element={<StaffDashboard user={user} onLogin={handleLogin} />} user={user} />} />
+            <Route path="/staff" element={<ProtectedStaffRoute element={<StaffDashboard user={user} onLogin={handleLogin} onLogout={handleLogout} />} user={user} />} />
             
             {/* 404 Route */}
             <Route path="*" element={<NotFoundPage />} />

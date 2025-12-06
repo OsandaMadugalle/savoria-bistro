@@ -207,6 +207,7 @@ const AdminNavbar: React.FC<{ user: User; onLogout: () => void }> = ({ user, onL
 
   const handleLogout = () => {
     onLogout();
+    localStorage.removeItem('userEmail');
     navigate('/');
     setIsUserMenuOpen(false);
   };
@@ -243,32 +244,22 @@ const AdminNavbar: React.FC<{ user: User; onLogout: () => void }> = ({ user, onL
 
           {/* User Menu */}
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-medium transition-all"
-              >
-                <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-900 font-bold text-sm">
-                  {user.name.charAt(0)}
-                </div>
-                <span className="hidden sm:block text-sm">{user.name.split(' ')[0]}</span>
-              </button>
-
-              {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-stone-200 py-2 animate-in fade-in slide-in-from-top-2 z-50">
-                  <div className="px-4 py-3 border-b border-stone-100">
-                    <p className="text-sm font-bold text-stone-900">{user.name}</p>
-                    <p className="text-xs text-stone-500">{user.email}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                  >
-                    <LogOut size={16} /> Sign Out
-                  </button>
-                </div>
-              )}
+            <div className="flex items-center gap-3 bg-stone-800 bg-opacity-50 px-4 py-2 rounded-lg border border-orange-700">
+              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-bold text-white">
+                {user.name.charAt(0)}
+              </div>
+              <div className="hidden sm:block">
+                <p className="text-sm font-semibold text-white">{user.name}</p>
+                <p className="text-xs text-orange-200 capitalize">{user.role}</p>
+              </div>
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold text-sm transition-colors shadow-md"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </div>

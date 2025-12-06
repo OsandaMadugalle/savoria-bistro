@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchAllOrders, updateOrderStatus, fetchReservations, loginUser } from '../services/api';
 import { Order, ReservationData, User } from '../types';
 import { ChefHat, CheckCircle, Clock, Utensils, Calendar, RefreshCcw, Lock, AlertTriangle } from 'lucide-react';
@@ -6,9 +7,11 @@ import { ChefHat, CheckCircle, Clock, Utensils, Calendar, RefreshCcw, Lock, Aler
 interface StaffDashboardProps {
   user: User | null;
   onLogin: (user: User) => void;
+  onLogout: () => void;
 }
 
-const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
+const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout }) => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [reservations, setReservations] = useState<ReservationData[]>([]);
   const [activeTab, setActiveTab] = useState<'kitchen' | 'reservations'>('kitchen');
@@ -169,8 +172,26 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
               </div>
             </div>
 
-            {/* Right Side - User Menu & Logout */}
-            <div className="flex items-center gap-6">
+            {/* Navigation Links */}
+            <div className="hidden md:flex items-center space-x-2">
+              {(user?.role === 'admin' || user?.role === 'masterAdmin') && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="px-4 py-2 rounded-lg font-medium transition-all text-orange-100 hover:bg-stone-800"
+                >
+                  Dashboard
+                </button>
+              )}
+              <button
+                onClick={() => navigate('/staff')}
+                className="px-4 py-2 rounded-lg font-medium transition-all bg-orange-600 text-white"
+              >
+                Staff Portal
+              </button>
+            </div>
+
+            {/* Right Side - User Menu */}
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-3 bg-stone-800 bg-opacity-50 px-4 py-2 rounded-lg border border-orange-700">
                 <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-bold text-white">
                   {user?.name?.charAt(0)?.toUpperCase()}
@@ -184,7 +205,8 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
               <button
                 onClick={() => {
                   localStorage.removeItem('userEmail');
-                  window.location.href = '/';
+                  onLogout();
+                  navigate('/');
                 }}
                 className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold text-sm transition-colors shadow-md"
               >
