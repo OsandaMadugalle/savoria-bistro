@@ -30,6 +30,19 @@ export interface ReservationData {
   status?: 'Pending' | 'Completed' | 'Cancelled';
 }
 
+export interface PrivateEventInquiry {
+  _id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  eventType: 'wedding' | 'birthday' | 'corporate' | 'anniversary' | 'other';
+  guestCount?: number;
+  eventDate?: string;
+  message?: string;
+  status?: 'new' | 'contacted';
+  createdAt?: string;
+}
+
 export interface Review {
   _id?: string;
   id?: string;

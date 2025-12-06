@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Phone, Mail, MapPin, Calendar, CheckCircle } from 'lucide-react';
+import { submitPrivateEventInquiry } from '../services/api';
 
 const ContactPage: React.FC = () => {
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     name: '',
     email: '',
     phone: '',
@@ -10,22 +11,38 @@ const ContactPage: React.FC = () => {
     guestCount: '',
     eventDate: '',
     message: ''
-  });
+  };
+  const [formData, setFormData] = useState(initialFormState);
   const [submitted, setSubmitted] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would submit to backend
-    console.log('Event inquiry:', formData);
-    setSubmitted(true);
-    setTimeout(() => {
-      setFormData({ name: '', email: '', phone: '', eventType: 'wedding', guestCount: '', eventDate: '', message: '' });
-      setSubmitted(false);
-    }, 3000);
+    setFormError('');
+    setIsSubmitting(true);
+    try {
+      await submitPrivateEventInquiry({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        eventType: formData.eventType,
+        guestCount: formData.guestCount ? Number(formData.guestCount) : undefined,
+        eventDate: formData.eventDate || undefined,
+        message: formData.message
+      });
+      setSubmitted(true);
+      setFormData(initialFormState);
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (err: any) {
+      setFormError(err.message || 'We could not submit your inquiry right now.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -106,6 +123,11 @@ const ContactPage: React.FC = () => {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
+                {formError && (
+                  <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">
+                    {formError}
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-bold text-stone-600 mb-2">Full Name *</label>
                   <input
@@ -203,9 +225,10 @@ const ContactPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Submit Inquiry
+                  {isSubmitting ? 'Sending…' : 'Submit Inquiry'}
                 </button>
               </form>
             )}

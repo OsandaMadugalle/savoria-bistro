@@ -1,3 +1,8 @@
+import { MenuItem, User, Order, ReservationData, PrivateEventInquiry } from '../types';
+
+// Use environment variable for API URL with a default fallback
+const API_URL = 'http://localhost:5000/api';
+
 // Fetch all reservations for a user (by email)
 export const fetchUserReservations = async (email: string): Promise<ReservationData[]> => {
   const res = await fetch(`${API_URL}/reservations?email=${encodeURIComponent(email)}`);
@@ -42,14 +47,9 @@ export const fetchUserProfile = async (email: string): Promise<User> => {
   if (!res.ok) throw new Error('Profile fetch failed');
   return await res.json();
 };
-import { MenuItem, User, Order, ReservationData } from '../types';
-
 export interface MenuItemPayload extends Partial<MenuItem> {
   imageData?: string;
 }
-
-// Use environment variable for API URL with a default fallback
-const API_URL = 'http://localhost:5000/api';
 
 
 
@@ -249,6 +249,62 @@ export const fetchApprovedReviews = async (): Promise<Review[]> => {
   } catch (e) {
     return [];
   }
+};
+
+// --- PRIVATE EVENTS API ---
+export interface PrivateEventInquiryPayload {
+  name: string;
+  email: string;
+  phone: string;
+  eventType: 'wedding' | 'birthday' | 'corporate' | 'anniversary' | 'other';
+  guestCount?: number;
+  eventDate?: string;
+  message?: string;
+}
+
+export const submitPrivateEventInquiry = async (payload: PrivateEventInquiryPayload): Promise<PrivateEventInquiry> => {
+  const res = await fetch(`${API_URL}/private-events/inquiries`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error('Failed to submit inquiry');
+  return await res.json();
+};
+
+export const fetchPrivateEventInquiries = async (): Promise<PrivateEventInquiry[]> => {
+  const res = await fetch(`${API_URL}/private-events/inquiries`);
+  if (!res.ok) throw new Error('Failed to load inquiries');
+  return await res.json();
+};
+
+export const updatePrivateEventInquiryStatus = async (id: string, status: PrivateEventInquiry['status']): Promise<PrivateEventInquiry> => {
+  const res = await fetch(`${API_URL}/private-events/inquiries/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw new Error('Failed to update inquiry');
+  return await res.json();
+};
+
+export interface PrivateEventContactPayload {
+  subject: string;
+  body: string;
+  staffName?: string;
+}
+
+export const sendPrivateEventEmail = async (inquiryId: string, payload: PrivateEventContactPayload): Promise<{ message: string }> => {
+  const res = await fetch(`${API_URL}/private-events/inquiries/${inquiryId}/contact`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to send email');
+  }
+  return await res.json();
 };
 
 // Get all reviews (for admin)

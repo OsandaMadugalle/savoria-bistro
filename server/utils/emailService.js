@@ -100,6 +100,27 @@ const emailTemplates = {
   })
 };
 
+emailTemplates.privateEventFollowup = (recipientName, staffName, body) => ({
+  subject: `Savoria Bistro • Private Event Follow-up`
+    + (staffName ? ` from ${staffName}` : ''),
+  html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #92400e 0%, #d97706 100%); padding: 30px; text-align: center; color: white; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Savoria Bistro</h1>
+      </div>
+      <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+        <h2 style="color: #1f2937;">Hello ${recipientName || 'Friend'},</h2>
+        <div style="color: #4b5563; line-height: 1.6;">
+          ${body}
+        </div>
+        <p style="color: #4b5563; margin-top: 30px;">Warm regards,<br/>${staffName || 'The Savoria Bistro Team'}</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Savoria Bistro. All rights reserved.</p>
+      </div>
+    </div>
+  `
+});
+
 // Send confirmation email
 const sendConfirmationEmail = async (email, unsubscribeToken) => {
   try {
@@ -192,10 +213,30 @@ const sendUnsubscribeConfirmation = async (email) => {
   }
 };
 
+const sendPrivateEventFollowup = async (email, name, staffName, body) => {
+  try {
+    const template = emailTemplates.privateEventFollowup(name, staffName, body);
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || 'Savoria Bistro <noreply@savoria.com>',
+      to: email,
+      subject: template.subject,
+      html: template.html
+    });
+
+    console.log(`✅ Private event follow-up sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Failed to send private event follow-up to ${email}:`, error.message);
+    return false;
+  }
+};
+
 module.exports = {
   sendConfirmationEmail,
   sendNewsletter,
   sendNewsletterToAll,
   sendUnsubscribeConfirmation,
+  sendPrivateEventFollowup,
   transporter
 };

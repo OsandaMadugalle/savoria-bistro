@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchAllOrders, updateOrderStatus, fetchReservations, loginUser } from '../services/api';
-import { Order, ReservationData, User } from '../types';
+import { fetchAllOrders, updateOrderStatus, fetchReservations, loginUser, fetchPrivateEventInquiries, updatePrivateEventInquiryStatus, sendPrivateEventEmail } from '../services/api';
+import { Order, ReservationData, User, PrivateEventInquiry } from '../types';
 import { ChefHat, CheckCircle, Clock, Utensils, Calendar, RefreshCcw, Lock, AlertTriangle } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
 
@@ -15,11 +15,15 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [reservations, setReservations] = useState<ReservationData[]>([]);
-  const [activeTab, setActiveTab] = useState<'kitchen' | 'reservations'>('kitchen');
+  const [activeTab, setActiveTab] = useState<'kitchen' | 'reservations' | 'events'>('kitchen');
   const [loading, setLoading] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [reservationActionLoading, setReservationActionLoading] = useState<string | null>(null); // reservation id
   const [reservationActionError, setReservationActionError] = useState<string | null>(null);
+  const [eventInquiries, setEventInquiries] = useState<PrivateEventInquiry[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState('');
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   
   // Login State
   const [email, setEmail] = useState('');
@@ -49,6 +53,19 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
     }
   };
 
+  const loadEventInquiries = useCallback(async () => {
+    setEventsLoading(true);
+    setEventsError('');
+    try {
+      const inquiries = await fetchPrivateEventInquiries();
+      setEventInquiries(inquiries);
+    } catch (err: any) {
+      setEventsError(err.message || 'Failed to load event inquiries');
+    } finally {
+      setEventsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (user && (user.role === 'staff' || user.role === 'admin' || user.role === 'masterAdmin')) {
       loadData();
@@ -56,6 +73,12 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
       return () => clearInterval(interval);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (activeTab === 'events') {
+      loadEventInquiries();
+    }
+  }, [activeTab, loadEventInquiries]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +110,35 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
       setStatusError('Failed to update order status. Please try again.');
       showToast('Failed to update order status. Please try again.', 'error');
       await loadData(); // Revert optimistic update
+    }
+  };
+
+  const handleMarkInquiryContacted = async (inquiryId: string) => {
+    try {
+      const updated = await updatePrivateEventInquiryStatus(inquiryId, 'contacted');
+      setEventInquiries(prev => prev.map(inquiry => (inquiry._id === inquiryId ? updated : inquiry)));
+      showToast('Inquiry marked as contacted.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Could not update inquiry status.', 'error');
+    }
+  };
+
+  const handleSendInquiryEmail = async (inquiry: PrivateEventInquiry) => {
+    const defaultMessage = `Hi ${inquiry.name},\n\nThanks for reaching out about your ${inquiry.eventType} event. We'll be happy to assist with seating ${inquiry.guestCount || 'your guests'} on ${inquiry.eventDate || 'your preferred date'}.`;    
+    const body = window.prompt('Message to customer', defaultMessage);
+    if (!body) return;
+    setSendingEmailId(inquiry._id || null);
+    try {
+      await sendPrivateEventEmail(inquiry._id || '', {
+        subject: 'Follow-up on your private event inquiry',
+        body,
+        staffName: user?.name
+      });
+      showToast('Email sent to customer.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to send email.', 'error');
+    } finally {
+      setSendingEmailId(null);
     }
   };
 
@@ -271,11 +323,17 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
            >
              Reservations
            </button>
+           <button 
+             onClick={() => setActiveTab('events')}
+             className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'events' ? 'bg-orange-600 text-white shadow-lg' : 'bg-white text-stone-600'}`}
+           >
+             Private Events
+           </button>
         </div>
-        {statusError && (
+        {activeTab !== 'events' && statusError && (
           <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium">{statusError}</div>
         )}
-        {activeTab === 'kitchen' ? (
+        {activeTab === 'kitchen' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
              {orders.filter(o => o.status !== 'Delivered').map(order => (
                <div key={order._id || order.orderId} className="bg-white rounded-xl shadow-md overflow-hidden border border-stone-200 flex flex-col animate-in fade-in zoom-in-95">
@@ -321,7 +379,8 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
                </div>
              )}
           </div>
-          ) : (
+        )}
+        {activeTab === 'reservations' && (
             <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
               {reservationActionError && (
                <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium">{reservationActionError}</div>
@@ -386,6 +445,89 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
                 <div className="p-12 text-center text-stone-500">No upcoming reservations found.</div>
               )}
             </div>
+        )}
+        {activeTab === 'events' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+              <div>
+                <h2 className="text-xl font-bold text-stone-900">Private Event Inquiries</h2>
+                <p className="text-sm text-stone-500">Track new inquiries and mark them as contacted.</p>
+              </div>
+              <button
+                onClick={loadEventInquiries}
+                className="px-4 py-2 bg-stone-100 rounded-full text-sm font-semibold text-stone-600 hover:bg-stone-200 transition"
+              >
+                Refresh
+              </button>
+            </div>
+            <div className="p-6">
+              {eventsLoading && (
+                <div className="text-center py-12 text-stone-500">Loading inquiries…</div>
+              )}
+              {eventsError && !eventsLoading && (
+                <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm">{eventsError}</div>
+              )}
+              {!eventsLoading && !eventsError && eventInquiries.length === 0 && (
+                <div className="text-center py-12 text-stone-500">No event inquiries yet.</div>
+              )}
+              {!eventsLoading && !eventsError && eventInquiries.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm text-left">
+                    <thead className="bg-stone-50 border-b border-stone-200">
+                      <tr>
+                        <th className="p-3 font-bold text-stone-600">Name</th>
+                        <th className="p-3 font-bold text-stone-600">Email</th>
+                        <th className="p-3 font-bold text-stone-600">Phone</th>
+                        <th className="p-3 font-bold text-stone-600">Event</th>
+                        <th className="p-3 font-bold text-stone-600">Date</th>
+                        <th className="p-3 font-bold text-stone-600">Guests</th>
+                        <th className="p-3 font-bold text-stone-600">Notes</th>
+                        <th className="p-3 font-bold text-stone-600">Status</th>
+                        <th className="p-3 font-bold text-stone-600">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {eventInquiries.map(inquiry => (
+                        <tr key={inquiry._id} className="hover:bg-stone-50">
+                          <td className="p-3 font-semibold text-stone-900">{inquiry.name}</td>
+                          <td className="p-3 text-stone-600">{inquiry.email}</td>
+                          <td className="p-3 text-stone-600">{inquiry.phone || '-'}</td>
+                          <td className="p-3 text-stone-600 uppercase tracking-wide text-xs">{inquiry.eventType}</td>
+                          <td className="p-3 text-stone-600 flex items-center gap-2">
+                            <Calendar size={14} />
+                            {inquiry.eventDate ? new Date(inquiry.eventDate).toLocaleDateString() : 'TBD'}
+                          </td>
+                          <td className="p-3 text-stone-600">{inquiry.guestCount || '-'}</td>
+                          <td className="p-3 text-stone-500 italic">{inquiry.message || '-'}</td>
+                          <td className="p-3">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${inquiry.status === 'contacted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                              {inquiry.status || 'new'}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <button
+                              onClick={() => inquiry._id && handleMarkInquiryContacted(inquiry._id)}
+                              disabled={inquiry.status === 'contacted'}
+                              className="px-3 py-1 rounded-lg bg-stone-900 text-white text-xs font-bold disabled:bg-stone-300"
+                            >
+                              {inquiry.status === 'contacted' ? 'Contacted' : 'Mark Contacted'}
+                            </button>
+                            <button
+                              onClick={() => handleSendInquiryEmail(inquiry)}
+                              disabled={sendingEmailId === inquiry._id}
+                              className="px-3 py-1 rounded-lg bg-orange-600 text-white text-xs font-bold disabled:bg-orange-200"
+                            >
+                              {sendingEmailId === inquiry._id ? 'Sending…' : 'Send Email'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
       </div>
