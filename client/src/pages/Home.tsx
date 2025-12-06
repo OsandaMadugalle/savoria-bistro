@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Star, ChevronRight, Clock, Users, Award, Zap, Check } from 'lucide-react';
-import { REVIEWS } from '../constants';
+import { fetchApprovedReviews } from '../services/api';
+import { Review } from '../types';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ customers: 0, dishes: 0, awards: 0 });
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   
   // Promo code state - get from localStorage or use default
   const [offerEnabled, setOfferEnabled] = useState(true);
@@ -51,6 +53,18 @@ const Home: React.FC = () => {
       }, 50);
     };
     animateStats();
+
+    // Fetch approved reviews
+    const fetchReviews = async () => {
+      try {
+        const data = await fetchApprovedReviews();
+        setReviews(data);
+      } catch (err) {
+        console.error('Failed to fetch reviews:', err);
+        setReviews([]);
+      }
+    };
+    fetchReviews();
   }, []);
 
   const handleClaimOffer = (code: string) => {
@@ -247,14 +261,14 @@ const Home: React.FC = () => {
               <p className="text-stone-300 text-sm">Sunday: 10am - 9pm</p>
             </div>
           </div>
-          <div className="flex gap-4">
-            <Users size={32} className="text-orange-500 flex-shrink-0" />
-            <div>
-              <h4 className="font-bold text-lg mb-1">Private Events</h4>
-              <p className="text-stone-300 text-sm">Host your special occasions</p>
-              <p className="text-stone-300 text-sm">Customized menus available</p>
-              <NavLink to="/contact" className="text-orange-400 text-sm font-semibold hover:text-orange-300 mt-2 inline-block">
-                Learn More →
+          <div className="flex gap-4 p-4 rounded-lg hover:bg-stone-700/50 transition-colors">
+            <Users size={32} className="text-orange-400 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h4 className="font-bold text-lg mb-2">Private Events</h4>
+              <p className="text-stone-300 text-sm mb-1">Host your special occasions</p>
+              <p className="text-stone-300 text-sm mb-3">Customized menus available</p>
+              <NavLink to="/contact" className="text-orange-400 text-sm font-semibold hover:text-orange-300 inline-flex items-center gap-1 transition-colors">
+                Learn More <ChevronRight size={16} />
               </NavLink>
             </div>
           </div>
@@ -269,26 +283,48 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Featured Review */}
-      <section className="py-20 bg-stone-900 text-white text-center px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex justify-center mb-6 text-orange-500">
-             {[...Array(5)].map((_, i) => <Star key={i} fill="currentColor" size={24} />)}
+      {/* Featured Reviews Section */}
+      <section className="py-20 bg-gradient-to-br from-stone-900 via-orange-900 to-stone-900 text-white px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-orange-300 font-bold tracking-widest uppercase text-sm mb-2">Customer Testimonials</h2>
+            <h3 className="text-4xl font-serif font-bold text-white">What Our Guests Say</h3>
           </div>
-          {REVIEWS.length > 0 ? (
-            <>
-              <blockquote className="text-2xl md:text-3xl font-serif italic leading-relaxed mb-8">
-                "{REVIEWS[0].text}"
-              </blockquote>
-              <cite className="not-italic text-stone-400 font-medium">— {REVIEWS[0].author}</cite>
-            </>
+          
+          {reviews.length > 0 ? (
+            <div className="space-y-8">
+              {reviews.slice(0, 3).map((review: Review, idx: number) => (
+                <div key={idx} className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:border-orange-400/50 transition-all">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex gap-1 text-orange-400">
+                      {[...Array(5)].map((_, i) => <Star key={i} fill="currentColor" size={20} />)}
+                    </div>
+                  </div>
+                  <blockquote className="text-lg md:text-xl font-serif italic leading-relaxed mb-4 text-white/90">
+                    "{review.text}"
+                  </blockquote>
+                  <cite className="not-italic text-stone-300 font-semibold">— {review.author}</cite>
+                </div>
+              ))}
+            </div>
           ) : (
-            <blockquote className="text-2xl md:text-3xl font-serif italic leading-relaxed mb-8">
-              No reviews yet. Be the first to leave feedback!
-            </blockquote>
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-12 border border-white/20 text-center">
+              <div className="flex justify-center mb-6 text-orange-400">
+                {[...Array(5)].map((_, i) => <Star key={i} fill="currentColor" size={24} />)}
+              </div>
+              <blockquote className="text-2xl md:text-3xl font-serif italic leading-relaxed mb-6">
+                No reviews yet. Be the first to leave feedback!
+              </blockquote>
+              <NavLink to="/reviews" className="inline-block bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-lg font-semibold transition-all">
+                Write a Review
+              </NavLink>
+            </div>
           )}
-          <div className="mt-8">
-             <NavLink to="/reviews" className="text-sm border-b border-orange-500 pb-1 hover:text-orange-400 transition-colors">See all reviews</NavLink>
+          
+          <div className="mt-12 text-center">
+            <NavLink to="/reviews" className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-lg font-semibold transition-all">
+              See All Reviews <ChevronRight size={18} />
+            </NavLink>
           </div>
         </div>
       </section>

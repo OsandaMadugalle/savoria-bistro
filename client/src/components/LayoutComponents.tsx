@@ -373,6 +373,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
     { path: '/tracker', label: 'Track Order', icon: null, highlight: false },
     { path: '/reservation', label: 'Book a Table', icon: Calendar, highlight: true },
     { path: '/reviews', label: 'Reviews', icon: null, highlight: false },
+    { path: '/contact', label: 'Contact', icon: null, highlight: false },
   ];
 
   const closeMenu = () => setIsMobileMenuOpen(false);
