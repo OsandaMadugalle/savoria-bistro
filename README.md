@@ -1,6 +1,6 @@
-# 🍽️ Savoria Bistro - MERN Stack Restaurant App
+# 🍽️ Savoria Bistro
 
-A premium restaurant application featuring an AI-powered concierge ("Chef Gustav"), real-time order tracking, loyalty rewards, and table reservations. Built with React, Node.js, Express, MongoDB, and the Google Gemini API.
+A premium restaurant experience with an AI concierge ("Chef Gustav"), live order tracking, loyalty rewards, reservations, and an admin console. Built with React + Vite, Node/Express, MongoDB, and the Google Gemini API for the AI chef.
 
 ## 🚀 Features
 
@@ -17,8 +17,8 @@ A premium restaurant application featuring an AI-powered concierge ("Chef Gustav
 ## 🛠️ Prerequisites
 
 Before you begin, ensure you have the following installed:
-1.  **Node.js** (v14 or higher)
-2.  **MongoDB** (Local installation or MongoDB Atlas account)
+1.  **Node.js** (v16+ recommended)
+2.  **MongoDB** (Local installation or MongoDB Atlas connection)
 
 ---
 
@@ -67,13 +67,10 @@ The frontend is a React application powered by Vite, located in the `client` fol
 
 3.  Create a `.env` file in the `client/` directory:
     ```env
-    # Your Google Gemini API Key
-    API_KEY=your_google_gemini_api_key_here
-    
-    # URL of your local backend
-    API_URL=http://localhost:5000/api
+    VITE_GEMINI_API_KEY=your_google_gemini_api_key_here
+    VITE_API_URL=http://localhost:5000/api
     ```
-    *Note: Get your API key from [Google AI Studio](https://aistudio.google.com/).*
+    *Note: Get your Gemini API key from [Google AI Studio](https://aistudio.google.com/) or your Google Cloud console. Rename the file to `.env.local` in production and never commit secrets.*
 
 4.  Start the frontend:
     ```bash
@@ -109,11 +106,11 @@ The frontend is a React application powered by Vite, located in the `client` fol
 
 | Variable | Location | Description |
 | :--- | :--- | :--- |
-| `API_KEY` | `client/.env` | Google Gemini API Key for the AI Chef. |
-| `API_URL` | `client/.env` | Base URL for the backend API (default: `http://localhost:5000/api`). |
+| `VITE_GEMINI_API_KEY` | `client/.env` | Google Gemini API key exposed to the frontend via Vite (keep secret). |
+| `VITE_API_URL` | `client/.env` | Frontend base URL pointing to the backend API (default: `http://localhost:5000/api`). |
 | `MONGO_URI` | `server/.env` | Connection string for MongoDB. |
 | `PORT` | `server/.env` | Port for the backend server (default: 5000). |
 
 ---
 
-Built with ❤️ using React & Google Gemini.# savoria-bistro
+Built with ❤️ using React, Vite, Express, MongoDB, and Google Gemini.
