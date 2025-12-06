@@ -5,6 +5,7 @@ import {
 import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin } from '../services/api';
 import { MenuItem, User, Order } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X } from 'lucide-react';
+import ToastContainer, { Toast, ToastType } from '../components/Toast';
 
 // ===== UTILITY FUNCTIONS =====
 /**
@@ -112,7 +113,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [allAdmins, setAllAdmins] = useState<User[]>([]);
   const [editingAdminId, setEditingAdminId] = useState<string | null>(null);
   const [adminEditForm, setAdminEditForm] = useState<{ name: string; email: string; phone?: string; password?: string }>({ name: '', email: '', phone: '' });
-  const [adminEditMsg, setAdminEditMsg] = useState('');
   
   // ===== STATE: FILTERS & LOADING =====
   const [orderSearch, setOrderSearch] = useState('');
@@ -152,6 +152,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [promoMessage, setPromoMessage] = useState('');
   const [promoError, setPromoError] = useState('');
 
+  // ===== STATE: TOASTS =====
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const showToast = (message: string, type: ToastType = 'success', duration: number = 3000) => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type, duration }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
   // ===== HANDLERS: MENU MANAGEMENT =====
   const handleMenuSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,21 +179,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       if (editingMenuId) {
         // Update existing menu item
         await updateMenuItem(editingMenuId, menuForm);
-        setMenuMessage('Dish updated successfully!');
+        showToast('Dish updated successfully!', 'success');
         const updatedMenu = await fetchMenu();
         setMenuItems(updatedMenu);
         setEditingMenuId(null);
       } else {
         // Add new menu item
         await addMenuItem(menuForm as MenuItem);
-        setMenuMessage('Dish added successfully!');
+        showToast('Dish added successfully!', 'success');
         const updatedMenu = await fetchMenu();
         setMenuItems(updatedMenu);
       }
       setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
       setTimeout(() => setShowMenuForm(false), 1500);
     } catch (err: any) {
-      setMenuError(err.message || 'Failed to save dish');
+      showToast(err.message || 'Failed to save dish', 'error');
     }
   };
 
@@ -189,11 +201,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     if (!window.confirm('Are you sure you want to delete this dish?')) return;
     try {
       await deleteMenuItem(id, user?.email);
-      setMenuMessage('Dish deleted successfully!');
+      showToast('Dish deleted successfully!', 'success');
       const updatedMenu = await fetchMenu();
       setMenuItems(updatedMenu);
     } catch (err: any) {
-      setMenuError(err.message || 'Failed to delete dish');
+      showToast(err.message || 'Failed to delete dish', 'error');
     }
   };
 
@@ -223,7 +235,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           ? { ...p, ...promoForm }
           : p
       );
-      setPromoMessage(`✅ Promo code "${promoForm.code}" updated successfully!`);
+      showToast(`Promo code "${promoForm.code}" updated successfully!`, 'success');
       setEditingPromoId(null);
     } else {
       // Add new promo
@@ -232,7 +244,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         ...promoForm
       };
       updatedPromos = [...promos, newPromo];
-      setPromoMessage(`✅ Promo code "${promoForm.code}" created successfully!`);
+      showToast(`Promo code "${promoForm.code}" created successfully!`, 'success');
     }
 
     setPromos(updatedPromos);
@@ -263,8 +275,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       // Update localStorage
       localStorage.setItem('activePromos', JSON.stringify(updatedPromos));
       localStorage.setItem('offerEnabled', JSON.stringify(offerEnabled));
-      setPromoMessage(`✅ Promo code "${deleted?.code}" deleted successfully!`);
-      setTimeout(() => setPromoMessage(''), 2000);
+      showToast(`Promo code "${deleted?.code}" deleted successfully!`, 'success');
     }
   };
 
@@ -313,12 +324,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       const { updateUser } = await import('../services/userActionsApi');
       const updates = { ...editForm, requesterEmail: user?.email };
       await updateUser(editForm.email, updates);
-      setEditMsg('User updated!');
+      showToast('User updated successfully!', 'success');
       setEditUser(null);
       setEditForm({ name: '', email: '' });
       await loadUsers();
     } catch (err: any) {
-      setEditMsg(err.message || 'Failed to update user');
+      showToast(err.message || 'Failed to update user', 'error');
     }
   }, [editForm, user]);
 
@@ -327,9 +338,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       try {
         const { deleteUser } = await import('../services/userActionsApi');
         await deleteUser(u.email);
+        showToast('User deleted successfully!', 'success');
         await loadUsers?.();
       } catch (err: any) {
-        alert(err.message || 'Failed to delete user');
+        showToast(err.message || 'Failed to delete user', 'error');
       }
     }
   }, []);
@@ -340,6 +352,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const headers = ['Name', 'Email', 'Phone'];
     const rows = staff.map(u => [u.name, u.email, u.phone || '-'] as (string | number)[]);
     exportToCSV('staff.csv', headers, rows);
+    showToast('Staff export downloaded!', 'success');
   }, [users]);
 
   const handleExportCustomersCSV = useCallback(() => {
@@ -347,6 +360,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const headers = ['Name', 'Email', 'Phone', 'Loyalty Points', 'Tier', 'Member Since'];
     const rows = customers.map(u => [u.name, u.email, u.phone || '-', u.loyaltyPoints ?? 0, u.tier ?? '-', u.memberSince ?? '-'] as (string | number)[]);
     exportToCSV('customers.csv', headers, rows);
+    showToast('Customer export downloaded!', 'success');
   }, [users]);
 
   const handleExportOrdersCSV = useCallback(() => {
@@ -359,12 +373,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       order.status
     ] as (string | number)[]);
     exportToCSV('orders.csv', headers, rows);
+    showToast('Orders export downloaded!', 'success');
   }, [orders]);
 
   const handleExportLogsCSV = useCallback(() => {
     const headers = ['User Email', 'Action', 'Details', 'Timestamp'];
     const rows = activityLogs.map(log => [log.userEmail, log.action, log.details, new Date(log.timestamp).toLocaleString()] as (string | number)[]);
     exportToCSV('activity_logs.csv', headers, rows);
+    showToast('Activity logs export downloaded!', 'success');
   }, [activityLogs]);
 
   // ===== DATA LOADING =====
@@ -405,18 +421,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
   const handleAddAdmin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    setAdminMsg('');
     try {
       await addAdmin({ ...adminForm, requesterEmail: user?.email } as any);
-      setAdminMsg('Admin added!');
+      showToast('Admin added successfully!', 'success');
       setAdminForm({ name: '', email: '', password: '', phone: '' });
       await loadAdmins();
       await loadUsers();
-      setTimeout(() => setAdminMsg(''), 3000);
     } catch (err: any) {
-      setAdminMsg(err.message || 'Failed to add admin');
+      showToast(err.message || 'Failed to add admin', 'error');
     }
-  }, [adminForm, user, loadAdmins, loadUsers]);
+  }, [adminForm, user, loadAdmins, loadUsers, showToast]);
 
   const handleEditAdminStart = (admin: User) => {
     if (admin._id) {
@@ -428,58 +442,54 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const handleSaveAdmin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAdminId) return;
-    setAdminEditMsg('');
     try {
       await updateAdmin(editingAdminId, adminEditForm);
-      setAdminEditMsg('Admin updated!');
+      showToast('Admin updated successfully!', 'success');
       setEditingAdminId(null);
       setAdminEditForm({ name: '', email: '', phone: '' });
       await loadAdmins();
-      setTimeout(() => setAdminEditMsg(''), 3000);
     } catch (err: any) {
-      setAdminEditMsg(err.message || 'Failed to update admin');
+      showToast(err.message || 'Failed to update admin', 'error');
     }
-  }, [editingAdminId, adminEditForm, loadAdmins]);
+  }, [editingAdminId, adminEditForm, loadAdmins, showToast]);
 
   const handleDeleteAdmin = useCallback(async (adminId: string) => {
     if (!window.confirm('Are you sure you want to delete this admin?')) return;
     try {
       await deleteAdmin(adminId);
       await loadAdmins();
-      alert('Admin deleted successfully');
+      showToast('Admin deleted successfully!', 'success');
     } catch (err: any) {
-      alert(err.message || 'Failed to delete admin');
+      showToast(err.message || 'Failed to delete admin', 'error');
     }
-  }, [loadAdmins]);
+  }, [loadAdmins, showToast]);
 
   const handleAddStaff = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    setStaffMsg('');
     try {
       await addStaff({ ...staffForm, requesterEmail: user?.email } as any);
-      setStaffMsg('Staff added!');
+      showToast('Staff added successfully!', 'success');
       setStaffForm({ name: '', email: '', password: '', phone: '' });
       await loadUsers();
-      setTimeout(() => setStaffMsg(''), 3000);
     } catch (err: any) {
-      setStaffMsg(err.message || 'Failed to add staff');
+      showToast(err.message || 'Failed to add staff', 'error');
     }
-  }, [staffForm, user, loadUsers]);
+  }, [staffForm, user, loadUsers, showToast]);
 
   // ===== HANDLERS: MASTER ADMIN OPERATIONS =====
   const handleRefreshData = useCallback(async () => {
     try {
       await Promise.all([loadData(), loadUsers()]);
-      alert('Data refreshed successfully!');
+      showToast('Data refreshed successfully!', 'success');
     } catch (err: any) {
-      alert('Failed to refresh data');
+      showToast('Failed to refresh data', 'error');
     }
   }, [loadData, loadUsers]);
 
   const handleBulkDeleteStaff = useCallback(async () => {
     const count = users.filter(u => u.role === 'staff').length;
     if (!count) {
-      alert('No staff members to delete');
+      showToast('No staff members to delete', 'info');
       return;
     }
     if (window.confirm(`Are you sure you want to delete all ${count} staff members? This action cannot be undone.`)) {
@@ -488,9 +498,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         const staff = users.filter(u => u.role === 'staff');
         await Promise.all(staff.map(s => deleteUser(s.email)));
         await loadUsers();
-        alert(`Successfully deleted ${count} staff members`);
+        showToast(`Successfully deleted ${count} staff members`, 'success');
       } catch (err: any) {
-        alert('Failed to delete staff members');
+        showToast('Failed to delete staff members', 'error');
       }
     }
   }, [users, loadUsers]);
@@ -521,6 +531,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
+    showToast('System report downloaded!', 'success');
   }, [users, orders, menuItems, activityLogs]);
 
   // ===== LIGHTBOX HANDLERS =====
@@ -620,6 +631,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
   return (
     <div>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      
       {/* Edit Modal (always rendered at top level) */}
       {editUser ? (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
@@ -1078,11 +1091,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           <button type="button" onClick={() => setEditingAdminId(null)} className="flex-1 px-6 py-2 bg-stone-300 text-stone-900 rounded-lg font-bold hover:bg-stone-400">Cancel</button>
                         </div>
                       </form>
-                      {adminEditMsg && (
-                        <div className="w-full my-4 p-3 rounded-lg font-bold text-center bg-green-50 text-green-600 border border-green-300">
-                          {adminEditMsg}
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -1661,10 +1669,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                     try {
                                       await updateReviewStatus(review._id, 'approved', '');
                                       setAllReviews(allReviews.map((r: any) => r._id === review._id ? {...r, status: 'approved'} : r));
-                                      setReviewMessage('Review approved!');
-                                      setTimeout(() => setReviewMessage(''), 3000);
+                                      showToast('Review approved successfully!', 'success');
                                     } catch (err: any) {
-                                      alert('Failed to approve review');
+                                      showToast('Failed to approve review', 'error');
                                     }
                                   }}
                                   className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded font-medium text-sm transition-colors"
@@ -1676,10 +1683,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                     try {
                                       await updateReviewStatus(review._id, 'rejected', 'Rejected by admin');
                                       setAllReviews(allReviews.map((r: any) => r._id === review._id ? {...r, status: 'rejected'} : r));
-                                      setReviewMessage('Review rejected!');
-                                      setTimeout(() => setReviewMessage(''), 3000);
+                                      showToast('Review rejected successfully!', 'success');
                                     } catch (err: any) {
-                                      alert('Failed to reject review');
+                                      showToast('Failed to reject review', 'error');
                                     }
                                   }}
                                   className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded font-medium text-sm transition-colors"
@@ -1694,10 +1700,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                   try {
                                     await deleteReview(review._id);
                                     setAllReviews(allReviews.filter((r: any) => r._id !== review._id));
-                                    setReviewMessage('Review deleted!');
-                                    setTimeout(() => setReviewMessage(''), 3000);
+                                    showToast('Review deleted successfully!', 'success');
                                   } catch (err: any) {
-                                    alert('Failed to delete review');
+                                    showToast('Failed to delete review', 'error');
                                   }
                                 }}
                                 className="flex items-center gap-1 bg-stone-400 hover:bg-stone-500 text-white px-3 py-2 rounded font-medium text-sm transition-colors ml-auto"
@@ -1869,8 +1874,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                               if (window.confirm('Delete this image?')) {
                                 deleteGalleryImage(img._id).then(() => {
                                   loadGalleryImages();
-                                  setGalleryMessage('✓ Image deleted!');
-                                  setTimeout(() => setGalleryMessage(''), 2000);
+                                  showToast('Image deleted successfully!', 'success');
+                                }).catch(() => {
+                                  showToast('Failed to delete image', 'error');
                                 });
                               }
                             }}
@@ -1915,22 +1921,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </div>
                         <form onSubmit={async (e) => {
                         e.preventDefault();
-                        if (!campaignContent.trim()) {
-                          setCampaignMessage('Newsletter content is required');
-                          return;
-                        }
-                        try {
-                          setCampaignSending(true);
-                          const result = await sendNewsletterCampaign(campaignContent, campaignSubject);
-                          setCampaignMessage(`✅ Campaign sent: ${result.sent} emails sent, ${result.failed} failed`);
-                          setCampaignContent('');
-                          setCampaignSubject('');
-                          setTimeout(() => setCampaignMessage(''), 5000);
-                        } catch (error) {
-                          setCampaignMessage(`❌ Error: ${error instanceof Error ? error.message : 'Failed to send campaign'}`);
-                        } finally {
-                          setCampaignSending(false);
-                        }
+                          if (!campaignContent.trim()) {
+                            showToast('Newsletter content is required', 'error');
+                            return;
+                          }
+                          try {
+                            setCampaignSending(true);
+                            const result = await sendNewsletterCampaign(campaignContent, campaignSubject);
+                            showToast(`Campaign sent: ${result.sent} emails sent, ${result.failed} failed`, result.failed === 0 ? 'success' : 'info');
+                            setCampaignContent('');
+                            setCampaignSubject('');
+                            setShowCampaignForm(false);
+                          } catch (error) {
+                            showToast(error instanceof Error ? error.message : 'Failed to send campaign', 'error');
+                          } finally {
+                            setCampaignSending(false);
+                          }
                       }} className="space-y-4">
                         <div>
                           <label className="block text-sm font-bold mb-1">Subject (Optional)</label>
