@@ -17,6 +17,17 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    if (selectedItem) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedItem]);
 
   useEffect(() => {
     const loadMenu = async () => {
@@ -282,7 +293,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
           >
             <button 
               onClick={() => setSelectedItem(null)}
-              className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white rounded-full text-stone-600 hover:text-red-500 transition-colors shadow-sm"
+              className="absolute top-4 right-4 z-20 p-2 bg-white/80 hover:bg-white rounded-full text-stone-600 hover:text-red-500 transition-colors shadow-sm"
             >
               <X size={24} />
             </button>
@@ -305,12 +316,12 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
 
             {/* Content Side */}
             <div className="w-full md:w-1/2 p-8 flex flex-col">
-               <div className="flex justify-between items-start mb-2">
+               <div className="flex justify-between items-start mb-2 gap-4 relative">
                  <div>
                     <span className="text-orange-600 font-bold uppercase tracking-widest text-xs mb-1 block">{selectedItem.category}</span>
                     <h2 className="text-3xl font-serif font-bold text-stone-900 leading-tight">{selectedItem.name}</h2>
                  </div>
-                 <span className="text-2xl font-bold text-orange-600">${selectedItem.price}</span>
+                 <span className="text-2xl font-bold text-orange-600 pr-10">${selectedItem.price}</span>
                </div>
 
                <p className="text-stone-600 mb-6 text-lg leading-relaxed border-b border-stone-100 pb-6">

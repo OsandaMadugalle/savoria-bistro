@@ -128,7 +128,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   // ===== STATE: MENU MANAGEMENT =====
   const [showMenuForm, setShowMenuForm] = useState(false);
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
-  const [menuForm, setMenuForm] = useState<Partial<MenuItem>>({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+  const [menuForm, setMenuForm] = useState<Partial<MenuItem>>({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
   const [menuImageFile, setMenuImageFile] = useState<File | null>(null);
   const [menuMessage, setMenuMessage] = useState('');
   const [menuError, setMenuError] = useState('');
@@ -205,7 +205,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         const updatedMenu = await fetchMenu();
         setMenuItems(updatedMenu);
       }
-      setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+      setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
       setMenuImageFile(null);
       setMenuTagsInput('');
       setMenuIngredientsInput('');
@@ -1281,7 +1281,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             onClick={() => {
                               setShowMenuForm(false);
                               setEditingMenuId(null);
-                              setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+                              setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
                               setMenuTagsInput('');
                               setMenuIngredientsInput('');
                               setMenuImageFile(null);
@@ -1296,6 +1296,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         <form onSubmit={handleMenuSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <input
+                            name="dishName"
                             type="text"
                             placeholder="Dish Name"
                             value={menuForm.name || ''}
@@ -1304,6 +1305,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             required
                           />
                           <select
+                            name="category"
                             value={menuForm.category || 'Main'}
                             onChange={e => setMenuForm({ ...menuForm, category: e.target.value as any })}
                             className="p-2 border rounded"
@@ -1315,6 +1317,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           </select>
                         </div>
                         <textarea
+                          name="description"
                           placeholder="Description"
                           value={menuForm.description || ''}
                           onChange={e => setMenuForm({ ...menuForm, description: e.target.value })}
@@ -1322,26 +1325,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           rows={3}
                         />
                         <div className="grid grid-cols-2 gap-4">
-                          <input
-                            type="number"
-                            placeholder="Price"
-                            step="0.01"
-                            value={menuForm.price || 0}
-                            onChange={e => setMenuForm({ ...menuForm, price: parseFloat(e.target.value) })}
-                            className="p-2 border rounded"
-                            required
-                          />
-                          <input
-                            type="text"
-                            placeholder="Image URL"
-                            value={menuForm.image || ''}
-                            onChange={e => setMenuForm({ ...menuForm, image: e.target.value })}
-                            className="p-2 border rounded"
-                          />
+                          <label className="flex flex-col text-sm font-semibold text-stone-700">
+                            Price
+                            <input
+                              id="price"
+                              name="price"
+                              type="number"
+                              placeholder="Price"
+                              step="0.01"
+                              value={menuForm.price || 0}
+                              onChange={e => setMenuForm({ ...menuForm, price: parseFloat(e.target.value) })}
+                              className="mt-2 p-2 border rounded"
+                              required
+                            />
+                          </label>
+                          <label className="flex flex-col text-sm font-semibold text-stone-700">
+                            Image URL
+                            <input
+                              id="imageUrl"
+                              name="imageUrl"
+                              type="text"
+                              placeholder="Image URL"
+                              value={menuForm.image || ''}
+                              onChange={e => setMenuForm({ ...menuForm, image: e.target.value })}
+                              className="mt-2 p-2 border rounded"
+                            />
+                          </label>
+                          <label className="flex flex-col text-sm font-semibold text-stone-700">
+                            Prep Time (mins)
+                            <input
+                              id="prepTime"
+                              name="prepTime"
+                              type="number"
+                              placeholder="Prep Time (mins)"
+                              value={menuForm.prepTime ?? ''}
+                              min={0}
+                              onChange={e => setMenuForm({ ...menuForm, prepTime: e.target.value === '' ? undefined : parseInt(e.target.value) })}
+                              className="mt-2 p-2 border rounded"
+                            />
+                          </label>
+                          <label className="flex flex-col text-sm font-semibold text-stone-700">
+                            Calories
+                            <input
+                              id="calories"
+                              name="calories"
+                              type="number"
+                              placeholder="Calories"
+                              value={menuForm.calories ?? ''}
+                              min={0}
+                              onChange={e => setMenuForm({ ...menuForm, calories: e.target.value === '' ? undefined : parseInt(e.target.value) })}
+                              className="mt-2 p-2 border rounded"
+                            />
+                          </label>
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Upload Image (optional)</label>
                           <input
+                            name="imageUpload"
                             type="file"
                             accept="image/*"
                             onChange={e => setMenuImageFile(e.target.files?.[0] || null)}
@@ -1356,6 +1396,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           <div>
                             <label className="block text-sm font-medium mb-1">Tags (comma separated)</label>
                             <input
+                              name="tags"
                               type="text"
                               value={menuTagsInput}
                               onChange={e => setMenuTagsInput(e.target.value)}
@@ -1366,6 +1407,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           <div>
                             <label className="block text-sm font-medium mb-1">Key Ingredients (comma separated)</label>
                             <input
+                              name="ingredients"
                               type="text"
                               value={menuIngredientsInput}
                               onChange={e => setMenuIngredientsInput(e.target.value)}
@@ -1376,6 +1418,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         </div>
                         <div className="flex items-center gap-2">
                           <input
+                            name="featured"
                             type="checkbox"
                             checked={menuForm.featured || false}
                             onChange={e => setMenuForm({ ...menuForm, featured: e.target.checked })}
@@ -1390,7 +1433,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           <button type="button" onClick={() => {
                             setShowMenuForm(false);
                             setEditingMenuId(null);
-                            setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+                            setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
                             setMenuTagsInput('');
                             setMenuIngredientsInput('');
                             setMenuImageFile(null);
@@ -1408,7 +1451,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <button onClick={() => {
                         setShowMenuForm(!showMenuForm);
                         setEditingMenuId(null);
-                        setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+                        setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
                         setMenuImageFile(null);
                         setMenuTagsInput('');
                         setMenuIngredientsInput('');
