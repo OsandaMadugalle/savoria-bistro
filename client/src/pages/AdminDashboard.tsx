@@ -105,6 +105,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [staffForm, setStaffForm] = useState<{ name: string; email: string; password: string; phone?: string }>({ name: '', email: '', password: '', phone: '' });
   const [adminMsg, setAdminMsg] = useState('');
   const [staffMsg, setStaffMsg] = useState('');
+  const [showAddAdminForm, setShowAddAdminForm] = useState(false);
+  const [showAddStaffForm, setShowAddStaffForm] = useState(false);
   
   // ===== STATE: ADMIN MANAGEMENT =====
   const [allAdmins, setAllAdmins] = useState<User[]>([]);
@@ -604,6 +606,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     }
   }, [activeTab]);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showAddAdminForm || showAddStaffForm || showMenuForm || showGalleryUpload || showCampaignForm || showPromoForm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAddAdminForm, showAddStaffForm, showMenuForm, showGalleryUpload, showCampaignForm, showPromoForm]);
+
   return (
     <div>
       {/* Edit Modal (always rendered at top level) */}
@@ -980,23 +994,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               {/* Admin Tab: Add Admin + List Admins */}
               {activeTab === 'addAdmin' && user?.role === 'masterAdmin' && (
                 <div className="space-y-6">
-                  {/* Add Admin Form */}
+                  {/* Add Admin Button */}
                   <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                    <h2 className="text-xl font-bold mb-4">Add New Admin</h2>
-                    <form onSubmit={e => handleAddAdmin(e)} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <input required placeholder="Name" className="p-3 rounded border border-stone-200" value={adminForm.name} onChange={e => setAdminForm(f => ({...f, name: e.target.value}))} />
-                        <input required type="email" placeholder="Email" className="p-3 rounded border border-stone-200" value={adminForm.email} onChange={e => setAdminForm(f => ({...f, email: e.target.value}))} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <input required type="password" placeholder="Password" className="p-3 rounded border border-stone-200" value={adminForm.password} onChange={e => setAdminForm(f => ({...f, password: e.target.value}))} />
-                        <input placeholder="Phone" className="p-3 rounded border border-stone-200" value={adminForm.phone} onChange={e => setAdminForm(f => ({...f, phone: e.target.value}))} />
-                      </div>
-                      <button type="submit" className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Admin</button>
-                    </form>
-                    {adminMsg && (
-                      <div className="w-full my-4 p-3 rounded-lg font-bold text-center bg-green-50 text-green-600 border border-green-300">
-                        {adminMsg}
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold">Admin Management</h2>
+                      <button 
+                        onClick={() => {
+                          setShowAddAdminForm(!showAddAdminForm);
+                          if (!showAddAdminForm) {
+                            setAdminForm({ name: '', email: '', password: '', phone: '' });
+                            setAdminMsg('');
+                          }
+                        }}
+                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
+                      >
+                        <Plus size={18} /> {showAddAdminForm ? 'Cancel' : 'Add Admin'}
+                      </button>
+                    </div>
+
+                    {/* Add Admin Modal Popup */}
+                    {showAddAdminForm && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full mx-4 animate-in fade-in scale-in-95">
+                          <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold text-stone-900">Add New Admin</h3>
+                            <button 
+                              onClick={() => setShowAddAdminForm(false)}
+                              className="text-stone-400 hover:text-stone-600 text-2xl"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <form onSubmit={e => {
+                            handleAddAdmin(e);
+                            setShowAddAdminForm(false);
+                          }} className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Name *</label>
+                              <input required placeholder="Admin Name" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={adminForm.name} onChange={e => setAdminForm(f => ({...f, name: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Email *</label>
+                              <input required type="email" placeholder="admin@example.com" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={adminForm.email} onChange={e => setAdminForm(f => ({...f, email: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Password *</label>
+                              <input required type="password" placeholder="••••••••" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={adminForm.password} onChange={e => setAdminForm(f => ({...f, password: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Phone</label>
+                              <input placeholder="(optional)" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={adminForm.phone} onChange={e => setAdminForm(f => ({...f, phone: e.target.value}))} />
+                            </div>
+                            {adminMsg && (
+                              <div className="p-3 rounded-lg font-bold text-center bg-green-50 text-green-600 border border-green-300">
+                                {adminMsg}
+                              </div>
+                            )}
+                            <div className="flex gap-2 pt-4">
+                              <button type="submit" className="flex-1 px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Admin</button>
+                              <button type="button" onClick={() => setShowAddAdminForm(false)} className="flex-1 px-6 py-2 bg-stone-200 text-stone-900 rounded-lg font-bold hover:bg-stone-300 transition-colors">Cancel</button>
+                            </div>
+                          </form>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1068,17 +1127,66 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               {activeTab === 'addStaff' && (
                 <div>
                   <div className="mb-4 bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                    <h2 className="text-xl font-bold mb-2">Add Staff</h2>
-                    <form onSubmit={e => handleAddStaff(e)} className="flex flex-wrap gap-4 items-end">
-                      <input required placeholder="Name" className="p-3 rounded border border-stone-200 min-w-[140px]" value={staffForm.name} onChange={e => setStaffForm(f => ({...f, name: e.target.value}))} />
-                      <input required type="email" placeholder="Email" className="p-3 rounded border border-stone-200 min-w-[180px]" value={staffForm.email} onChange={e => setStaffForm(f => ({...f, email: e.target.value}))} />
-                      <input required type="password" placeholder="Password" className="p-3 rounded border border-stone-200 min-w-[180px]" value={staffForm.password} onChange={e => setStaffForm(f => ({...f, password: e.target.value}))} />
-                      <input placeholder="Phone" className="p-3 rounded border border-stone-200 min-w-[140px]" value={staffForm.phone} onChange={e => setStaffForm(f => ({...f, phone: e.target.value}))} />
-                      <button type="submit" className="px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Staff</button>
-                    </form>
-                    {staffMsg && (
-                      <div className="w-full my-2 p-3 rounded-lg font-bold text-center" style={{ background: '#ffeaea', color: '#d32f2f', border: '2px solid #d32f2f' }}>
-                        {staffMsg}
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold">Staff Management</h2>
+                      <button 
+                        onClick={() => {
+                          setShowAddStaffForm(!showAddStaffForm);
+                          if (!showAddStaffForm) {
+                            setStaffForm({ name: '', email: '', password: '', phone: '' });
+                            setStaffMsg('');
+                          }
+                        }}
+                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
+                      >
+                        <Plus size={18} /> {showAddStaffForm ? 'Cancel' : 'Add Staff'}
+                      </button>
+                    </div>
+
+                    {/* Add Staff Modal Popup */}
+                    {showAddStaffForm && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full mx-4 animate-in fade-in scale-in-95">
+                          <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold text-stone-900">Add New Staff</h3>
+                            <button 
+                              onClick={() => setShowAddStaffForm(false)}
+                              className="text-stone-400 hover:text-stone-600 text-2xl"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <form onSubmit={e => {
+                            handleAddStaff(e);
+                            setShowAddStaffForm(false);
+                          }} className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Name *</label>
+                              <input required placeholder="Staff Name" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={staffForm.name} onChange={e => setStaffForm(f => ({...f, name: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Email *</label>
+                              <input required type="email" placeholder="staff@example.com" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={staffForm.email} onChange={e => setStaffForm(f => ({...f, email: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Password *</label>
+                              <input required type="password" placeholder="••••••••" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={staffForm.password} onChange={e => setStaffForm(f => ({...f, password: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Phone</label>
+                              <input placeholder="(optional)" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={staffForm.phone} onChange={e => setStaffForm(f => ({...f, phone: e.target.value}))} />
+                            </div>
+                            {staffMsg && (
+                              <div className="p-3 rounded-lg font-bold text-center bg-red-50 text-red-600 border border-red-300">
+                                {staffMsg}
+                              </div>
+                            )}
+                            <div className="flex gap-2 pt-4">
+                              <button type="submit" className="flex-1 px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Staff</button>
+                              <button type="button" onClick={() => setShowAddStaffForm(false)} className="flex-1 px-6 py-2 bg-stone-200 text-stone-900 rounded-lg font-bold hover:bg-stone-300 transition-colors">Cancel</button>
+                            </div>
+                          </form>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1132,11 +1240,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               {activeTab === 'menu' && (
                 <div className="space-y-6">
                   {showMenuForm && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 animate-in fade-in slide-in-from-bottom-2">
-                      <h3 className="text-lg font-bold text-stone-900 mb-4">{editingMenuId ? 'Edit Dish' : 'Add New Dish'}</h3>
-                      {menuError && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{menuError}</div>}
-                      {menuMessage && <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg text-sm">{menuMessage}</div>}
-                      <form onSubmit={handleMenuSubmit} className="space-y-4">
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white p-8 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-in fade-in scale-in-95">
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-2xl font-bold text-stone-900">{editingMenuId ? 'Edit Dish' : 'Add New Dish'}</h3>
+                          <button 
+                            onClick={() => {
+                              setShowMenuForm(false);
+                              setEditingMenuId(null);
+                              setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+                            }}
+                            className="text-stone-400 hover:text-stone-600 text-2xl"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        {menuError && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{menuError}</div>}
+                        {menuMessage && <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg text-sm">{menuMessage}</div>}
+                        <form onSubmit={handleMenuSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <input
                             type="text"
@@ -1191,7 +1312,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           />
                           <label htmlFor="featured" className="text-sm">Mark as Featured (Chef's Special)</label>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 pt-4">
                           <button type="submit" className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700">
                             {editingMenuId ? 'Update Dish' : 'Add Dish'}
                           </button>
@@ -1204,6 +1325,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           </button>
                         </div>
                       </form>
+                      </div>
                     </div>
                   )}
                   <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
@@ -1637,9 +1759,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   </div>
 
                   {showGalleryUpload && (
-                    <div className="mb-6 p-4 bg-stone-50 border border-stone-200 rounded-lg">
-                      <h3 className="font-bold mb-4">Upload New Image</h3>
-                      <form onSubmit={async (e) => {
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full mx-4 animate-in fade-in scale-in-95">
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-2xl font-bold text-stone-900">Upload New Image</h3>
+                          <button 
+                            onClick={() => setShowGalleryUpload(false)}
+                            className="text-stone-400 hover:text-stone-600 text-2xl"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <form onSubmit={async (e) => {
                         e.preventDefault();
                         if (!galleryUploadForm.caption || !galleryUploadForm.category || !galleryUploadForm.file) {
                           setGalleryMessage('All fields required');
@@ -1716,6 +1847,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           </button>
                         </div>
                       </form>
+                      </div>
                     </div>
                   )}
 
@@ -1770,9 +1902,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   </div>
 
                   {showCampaignForm && (
-                    <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                      <h3 className="font-bold mb-4">Send Newsletter Campaign</h3>
-                      <form onSubmit={async (e) => {
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white p-8 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-in fade-in scale-in-95">
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-2xl font-bold text-stone-900">Send Newsletter Campaign</h3>
+                          <button 
+                            onClick={() => setShowCampaignForm(false)}
+                            className="text-stone-400 hover:text-stone-600 text-2xl"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <form onSubmit={async (e) => {
                         e.preventDefault();
                         if (!campaignContent.trim()) {
                           setCampaignMessage('Newsletter content is required');
@@ -1832,6 +1973,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           </div>
                         )}
                       </form>
+                      </div>
                     </div>
                   )}
 
@@ -1956,11 +2098,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   </div>
 
                   {showPromoForm && (
-                    <form 
-                      onSubmit={handlePromoSubmit}
-                      className="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white p-8 rounded-xl shadow-2xl max-w-2xl w-full mx-4 animate-in fade-in scale-in-95">
+                        <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-2xl font-bold text-stone-900">{editingPromoId ? 'Edit Promo Code' : 'Add Promo Code'}</h3>
+                          <button 
+                            onClick={handleCancelPromoForm}
+                            className="text-stone-400 hover:text-stone-600 text-2xl"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <form 
+                          onSubmit={handlePromoSubmit}
+                          className="space-y-4"
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-semibold text-stone-700 mb-2">Promo Code</label>
                           <input 
@@ -2020,9 +2173,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           Cancel
                         </button>
                       </div>
-                      {promoError && <p className="text-red-600 text-sm mt-2">{promoError}</p>}
-                      {promoMessage && <p className="text-green-600 text-sm mt-2">{promoMessage}</p>}
-                    </form>
+                          {promoError && <p className="text-red-600 text-sm mt-2">{promoError}</p>}
+                          {promoMessage && <p className="text-green-600 text-sm mt-2">{promoMessage}</p>}
+                        </form>
+                      </div>
+                    </div>
                   )}
 
                   <div className="overflow-x-auto">
