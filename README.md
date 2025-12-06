@@ -11,6 +11,7 @@ A premium restaurant experience with an AI concierge ("Chef Gustav"), live order
 -   **Loyalty System**: Earn points, view tier status (Bronze/Silver/Gold), and order history.
 -   **Gallery & Reviews**: Visual storytelling and social proof.
 -   **Admin/Backend**: REST API handling menu items, orders, users, and reservations.
+ -   **Payments**: Secure card checkout via Stripe payment intents before order confirmation.
 
 ---
 
@@ -43,6 +44,8 @@ The backend handles the API, database connection, and data seeding.
     PORT=5000
     MONGO_URI=mongodb://localhost:27017/savoria
     # Or use your MongoDB Atlas connection string
+    STRIPE_SECRET_KEY=sk_test_...
+    STRIPE_WEBHOOK_SECRET=whsec_...
     ```
 
 4.  Start the server:
@@ -69,6 +72,7 @@ The frontend is a React application powered by Vite, located in the `client` fol
     ```env
     VITE_GEMINI_API_KEY=your_google_gemini_api_key_here
     VITE_API_URL=http://localhost:5000/api
+    VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
     ```
     *Note: Get your Gemini API key from [Google AI Studio](https://aistudio.google.com/) or your Google Cloud console. Rename the file to `.env.local` in production and never commit secrets.*
 
@@ -108,8 +112,11 @@ The frontend is a React application powered by Vite, located in the `client` fol
 | :--- | :--- | :--- |
 | `VITE_GEMINI_API_KEY` | `client/.env` | Google Gemini API key exposed to the frontend via Vite (keep secret). |
 | `VITE_API_URL` | `client/.env` | Frontend base URL pointing to the backend API (default: `http://localhost:5000/api`). |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | `client/.env` | Publishable Stripe key used by the front end when initializing Elements. |
 | `MONGO_URI` | `server/.env` | Connection string for MongoDB. |
 | `PORT` | `server/.env` | Port for the backend server (default: 5000). |
+| `STRIPE_SECRET_KEY` | `server/.env` | Secret key used server side for creating payment intents. |
+| `STRIPE_WEBHOOK_SECRET` | `server/.env` | Secret used to verify Stripe webhooks if you enable them. |
 
 ---
 

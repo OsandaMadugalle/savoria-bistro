@@ -178,14 +178,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     try {
       if (editingMenuId) {
         // Update existing menu item
-        await updateMenuItem(editingMenuId, menuForm);
+        await updateMenuItem(editingMenuId, menuForm, user?.email);
         showToast('Dish updated successfully!', 'success');
         const updatedMenu = await fetchMenu();
         setMenuItems(updatedMenu);
         setEditingMenuId(null);
       } else {
         // Add new menu item
-        await addMenuItem(menuForm as MenuItem);
+        await addMenuItem(menuForm as MenuItem, user?.email);
         showToast('Dish added successfully!', 'success');
         const updatedMenu = await fetchMenu();
         setMenuItems(updatedMenu);

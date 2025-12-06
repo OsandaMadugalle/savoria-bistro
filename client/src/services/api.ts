@@ -56,11 +56,11 @@ export const fetchMenu = async (): Promise<MenuItem[]> => {
   return await res.json();
 };
 
-export const addMenuItem = async (item: MenuItem): Promise<MenuItem> => {
+export const addMenuItem = async (item: MenuItem, requesterEmail?: string): Promise<MenuItem> => {
   const res = await fetch(`${API_URL}/menu`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(item)
+    body: JSON.stringify({ ...item, requesterEmail })
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
@@ -69,11 +69,11 @@ export const addMenuItem = async (item: MenuItem): Promise<MenuItem> => {
   return await res.json();
 };
 
-export const updateMenuItem = async (id: string, item: Partial<MenuItem>): Promise<MenuItem> => {
+export const updateMenuItem = async (id: string, item: Partial<MenuItem>, requesterEmail?: string): Promise<MenuItem> => {
   const res = await fetch(`${API_URL}/menu/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(item)
+    body: JSON.stringify({ ...item, requesterEmail })
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
