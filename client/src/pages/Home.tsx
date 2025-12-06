@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Star, ChevronRight, Clock, Users, Award, Zap, Check } from 'lucide-react';
 import { fetchApprovedReviews, fetchMenu } from '../services/api';
@@ -10,6 +10,7 @@ const Home: React.FC = () => {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [featuredDishes, setFeaturedDishes] = useState<MenuItem[]>([]);
+  const [loadingFeatured, setLoadingFeatured] = useState(true);
   
   // Promo code state - get from localStorage or use default
   const [offerEnabled, setOfferEnabled] = useState(true);
@@ -71,15 +72,28 @@ const Home: React.FC = () => {
     const loadFeaturedDishes = async () => {
       try {
         const menuItems = await fetchMenu();
-        const featured = menuItems.filter((item: MenuItem) => item.featured === true).slice(0, 3);
-        setFeaturedDishes(featured.length > 0 ? featured : []);
+        const featured = menuItems.filter((item: MenuItem) => item.featured === true);
+        setFeaturedDishes(featured);
       } catch (err) {
         console.error('Failed to fetch featured dishes:', err);
-        setFeaturedDishes([]);
+      } finally {
+        setLoadingFeatured(false);
       }
     };
     loadFeaturedDishes();
   }, []);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const hasScrollableFeatured = featuredDishes.length > 3;
+
+  const scrollFeatured = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    const scrollAmount = scrollContainerRef.current.clientWidth * 0.7;
+    scrollContainerRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
   const handleClaimOffer = (code: string) => {
     // Copy promo code to clipboard
@@ -239,30 +253,85 @@ const Home: React.FC = () => {
             <h3 className="text-4xl font-serif font-bold text-stone-900 mb-4">Chef's Specialties</h3>
             <p className="text-stone-600 max-w-2xl mx-auto">Handpicked dishes that showcase our culinary excellence and commitment to quality ingredients</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {featuredDishes.length > 0 ? (
-              featuredDishes.map((dish: MenuItem, idx: number) => (
-                <div key={idx} className="group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2">
-                  <div className="relative h-64 overflow-hidden">
-                    <img src={dish.image} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
-                  </div>
-                  <div className="p-6 bg-stone-50 group-hover:bg-orange-50 transition-colors">
-                    <h4 className="text-xl font-serif font-bold text-stone-900 mb-2">{dish.name}</h4>
-                    <p className="text-stone-600 text-sm mb-2">{dish.description}</p>
-                    <p className="text-orange-600 font-bold mb-4">${dish.price.toFixed(2)}</p>
-                    <NavLink to="/menu" className="text-orange-600 font-semibold text-sm hover:text-orange-700 flex items-center gap-1">
-                      Order Now <ChevronRight size={14} />
-                    </NavLink>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="md:col-span-3 rounded-2xl border border-stone-200 bg-stone-50 p-8 text-center text-stone-500">
-                <p className="text-lg font-medium">Chef's specialties will be added soon—check back later!</p>
+          {loadingFeatured ? (
+            <div className="w-full flex justify-center">
+              <div className="inline-block">
+                <div className="w-12 h-12 border-4 border-stone-300 border-t-orange-600 rounded-full animate-spin mb-4"></div>
+                <p className="text-stone-500 font-medium text-center">Loading specialties...</p>
               </div>
-            )}
-          </div>
+            </div>
+          ) : featuredDishes.length > 0 ? (
+            <div className="relative">
+              <div
+                ref={scrollContainerRef}
+                className={`${
+                  hasScrollableFeatured
+                    ? 'flex gap-6 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth pb-4 -mx-4 px-4'
+                    : 'grid md:grid-cols-3 gap-8'
+                }`}
+              >
+                {featuredDishes.map((dish: MenuItem, idx: number) => (
+                  <div
+                    key={dish.id || idx}
+                    className={`${hasScrollableFeatured ? 'min-w-[300px]' : ''} group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col flex-shrink-0`}
+                  >
+                    <div className="relative h-64 overflow-hidden bg-stone-200">
+                      <img
+                        src={dish.image}
+                        alt={dish.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+                    <div className="p-6 flex-1 flex flex-col">
+                      <h4 className="text-xl font-serif font-bold text-stone-900 mb-2 truncate">
+                        {dish.name}
+                      </h4>
+                      <p className="text-stone-600 text-sm mb-4 line-clamp-3 flex-1">
+                        {dish.description}
+                      </p>
+                      <div className="flex items-center justify-between border-t border-stone-200 pt-4">
+                        <span className="text-2xl font-serif font-bold text-orange-600">${dish.price.toFixed(2)}</span>
+                        <NavLink
+                          to="/menu"
+                          state={{ focusDishId: dish.id }}
+                          className="inline-flex items-center gap-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors duration-200"
+                        >
+                          Order Now <ChevronRight size={16} />
+                        </NavLink>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {hasScrollableFeatured && (
+                <>
+                  <button
+                    onClick={() => scrollFeatured('left')}
+                    className="absolute left-5 top-1/2 -translate-y-1/2 rounded-full bg-white/90 shadow-lg p-3 text-stone-700 hover:text-orange-600 transition-colors duration-200"
+                    aria-label="Scroll left"
+                  >
+                    <ChevronRight size={20} className="rotate-180" />
+                  </button>
+                  <button
+                    onClick={() => scrollFeatured('right')}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 rounded-full bg-white/90 shadow-lg p-3 text-stone-700 hover:text-orange-600 transition-colors duration-200"
+                    aria-label="Scroll right"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="w-full rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 p-12 text-center">
+              <Award size={48} className="mx-auto mb-3 text-stone-400" />
+              <p className="text-lg font-medium text-stone-600 mb-2">Coming Soon</p>
+              <p className="text-stone-500">
+                Our Chef's specialty dishes will be featured here soon. Check back to discover culinary masterpieces!
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

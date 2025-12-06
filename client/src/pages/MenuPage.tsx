@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, X, Leaf, Sprout, Wheat, Loader2, ChevronRight, Clock, Flame, Utensils, Info, Plus, Zap } from 'lucide-react';
 import { MenuItem } from '../types';
 import { fetchMenu } from '../services/api';
@@ -17,6 +18,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
   
   useEffect(() => {
     if (selectedItem) {
@@ -28,6 +31,16 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
       document.body.style.overflow = '';
     };
   }, [selectedItem]);
+
+  useEffect(() => {
+    const focusDishId = (location.state as any)?.focusDishId;
+    if (!focusDishId || menuItems.length === 0) return;
+    const match = menuItems.find(item => item.id === focusDishId);
+    if (match) {
+      setSelectedItem(match);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, menuItems, navigate]);
 
   useEffect(() => {
     const loadMenu = async () => {
