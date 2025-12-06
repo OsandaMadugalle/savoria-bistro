@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, ChefHat, Eye, EyeOff } from 'lucide-react';
+import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, ChefHat, Eye, EyeOff, Calendar } from 'lucide-react';
 import { CartItem, User } from '../types';
 import { loginUser, subscribeNewsletter } from '../services/api';
 
@@ -367,11 +367,12 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   const navLinks = [
-    { path: '/', label: 'Home' },
-    { path: '/menu', label: 'Menu' },
-    { path: '/gallery', label: 'Gallery' },
-    { path: '/tracker', label: 'Track Order' },
-    { path: '/reviews', label: 'Reviews' },
+    { path: '/', label: 'Home', icon: null, highlight: false },
+    { path: '/menu', label: 'Menu', icon: null, highlight: false },
+    { path: '/gallery', label: 'Gallery', icon: null, highlight: false },
+    { path: '/tracker', label: 'Track Order', icon: null, highlight: false },
+    { path: '/reservation', label: 'Book a Table', icon: Calendar, highlight: true },
+    { path: '/reviews', label: 'Reviews', icon: null, highlight: false },
   ];
 
   const closeMenu = () => setIsMobileMenuOpen(false);
@@ -396,20 +397,24 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
             </div>
 
             {/* Desktop Nav */}
-            <div className="hidden md:flex items-center space-x-6 xl:space-x-8">
+            <div className="hidden md:flex items-center space-x-1 xl:space-x-2">
               {navLinks.map((link) => (
                 <NavLink
                   key={link.path}
                   to={link.path}
-                  className={({ isActive }) => 
-                    `text-sm font-medium transition-colors hover:text-orange-600 ${isActive ? 'text-orange-600' : 'text-stone-600'}`
-                  }
+                  className={({ isActive }) => {
+                    if (link.highlight) {
+                      return `flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isActive ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`;
+                    }
+                    return `px-1 py-2 text-sm font-medium transition-colors hover:text-orange-600 ${isActive ? 'text-orange-600' : 'text-stone-600'}`;
+                  }}
                 >
+                  {link.icon && <link.icon size={18} />}
                   {link.label}
                 </NavLink>
               ))}
 
-              <div className="h-6 w-px bg-stone-300 mx-2"></div>
+              <div className="h-6 w-px bg-stone-200 mx-4"></div>
               
               {/* User Actions */}
               {user ? (
@@ -496,10 +501,14 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                   key={link.path}
                   to={link.path}
                   onClick={closeMenu}
-                  className={({ isActive }) => 
-                    `block px-3 py-3 rounded-md text-base font-medium ${isActive ? 'bg-orange-50 text-orange-600' : 'text-stone-700 hover:bg-stone-50'}`
-                  }
+                  className={({ isActive }) => {
+                    if (link.highlight) {
+                      return `flex items-center gap-2 px-4 py-3 rounded-lg text-base font-semibold transition-all ${isActive ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`;
+                    }
+                    return `block px-4 py-3 rounded-lg text-base font-medium transition-colors ${isActive ? 'bg-orange-50 text-orange-600' : 'text-stone-700 hover:bg-stone-50'}`;
+                  }}
                 >
+                  {link.icon && <link.icon size={20} />}
                   {link.label}
                 </NavLink>
               ))}
