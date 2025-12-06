@@ -234,13 +234,13 @@ seedAccounts();
 
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, address, birthday } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     // Default role is customer. Admin/Staff must be created via DB or seeded for security.
-    const user = new User({ name, email, password: hashedPassword, phone, role: 'customer' });
+    const user = new User({ name, email, password: hashedPassword, phone, address, birthday, role: 'customer' });
     await user.save();
     console.log('✅ User created:', user.email);
     

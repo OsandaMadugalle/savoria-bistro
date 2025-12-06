@@ -75,6 +75,12 @@ export interface User {
   name: string;
   email: string;
   phone: string;
+  address?: string;
+  birthday?: string;
+  favoriteCuisine?: string;
+  dietaryRestrictions?: string;
+  preferredDiningTime?: string;
+  specialRequests?: string;
   loyaltyPoints: number;
   memberSince: string;
   tier: 'Bronze' | 'Silver' | 'Gold';

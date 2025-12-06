@@ -65,6 +65,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
   const [signupError, setSignupError] = useState('');
+  const [signupAddress, setSignupAddress] = useState('');
+  const [signupBirthday, setSignupBirthday] = useState('');
 
   const navigate = useNavigate();
 
@@ -144,10 +146,21 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
         name: signupName,
         email: signupEmail,
         phone: signupPhone,
-        password: signupPassword
+        password: signupPassword,
+        address: signupAddress,
+        birthday: signupBirthday
       }));
-      setIsLoginModalOpen(false);
-      navigate('/profile');
+      setSignupName('');
+      setSignupEmail('');
+      setSignupPhone('');
+      setSignupAddress('');
+      setSignupBirthday('');
+      setSignupPassword('');
+      setSignupConfirmPassword('');
+      setAuthMode('signin');
+      setLoginEmail(signupEmail);
+      setIsLoginModalOpen(true);
+      setSignupError('Account created! Please log in.');
     } catch (err) {
       setSignupError('Signup failed. Please try again.');
     }
@@ -187,6 +200,10 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
           setSignupPassword={setSignupPassword}
           signupConfirmPassword={signupConfirmPassword}
           setSignupConfirmPassword={setSignupConfirmPassword}
+          signupAddress={signupAddress}
+          setSignupAddress={setSignupAddress}
+          signupBirthday={signupBirthday}
+          setSignupBirthday={setSignupBirthday}
           showSignupPassword={showSignupPassword}
           setShowSignupPassword={setShowSignupPassword}
           showSignupConfirmPassword={showSignupConfirmPassword}
@@ -300,6 +317,10 @@ interface CustomerNavbarProps {
   showSignupConfirmPassword: boolean;
   setShowSignupConfirmPassword: (value: boolean) => void;
   signupError: string;
+  signupAddress: string;
+  setSignupAddress: (value: string) => void;
+  signupBirthday: string;
+  setSignupBirthday: (value: string) => void;
   handleLoginSubmit: (e: React.FormEvent) => Promise<void>;
   handleSignupSubmit: (e: React.FormEvent) => Promise<void>;
 }
@@ -331,6 +352,10 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
   setSignupPassword,
   signupConfirmPassword,
   setSignupConfirmPassword,
+  signupAddress,
+  setSignupAddress,
+  signupBirthday,
+  setSignupBirthday,
   showSignupPassword,
   setShowSignupPassword,
   showSignupConfirmPassword,
@@ -526,7 +551,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
       {/* Auth Modal */}
       {isLoginModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-200 max-h-[90vh]">
             <button 
               onClick={() => setIsLoginModalOpen(false)}
               className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-600 transition-colors z-10"
@@ -534,7 +559,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
               <X size={20} />
             </button>
             
-            <div className="p-8">
+            <div className="p-8 max-h-[82vh] overflow-auto">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-serif font-bold text-stone-900">
                   {authMode === 'signin' ? 'Welcome Back' : 'Join Savoria'}
@@ -641,6 +666,32 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         onChange={(e) => setSignupPhone(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                         placeholder="(555) 000-0000"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Address</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3 text-stone-400" size={18} />
+                      <input 
+                        type="text"
+                        value={signupAddress}
+                        onChange={(e) => setSignupAddress(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        placeholder="Street, city, neighborhood"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Birthday</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-3 text-stone-400" size={18} />
+                      <input 
+                        type="date"
+                        value={signupBirthday}
+                        onChange={(e) => setSignupBirthday(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        placeholder="MM/DD/YYYY"
                       />
                     </div>
                   </div>
