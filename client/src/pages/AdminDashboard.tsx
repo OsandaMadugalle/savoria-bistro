@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
-import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem } from '../services/api';
+import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin } from '../services/api';
 import { MenuItem, User, Order } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X } from 'lucide-react';
 
@@ -106,8 +106,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [adminMsg, setAdminMsg] = useState('');
   const [staffMsg, setStaffMsg] = useState('');
   
+  // ===== STATE: ADMIN MANAGEMENT =====
+  const [allAdmins, setAllAdmins] = useState<User[]>([]);
+  const [editingAdminId, setEditingAdminId] = useState<string | null>(null);
+  const [adminEditForm, setAdminEditForm] = useState<{ name: string; email: string; phone?: string; password?: string }>({ name: '', email: '', phone: '' });
+  const [adminEditMsg, setAdminEditMsg] = useState('');
+  
   // ===== STATE: FILTERS & LOADING =====
-  const [userSearch, setUserSearch] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [orderDateFilter, setOrderDateFilter] = useState('');
@@ -181,7 +186,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const handleDeleteMenu = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this dish?')) return;
     try {
-      await deleteMenuItem(id);
+      await deleteMenuItem(id, user?.email);
       setMenuMessage('Dish deleted successfully!');
       const updatedMenu = await fetchMenu();
       setMenuItems(updatedMenu);
@@ -387,6 +392,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   }, []);
 
   // ===== HANDLERS: FORM SUBMISSIONS =====
+  const loadAdmins = useCallback(async () => {
+    try {
+      const admins = await fetchAllAdmins(user?.email);
+      setAllAdmins(admins);
+    } catch (err: any) {
+      console.error('Failed to load admins:', err);
+    }
+  }, [user?.email]);
+
   const handleAddAdmin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminMsg('');
@@ -394,12 +408,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       await addAdmin({ ...adminForm, requesterEmail: user?.email } as any);
       setAdminMsg('Admin added!');
       setAdminForm({ name: '', email: '', password: '', phone: '' });
+      await loadAdmins();
       await loadUsers();
       setTimeout(() => setAdminMsg(''), 3000);
     } catch (err: any) {
       setAdminMsg(err.message || 'Failed to add admin');
     }
-  }, [adminForm, user, loadUsers]);
+  }, [adminForm, user, loadAdmins, loadUsers]);
+
+  const handleEditAdminStart = (admin: User) => {
+    if (admin._id) {
+      setEditingAdminId(admin._id);
+      setAdminEditForm({ name: admin.name, email: admin.email, phone: admin.phone || '' });
+    }
+  };
+
+  const handleSaveAdmin = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAdminId) return;
+    setAdminEditMsg('');
+    try {
+      await updateAdmin(editingAdminId, adminEditForm);
+      setAdminEditMsg('Admin updated!');
+      setEditingAdminId(null);
+      setAdminEditForm({ name: '', email: '', phone: '' });
+      await loadAdmins();
+      setTimeout(() => setAdminEditMsg(''), 3000);
+    } catch (err: any) {
+      setAdminEditMsg(err.message || 'Failed to update admin');
+    }
+  }, [editingAdminId, adminEditForm, loadAdmins]);
+
+  const handleDeleteAdmin = useCallback(async (adminId: string) => {
+    if (!window.confirm('Are you sure you want to delete this admin?')) return;
+    try {
+      await deleteAdmin(adminId);
+      await loadAdmins();
+      alert('Admin deleted successfully');
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete admin');
+    }
+  }, [loadAdmins]);
 
   const handleAddStaff = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -505,8 +554,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     if (user && (user.role === 'admin' || user.role === 'staff' || user.role === 'masterAdmin')) {
       loadData();
       loadUsers();
+      if (user.role === 'masterAdmin') {
+        loadAdmins();
+      }
     }
-  }, [user, loadData, loadUsers]);
+  }, [user, loadData, loadUsers, loadAdmins]);
 
   useEffect(() => {
     if (user && user.role === 'masterAdmin' && activeTab === 'logs') {
@@ -588,16 +640,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           </div>
         </div>
       ) : null}
-      {/* Master Admin Panel */}
-      {user && user.role === 'masterAdmin' ? (
+      {/* Admin Panel - for both masterAdmin and admin */}
+      {user && (user.role === 'masterAdmin' || user.role === 'admin') ? (
         <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-4">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-4xl font-serif font-bold text-stone-900 flex items-center gap-3 mb-2">
-                <LayoutDashboard className="text-orange-600" size={32} /> Master Admin Panel
+                <LayoutDashboard className="text-orange-600" size={32} /> {user.role === 'masterAdmin' ? 'Master Admin' : 'Admin'} Panel
               </h1>
-              <p className="text-stone-600">Manage all system resources, staff, analytics, and configurations</p>
+              <p className="text-stone-600">{user.role === 'masterAdmin' ? 'Manage all system resources, staff, analytics, and configurations' : 'Manage staff, orders, menu, and business operations'}</p>
             </div>
 
             {/* Quick Stats Overview */}
@@ -630,44 +682,52 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   {/* Staff Management */}
                   <div>
                     <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Staff</p>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addAdmin' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                      onClick={() => setActiveTab('addAdmin')}
-                    >
-                      👨‍💼 Admins
-                    </button>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addStaff' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                      onClick={() => setActiveTab('addStaff')}
-                    >
-                      👥 Staff
-                    </button>
+                    {user?.role === 'masterAdmin' && (
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addAdmin' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                        onClick={() => setActiveTab('addAdmin')}
+                      >
+                        👨‍💼 Admins
+                      </button>
+                    )}
+                    {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addStaff' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                        onClick={() => setActiveTab('addStaff')}
+                      >
+                        👥 Staff
+                      </button>
+                    )}
                   </div>
 
                   <div className="border-t border-stone-200"></div>
 
                   {/* Customer Management */}
-                  <div>
-                    <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Customers</p>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'customers' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                      onClick={() => setActiveTab('customers')}
-                    >
-                      👤 All Customers
-                    </button>
-                  </div>
+                  {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                    <div>
+                      <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Customers</p>
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'customers' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                        onClick={() => setActiveTab('customers')}
+                      >
+                        👤 All Customers
+                      </button>
+                    </div>
+                  )}
 
                   <div className="border-t border-stone-200"></div>
 
                   {/* Business Management */}
                   <div>
                     <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Business</p>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'menu' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                      onClick={() => setActiveTab('menu')}
-                    >
-                      🍽️ Menu
-                    </button>
+                    {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'menu' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                        onClick={() => setActiveTab('menu')}
+                      >
+                        🍽️ Menu
+                      </button>
+                    )}
                     <button 
                       className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'orders' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
                       onClick={() => setActiveTab('orders')}
@@ -679,60 +739,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   <div className="border-t border-stone-200"></div>
 
                   {/* Reviews & Feedback */}
-                  <div>
-                    <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Feedback</p>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all relative ${activeTab === 'reviews' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                      onClick={() => setActiveTab('reviews')}
-                    >
-                      ⭐ Reviews
-                      {allReviews.filter((r: any) => r.status === 'pending').length > 0 && (
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                          {allReviews.filter((r: any) => r.status === 'pending').length}
-                        </span>
-                      )}
-                    </button>
-                  </div>
+                  {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                    <div>
+                      <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Feedback</p>
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all relative ${activeTab === 'reviews' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                        onClick={() => setActiveTab('reviews')}
+                      >
+                        ⭐ Reviews
+                        {allReviews.filter((r: any) => r.status === 'pending').length > 0 && (
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                            {allReviews.filter((r: any) => r.status === 'pending').length}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Gallery Management */}
-                  <div>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'gallery' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                      onClick={() => setActiveTab('gallery')}
-                    >
-                      🖼️ Gallery
-                    </button>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'newsletter' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                      onClick={() => setActiveTab('newsletter')}
-                    >
-                      📧 Newsletter
-                    </button>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'promos' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                      onClick={() => setActiveTab('promos')}
-                    >
-                      🎟️ Promo Codes
-                    </button>
-                  </div>
+                  {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                    <div>
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'gallery' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                        onClick={() => setActiveTab('gallery')}
+                      >
+                        🖼️ Gallery
+                      </button>
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'newsletter' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                        onClick={() => setActiveTab('newsletter')}
+                      >
+                        📧 Newsletter
+                      </button>
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'promos' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                        onClick={() => setActiveTab('promos')}
+                      >
+                        🎟️ Promo Codes
+                      </button>
+                    </div>
+                  )}
 
                   <div className="border-t border-stone-200"></div>
 
                   {/* Analytics & Monitoring */}
                   <div>
                     <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Insights</p>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'analytics' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                      onClick={() => setActiveTab('analytics')}
-                    >
-                      📊 Analytics
-                    </button>
-                    <button 
-                      className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'logs' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
-                      onClick={() => setActiveTab('logs')}
-                    >
-                      📋 Logs
-                    </button>
+                    {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'analytics' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                        onClick={() => setActiveTab('analytics')}
+                      >
+                        📊 Analytics
+                      </button>
+                    )}
+                    {user?.role === 'masterAdmin' && (
+                      <button 
+                        className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'logs' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                        onClick={() => setActiveTab('logs')}
+                      >
+                        📋 Logs
+                      </button>
+                    )}
                   </div>
 
                   <div className="border-t border-stone-200"></div>
@@ -910,66 +978,89 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           )}
             <div>
               {/* Admin Tab: Add Admin + List Admins */}
-              {activeTab === 'addAdmin' && (
-                <div>
-                  <div className="mb-4 bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                    <h2 className="text-xl font-bold mb-2">Add Admin</h2>
-                    <form onSubmit={e => handleAddAdmin(e)} className="flex flex-wrap gap-4 items-end">
-                      <input required placeholder="Name" className="p-3 rounded border border-stone-200 min-w-[140px]" value={adminForm.name} onChange={e => setAdminForm(f => ({...f, name: e.target.value}))} />
-                      <input required type="email" placeholder="Email" className="p-3 rounded border border-stone-200 min-w-[180px]" value={adminForm.email} onChange={e => setAdminForm(f => ({...f, email: e.target.value}))} />
-                      <input required type="password" placeholder="Password" className="p-3 rounded border border-stone-200 min-w-[180px]" value={adminForm.password} onChange={e => setAdminForm(f => ({...f, password: e.target.value}))} />
-                      <input placeholder="Phone" className="p-3 rounded border border-stone-200 min-w-[140px]" value={adminForm.phone} onChange={e => setAdminForm(f => ({...f, phone: e.target.value}))} />
-                      <button type="submit" className="px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Admin</button>
+              {activeTab === 'addAdmin' && user?.role === 'masterAdmin' && (
+                <div className="space-y-6">
+                  {/* Add Admin Form */}
+                  <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                    <h2 className="text-xl font-bold mb-4">Add New Admin</h2>
+                    <form onSubmit={e => handleAddAdmin(e)} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <input required placeholder="Name" className="p-3 rounded border border-stone-200" value={adminForm.name} onChange={e => setAdminForm(f => ({...f, name: e.target.value}))} />
+                        <input required type="email" placeholder="Email" className="p-3 rounded border border-stone-200" value={adminForm.email} onChange={e => setAdminForm(f => ({...f, email: e.target.value}))} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <input required type="password" placeholder="Password" className="p-3 rounded border border-stone-200" value={adminForm.password} onChange={e => setAdminForm(f => ({...f, password: e.target.value}))} />
+                        <input placeholder="Phone" className="p-3 rounded border border-stone-200" value={adminForm.phone} onChange={e => setAdminForm(f => ({...f, phone: e.target.value}))} />
+                      </div>
+                      <button type="submit" className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Admin</button>
                     </form>
                     {adminMsg && (
-                      <div className="w-full my-2 p-3 rounded-lg font-bold text-center" style={{ background: '#ffeaea', color: '#d32f2f', border: '2px solid #d32f2f' }}>
+                      <div className="w-full my-4 p-3 rounded-lg font-bold text-center bg-green-50 text-green-600 border border-green-300">
                         {adminMsg}
                       </div>
                     )}
                   </div>
-                  <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                    <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
-                      <span>Admins</span>
-                    </h2>
-                    <div className="flex gap-2 mb-4 flex-wrap">
-                      <input
-                        type="text"
-                        className="p-2 border rounded min-w-[160px]"
-                        placeholder="Search name, email, phone..."
-                        value={userSearch}
-                        onChange={e => setUserSearch(e.target.value)}
-                      />
+
+                  {/* Edit Admin Form */}
+                  {editingAdminId && (
+                    <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                      <h2 className="text-xl font-bold mb-4">Edit Admin</h2>
+                      <form onSubmit={e => handleSaveAdmin(e)} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <input required placeholder="Name" className="p-3 rounded border border-stone-200" value={adminEditForm.name} onChange={e => setAdminEditForm(f => ({...f, name: e.target.value}))} />
+                          <input required type="email" placeholder="Email" className="p-3 rounded border border-stone-200" value={adminEditForm.email} onChange={e => setAdminEditForm(f => ({...f, email: e.target.value}))} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <input type="password" placeholder="New Password (optional)" className="p-3 rounded border border-stone-200" value={adminEditForm.password || ''} onChange={e => setAdminEditForm(f => ({...f, password: e.target.value}))} />
+                          <input placeholder="Phone" className="p-3 rounded border border-stone-200" value={adminEditForm.phone} onChange={e => setAdminEditForm(f => ({...f, phone: e.target.value}))} />
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="submit" className="flex-1 px-6 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700">Save Changes</button>
+                          <button type="button" onClick={() => setEditingAdminId(null)} className="flex-1 px-6 py-2 bg-stone-300 text-stone-900 rounded-lg font-bold hover:bg-stone-400">Cancel</button>
+                        </div>
+                      </form>
+                      {adminEditMsg && (
+                        <div className="w-full my-4 p-3 rounded-lg font-bold text-center bg-green-50 text-green-600 border border-green-300">
+                          {adminEditMsg}
+                        </div>
+                      )}
                     </div>
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-stone-100">
-                          <th className="p-2">Name</th>
-                          <th className="p-2">Email</th>
-                          <th className="p-2">Phone</th>
-                          <th className="p-2">Role</th>
-                          <th className="p-2">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users
-                          .filter(u => u.role === 'admin')
-                          .filter(u =>
-                            [u.name, u.email, u.phone].join(' ').toLowerCase().includes(userSearch.toLowerCase())
-                          )
-                          .map((u, idx) => (
-                            <tr key={u.email || idx} className="border-b">
-                              <td className="p-2">{u.name}</td>
-                              <td className="p-2">{u.email}</td>
-                              <td className="p-2">{u.phone || '-'}</td>
-                              <td className="p-2">{u.role}</td>
-                              <td className="p-2">
-                                <button className="text-blue-600 mr-2" onClick={() => handleEditUser(u)}>Edit</button>
-                                <button className="text-red-600" onClick={() => handleDeleteUser(u)}>Delete</button>
-                              </td>
+                  )}
+
+                  {/* Admin List */}
+                  <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                    <h2 className="text-xl font-bold mb-4">All Admins ({allAdmins.length})</h2>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-stone-100 border-b-2">
+                            <th className="p-3">Name</th>
+                            <th className="p-3">Email</th>
+                            <th className="p-3">Phone</th>
+                            <th className="p-3">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {allAdmins.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="p-6 text-center text-stone-500">No admins found</td>
                             </tr>
-                          ))}
-                      </tbody>
-                    </table>
+                          ) : (
+                            allAdmins.map((admin, idx) => (
+                              <tr key={admin._id || idx} className="border-b hover:bg-stone-50">
+                                <td className="p-3 font-bold">{admin.name}</td>
+                                <td className="p-3">{admin.email}</td>
+                                <td className="p-3">{admin.phone || '-'}</td>
+                                <td className="p-3 flex gap-2">
+                                  <button onClick={() => handleEditAdminStart(admin)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-bold">Edit</button>
+                                  <button onClick={() => admin._id && handleDeleteAdmin(admin._id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-bold" disabled={!admin._id}>Delete</button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1441,7 +1532,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           )}
 
                           <div className="flex gap-2">
-                            {review.status === 'pending' && (
+                            {(user?.role === 'masterAdmin' || user?.role === 'admin') && review.status === 'pending' && (
                               <>
                                 <button
                                   onClick={async () => {
@@ -1475,21 +1566,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                 </button>
                               </>
                             )}
-                            <button
-                              onClick={async () => {
-                                try {
-                                  await deleteReview(review._id);
-                                  setAllReviews(allReviews.filter((r: any) => r._id !== review._id));
-                                  setReviewMessage('Review deleted!');
-                                  setTimeout(() => setReviewMessage(''), 3000);
-                                } catch (err: any) {
-                                  alert('Failed to delete review');
-                                }
-                              }}
-                              className="flex items-center gap-1 bg-stone-400 hover:bg-stone-500 text-white px-3 py-2 rounded font-medium text-sm transition-colors ml-auto"
-                            >
-                              🗑️ Delete
-                            </button>
+                            {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await deleteReview(review._id);
+                                    setAllReviews(allReviews.filter((r: any) => r._id !== review._id));
+                                    setReviewMessage('Review deleted!');
+                                    setTimeout(() => setReviewMessage(''), 3000);
+                                  } catch (err: any) {
+                                    alert('Failed to delete review');
+                                  }
+                                }}
+                                className="flex items-center gap-1 bg-stone-400 hover:bg-stone-500 text-white px-3 py-2 rounded font-medium text-sm transition-colors ml-auto"
+                              >
+                                🗑️ Delete
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1794,7 +1887,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             {(newsletterSubscribers || [])
                               .filter((sub: any) => !newsletterSearch || sub.email.toLowerCase().includes(newsletterSearch.toLowerCase()))
                               .map((subscriber: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-stone-50">
+                                <tr key={subscriber.email || idx} className="hover:bg-stone-50">
                                   <td className="px-4 py-3">{subscriber.email}</td>
                                   <td className="px-4 py-3">{subscriber.name || '—'}</td>
                                   <td className="px-4 py-3 text-xs text-stone-600">{new Date(subscriber.subscribedAt).toLocaleDateString()}</td>
@@ -1984,122 +2077,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 </div>
               )}
             </div>
-              </div>
-            </div>
           </div>
         </div>
-      ) : (
-        <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-4">
-          <div className="max-w-5xl mx-auto">
-            <h1 className="text-3xl font-serif font-bold text-stone-900 flex items-center gap-3 mb-8">
-              <LayoutDashboard className="text-orange-600" /> Admin Panel
-            </h1>
-            <div className="mb-8 flex gap-4">
-              <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'menu' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('menu')}>Menu</button>
-              <button className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'orders' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-600'}`} onClick={() => setActiveTab('orders')}>Orders</button>
-            </div>
-            <div>
-              {activeTab === 'menu' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                  <div className="p-6 border-b border-stone-100 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-stone-900">Menu Management</h2>
-                    <button className="bg-stone-900 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-stone-800">
-                      <Plus size={18} /> Add Dish
-                    </button>
-                  </div>
-                  <div className="flex gap-2 mb-4 px-6 pt-4 flex-wrap">
-                    <input
-                      type="text"
-                      className="p-2 border rounded min-w-[160px]"
-                      placeholder="Search dish, category..."
-                      value={menuSearch}
-                      onChange={e => setMenuSearch(e.target.value)}
-                    />
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-stone-200">
-                      <thead className="bg-stone-50">
-                        <tr>
-                          <th className="p-4 text-left font-bold text-stone-700">Dish</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Category</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Price</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Tags</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100 text-sm">
-                        {menuItems.filter(item =>
-                          item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
-                          item.category.toLowerCase().includes(menuSearch.toLowerCase())
-                        ).map(item => (
-                          <tr key={item.id} className="hover:bg-stone-50">
-                            <td className="p-4 font-bold text-stone-900">{item.name}</td>
-                            <td className="p-4 text-stone-600">{item.category}</td>
-                            <td className="p-4 font-bold text-stone-900">${item.price}</td>
-                            <td className="p-4 text-stone-600">{Array.isArray(item.tags) ? item.tags.join(', ') : item.tags}</td>
-                            <td className="p-4 flex gap-2">
-                              <button className="text-blue-600 hover:underline"><Edit2 size={16} /></button>
-                              <button className="text-red-600 hover:underline"><Trash2 size={16} /></button>
-                            </td>
-                          </tr>
-                        ))}
-                        {menuItems.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="p-8 text-center text-stone-500">No menu items found.</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-              {activeTab === 'orders' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-stone-200">
-                      <thead className="bg-stone-50">
-                        <tr>
-                          <th className="p-4 text-left font-bold text-stone-700">Order ID</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Date</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Items</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Total</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100 text-sm">
-                        {orders.map(order => (
-                          <tr key={order.orderId} className="hover:bg-stone-50">
-                            <td className="p-4 font-mono font-bold text-stone-900">#{order.orderId}</td>
-                            <td className="p-4 text-stone-600">{new Date(order.createdAt).toLocaleDateString()} <span className="text-xs text-stone-400">{new Date(order.createdAt).toLocaleTimeString()}</span></td>
-                            <td className="p-4">
-                              <p className="text-stone-900 font-medium truncate max-w-xs">{order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
-                            </td>
-                            <td className="p-4 font-bold text-stone-900">${order.total.toFixed(2)}</td>
-                            <td className="p-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
-                                order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
-                                order.status === 'Confirmed' ? 'bg-red-100 text-red-700' :
-                                'bg-orange-100 text-orange-700'
-                              }`}>
-                                {order.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                        {orders.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="p-8 text-center text-stone-500">No orders found.</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
+      </div>
+      ) : null}
 
       {/* Image Lightbox */}
       {lightboxImage && (

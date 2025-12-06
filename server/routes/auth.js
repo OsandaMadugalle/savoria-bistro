@@ -203,6 +203,9 @@ const seedAccounts = async () => {
     const hashed = await bcrypt.hash(masterPassword, 10);
     await User.create({ name: 'Master Admin', email: 'master@savoria.com', password: hashed, role: 'masterAdmin', phone: '000-000-0000' });
     console.log(`👑 MasterAdmin account created: master@savoria.com / ${masterPassword}`);
+  } else {
+    // Ensure existing master has correct role
+    await User.updateOne({ email: 'master@savoria.com' }, { role: 'masterAdmin' });
   }
 
   const adminExists = await User.findOne({ email: 'admin@savoria.com' });
@@ -211,6 +214,9 @@ const seedAccounts = async () => {
     const hashed = await bcrypt.hash(adminPassword, 10);
     await User.create({ name: 'Admin Owner', email: 'admin@savoria.com', password: hashed, role: 'admin', phone: '000-000-0000' });
     console.log(`👑 Admin account created: admin@savoria.com / ${adminPassword}`);
+  } else {
+    // Ensure existing admin has correct role
+    await User.updateOne({ email: 'admin@savoria.com' }, { role: 'admin' });
   }
 
   const staffExists = await User.findOne({ email: 'staff@savoria.com' });
@@ -219,6 +225,9 @@ const seedAccounts = async () => {
     const hashed = await bcrypt.hash(staffPassword, 10);
     await User.create({ name: 'Kitchen Staff', email: 'staff@savoria.com', password: hashed, role: 'staff', phone: '000-000-0000' });
     console.log(`👨‍🍳 Staff account created: staff@savoria.com / ${staffPassword}`);
+  } else {
+    // Ensure existing staff has correct role
+    await User.updateOne({ email: 'staff@savoria.com' }, { role: 'staff' });
   }
 };
 seedAccounts();
@@ -238,6 +247,51 @@ router.post('/signup', async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.password;
     res.status(201).json(userResponse);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get all admins (masterAdmin only)
+router.get('/admins', requireRole(['masterAdmin'], true), async (req, res) => {
+  try {
+    const admins = await User.find({ role: 'admin' }, '-password');
+    res.json(admins);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Update admin (masterAdmin only)
+router.put('/admins/:id', requireRole(['masterAdmin']), async (req, res) => {
+  try {
+    const { name, email, phone, password } = req.body;
+    const updates = {};
+    
+    if (name) updates.name = name;
+    if (email) updates.email = email;
+    if (phone) updates.phone = phone;
+    if (password && password.trim() !== '') {
+      updates.password = await bcrypt.hash(password, 10);
+    }
+
+    const admin = await User.findByIdAndUpdate(req.params.id, updates, { new: true });
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+
+    const adminResponse = admin.toObject();
+    delete adminResponse.password;
+    res.json(adminResponse);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Delete admin (masterAdmin only)
+router.delete('/admins/:id', requireRole(['masterAdmin']), async (req, res) => {
+  try {
+    const admin = await User.findByIdAndDelete(req.params.id);
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+    res.json({ message: 'Admin deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -82,8 +82,12 @@ export const updateMenuItem = async (id: string, item: Partial<MenuItem>): Promi
   return await res.json();
 };
 
-export const deleteMenuItem = async (id: string): Promise<void> => {
-  const res = await fetch(`${API_URL}/menu/${id}`, { method: 'DELETE' });
+export const deleteMenuItem = async (id: string, requesterEmail?: string): Promise<void> => {
+  const res = await fetch(`${API_URL}/menu/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requesterEmail })
+  });
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
     throw new Error(error.message || 'Failed to delete menu item');
@@ -103,6 +107,37 @@ export const addAdmin = async (adminData: { name: string; email: string; passwor
     throw new Error(err.message || 'Failed to add admin');
   }
   return await res.json();
+};
+
+// Fetch all admins (masterAdmin only)
+export const fetchAllAdmins = async (email?: string): Promise<User[]> => {
+  const url = email ? `${API_URL}/auth/admins?requesterEmail=${encodeURIComponent(email)}` : `${API_URL}/auth/admins`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch admins');
+  return await res.json();
+};
+
+// Update admin (masterAdmin only)
+export const updateAdmin = async (id: string, adminData: Partial<User>): Promise<User> => {
+  const res = await fetch(`${API_URL}/auth/admins/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(adminData)
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Failed to update admin');
+  }
+  return await res.json();
+};
+
+// Delete admin (masterAdmin only)
+export const deleteAdmin = async (id: string): Promise<void> => {
+  const res = await fetch(`${API_URL}/auth/admins/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Failed to delete admin');
+  }
 };
 
 // Add Staff (admin or masterAdmin)
