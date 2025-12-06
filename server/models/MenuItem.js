@@ -10,6 +10,7 @@ const menuItemSchema = new mongoose.Schema({
   cloudinaryId: String,
   tags: [String],
   ingredients: [String],
+  dietary: [String],
   calories: Number,
   prepTime: Number,
   featured: { type: Boolean, default: false }

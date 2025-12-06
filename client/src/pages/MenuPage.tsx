@@ -80,7 +80,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
 
   let filteredItems = menuItems.filter(item => {
     const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
-    const matchesFilters = activeFilters.length === 0 || activeFilters.every(filter => item.tags.includes(filter));
+    const relevantTags = new Set([...(item.tags || []), ...(item.dietary || [])]);
+    const matchesFilters = activeFilters.length === 0 || activeFilters.every(filter => relevantTags.has(filter));
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPrice = item.price >= priceRange[0] && item.price <= priceRange[1];
     return matchesCategory && matchesFilters && matchesSearch && matchesPrice;

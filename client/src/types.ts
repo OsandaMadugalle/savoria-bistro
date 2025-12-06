@@ -8,6 +8,7 @@ export interface MenuItem {
   cloudinaryId?: string;
   tags: string[]; // e.g., 'Vegan', 'Spicy', 'GF'
   ingredients?: string[];
+  dietary?: string[];
   calories?: number;
   prepTime?: number;
   featured?: boolean; // For Chef's Specialties on home page

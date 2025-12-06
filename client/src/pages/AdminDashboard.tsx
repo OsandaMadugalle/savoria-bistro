@@ -8,6 +8,22 @@ import { MenuItem, User, Order } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
 
+const DIETARY_TAGS = ['Vegetarian', 'Vegan', 'GF'];
+
+const getEmptyMenuForm = (): Partial<MenuItem> => ({
+  name: '',
+  description: '',
+  price: 0,
+  category: 'Main',
+  image: '',
+  tags: [],
+  ingredients: [],
+  dietary: [],
+  featured: false,
+  prepTime: 0,
+  calories: 0,
+});
+
 // ===== UTILITY FUNCTIONS =====
 /**
  * Generic CSV export utility
@@ -128,7 +144,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   // ===== STATE: MENU MANAGEMENT =====
   const [showMenuForm, setShowMenuForm] = useState(false);
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
-  const [menuForm, setMenuForm] = useState<Partial<MenuItem>>({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
+  const [menuForm, setMenuForm] = useState<Partial<MenuItem>>(getEmptyMenuForm());
   const [menuImageFile, setMenuImageFile] = useState<File | null>(null);
   const [menuMessage, setMenuMessage] = useState('');
   const [menuError, setMenuError] = useState('');
@@ -136,6 +152,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [menuIngredientsInput, setMenuIngredientsInput] = useState('');
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState('');
+
+  const resetMenuFormState = () => {
+    setMenuForm(getEmptyMenuForm());
+    setMenuTagsInput('');
+    setMenuIngredientsInput('');
+    setMenuImageFile(null);
+  };
+
+  const closeMenuForm = () => {
+    setShowMenuForm(false);
+    setEditingMenuId(null);
+  };
+
+  const toggleDietaryOption = (option: string) => {
+    setMenuForm(prev => {
+      const existing = prev.dietary || [];
+      const next = existing.includes(option)
+        ? existing.filter(tag => tag !== option)
+        : [...existing, option];
+      return { ...prev, dietary: next };
+    });
+  };
 
   // ===== STATE: GALLERY =====
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
@@ -188,9 +226,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
     try {
       const imageData = menuImageFile ? await readFileAsDataUrl(menuImageFile) : undefined;
-      const tags = menuTagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
+      const dietaryTags = menuForm.dietary || [];
+      const inputTags = menuTagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
+      const tags = Array.from(new Set([...dietaryTags, ...inputTags]));
       const ingredients = menuIngredientsInput.split(',').map(item => item.trim()).filter(Boolean);
-      const payload: MenuItemPayload = { ...menuForm, tags, ingredients };
+      const payload: MenuItemPayload = { ...menuForm, tags, ingredients, dietary: dietaryTags };
       if (imageData) payload.imageData = imageData;
 
       if (editingMenuId) {
@@ -205,11 +245,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         const updatedMenu = await fetchMenu();
         setMenuItems(updatedMenu);
       }
-      setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
-      setMenuImageFile(null);
-      setMenuTagsInput('');
-      setMenuIngredientsInput('');
-      setTimeout(() => setShowMenuForm(false), 1500);
+      resetMenuFormState();
+      setTimeout(() => closeMenuForm(), 1500);
     } catch (err: any) {
       showToast(err.message || 'Failed to save dish', 'error');
     }
@@ -228,7 +265,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   };
 
   const handleEditMenu = (item: MenuItem) => {
-    setMenuForm(item);
+    const derivedDietary = item.dietary?.length
+      ? item.dietary
+      : (item.tags || []).filter(tag => DIETARY_TAGS.includes(tag));
+    setMenuForm({ ...item, dietary: derivedDietary });
     setEditingMenuId(item.id);
     setShowMenuForm(true);
     setMenuImageFile(null);
@@ -1279,12 +1319,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           <h3 className="text-2xl font-bold text-stone-900">{editingMenuId ? 'Edit Dish' : 'Add New Dish'}</h3>
                           <button 
                             onClick={() => {
-                              setShowMenuForm(false);
-                              setEditingMenuId(null);
-                              setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
-                              setMenuTagsInput('');
-                              setMenuIngredientsInput('');
-                              setMenuImageFile(null);
+                              resetMenuFormState();
+                              closeMenuForm();
                             }}
                             className="text-stone-400 hover:text-stone-600 text-2xl"
                           >
@@ -1416,6 +1452,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             />
                           </div>
                         </div>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium">Dietary Tags</label>
+                            <span className="text-xs text-stone-400">Tap to toggle</span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {DIETARY_TAGS.map(option => (
+                              <button
+                                type="button"
+                                key={option}
+                                onClick={() => toggleDietaryOption(option)}
+                                className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ${
+                                  menuForm.dietary?.includes(option)
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                    : 'bg-stone-50 border-transparent text-stone-500 hover:bg-stone-100'
+                                }`}
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                         <div className="flex items-center gap-2">
                           <input
                             name="featured"
@@ -1431,12 +1489,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             {editingMenuId ? 'Update Dish' : 'Add Dish'}
                           </button>
                           <button type="button" onClick={() => {
-                            setShowMenuForm(false);
-                            setEditingMenuId(null);
-                            setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
-                            setMenuTagsInput('');
-                            setMenuIngredientsInput('');
-                            setMenuImageFile(null);
+                            resetMenuFormState();
+                            closeMenuForm();
                           }} className="flex-1 bg-stone-300 text-stone-900 px-4 py-2 rounded-lg font-bold hover:bg-stone-400">
                             Cancel
                           </button>
@@ -1449,12 +1503,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     <div className="p-6 border-b border-stone-100 flex justify-between items-center">
                       <h2 className="text-xl font-bold text-stone-900">Menu Management</h2>
                       <button onClick={() => {
-                        setShowMenuForm(!showMenuForm);
+                        if (showMenuForm) {
+                          resetMenuFormState();
+                          closeMenuForm();
+                          return;
+                        }
+                        resetMenuFormState();
                         setEditingMenuId(null);
-                        setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false, prepTime: 0, calories: 0 });
-                        setMenuImageFile(null);
-                        setMenuTagsInput('');
-                        setMenuIngredientsInput('');
+                        setShowMenuForm(true);
                       }} className="bg-stone-900 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-stone-800">
                         <Plus size={18} /> Add Dish
                       </button>
