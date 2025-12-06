@@ -3,6 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
 import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin } from '../services/api';
+import type { MenuItemPayload } from '../services/api';
 import { MenuItem, User, Order } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
@@ -127,9 +128,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   // ===== STATE: MENU MANAGEMENT =====
   const [showMenuForm, setShowMenuForm] = useState(false);
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
-  const [menuForm, setMenuForm] = useState<Partial<MenuItem>>({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+  const [menuForm, setMenuForm] = useState<Partial<MenuItem>>({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+  const [menuImageFile, setMenuImageFile] = useState<File | null>(null);
   const [menuMessage, setMenuMessage] = useState('');
   const [menuError, setMenuError] = useState('');
+  const [menuTagsInput, setMenuTagsInput] = useState('');
+  const [menuIngredientsInput, setMenuIngredientsInput] = useState('');
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState('');
 
@@ -165,6 +169,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   };
 
   // ===== HANDLERS: MENU MANAGEMENT =====
+  const readFileAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Unable to read image file'));
+    reader.readAsDataURL(file);
+  });
+
   const handleMenuSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMenuError('');
@@ -176,21 +187,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     }
 
     try {
+      const imageData = menuImageFile ? await readFileAsDataUrl(menuImageFile) : undefined;
+      const tags = menuTagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
+      const ingredients = menuIngredientsInput.split(',').map(item => item.trim()).filter(Boolean);
+      const payload: MenuItemPayload = { ...menuForm, tags, ingredients };
+      if (imageData) payload.imageData = imageData;
+
       if (editingMenuId) {
-        // Update existing menu item
-        await updateMenuItem(editingMenuId, menuForm, user?.email);
+        await updateMenuItem(editingMenuId, payload, user?.email);
         showToast('Dish updated successfully!', 'success');
         const updatedMenu = await fetchMenu();
         setMenuItems(updatedMenu);
         setEditingMenuId(null);
       } else {
-        // Add new menu item
-        await addMenuItem(menuForm as MenuItem, user?.email);
+        await addMenuItem(payload, user?.email);
         showToast('Dish added successfully!', 'success');
         const updatedMenu = await fetchMenu();
         setMenuItems(updatedMenu);
       }
-      setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+      setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+      setMenuImageFile(null);
+      setMenuTagsInput('');
+      setMenuIngredientsInput('');
       setTimeout(() => setShowMenuForm(false), 1500);
     } catch (err: any) {
       showToast(err.message || 'Failed to save dish', 'error');
@@ -213,6 +231,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     setMenuForm(item);
     setEditingMenuId(item.id);
     setShowMenuForm(true);
+    setMenuImageFile(null);
+    setMenuTagsInput(item.tags?.join(', ') || '');
+    setMenuIngredientsInput(item.ingredients?.join(', ') || '');
   };
 
   // ===== HANDLERS: PROMO MANAGEMENT =====
@@ -1260,7 +1281,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             onClick={() => {
                               setShowMenuForm(false);
                               setEditingMenuId(null);
-                              setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+                              setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+                              setMenuTagsInput('');
+                              setMenuIngredientsInput('');
+                              setMenuImageFile(null);
                             }}
                             className="text-stone-400 hover:text-stone-600 text-2xl"
                           >
@@ -1315,6 +1339,41 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             className="p-2 border rounded"
                           />
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Upload Image (optional)</label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setMenuImageFile(e.target.files?.[0] || null)}
+                            className="w-full p-2 border rounded"
+                          />
+                          {menuImageFile && (
+                            <p className="text-xs text-stone-500 mt-1">Selected: {menuImageFile.name}</p>
+                          )}
+                          <p className="text-xs text-stone-400 mt-1">Select a file to have Cloudinary host the image; the Image URL stays in sync after upload.</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Tags (comma separated)</label>
+                            <input
+                              type="text"
+                              value={menuTagsInput}
+                              onChange={e => setMenuTagsInput(e.target.value)}
+                              placeholder="e.g. Vegetarian, Spicy, Featured"
+                              className="w-full p-2 border rounded"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Key Ingredients (comma separated)</label>
+                            <input
+                              type="text"
+                              value={menuIngredientsInput}
+                              onChange={e => setMenuIngredientsInput(e.target.value)}
+                              placeholder="e.g. basil, lemon zest, ricotta"
+                              className="w-full p-2 border rounded"
+                            />
+                          </div>
+                        </div>
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
@@ -1331,7 +1390,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           <button type="button" onClick={() => {
                             setShowMenuForm(false);
                             setEditingMenuId(null);
-                            setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+                            setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+                            setMenuTagsInput('');
+                            setMenuIngredientsInput('');
+                            setMenuImageFile(null);
                           }} className="flex-1 bg-stone-300 text-stone-900 px-4 py-2 rounded-lg font-bold hover:bg-stone-400">
                             Cancel
                           </button>
@@ -1346,7 +1408,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <button onClick={() => {
                         setShowMenuForm(!showMenuForm);
                         setEditingMenuId(null);
-                        setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], featured: false });
+                        setMenuForm({ name: '', description: '', price: 0, category: 'Main', image: '', tags: [], ingredients: [], featured: false });
+                        setMenuImageFile(null);
+                        setMenuTagsInput('');
+                        setMenuIngredientsInput('');
                       }} className="bg-stone-900 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-stone-800">
                         <Plus size={18} /> Add Dish
                       </button>

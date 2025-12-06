@@ -5,6 +5,7 @@ export interface MenuItem {
   price: number;
   category: 'Starter' | 'Main' | 'Dessert' | 'Drink';
   image: string;
+  cloudinaryId?: string;
   tags: string[]; // e.g., 'Vegan', 'Spicy', 'GF'
   ingredients?: string[];
   calories?: number;

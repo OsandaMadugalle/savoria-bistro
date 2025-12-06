@@ -44,6 +44,10 @@ export const fetchUserProfile = async (email: string): Promise<User> => {
 };
 import { MenuItem, User, Order, ReservationData } from '../types';
 
+export interface MenuItemPayload extends Partial<MenuItem> {
+  imageData?: string;
+}
+
 // Use environment variable for API URL with a default fallback
 const API_URL = 'http://localhost:5000/api';
 
@@ -56,7 +60,7 @@ export const fetchMenu = async (): Promise<MenuItem[]> => {
   return await res.json();
 };
 
-export const addMenuItem = async (item: MenuItem, requesterEmail?: string): Promise<MenuItem> => {
+export const addMenuItem = async (item: MenuItemPayload, requesterEmail?: string): Promise<MenuItem> => {
   const res = await fetch(`${API_URL}/menu`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -69,7 +73,7 @@ export const addMenuItem = async (item: MenuItem, requesterEmail?: string): Prom
   return await res.json();
 };
 
-export const updateMenuItem = async (id: string, item: Partial<MenuItem>, requesterEmail?: string): Promise<MenuItem> => {
+export const updateMenuItem = async (id: string, item: MenuItemPayload, requesterEmail?: string): Promise<MenuItem> => {
   const res = await fetch(`${API_URL}/menu/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

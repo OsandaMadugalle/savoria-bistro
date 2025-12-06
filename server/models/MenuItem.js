@@ -7,6 +7,7 @@ const menuItemSchema = new mongoose.Schema({
   price: Number,
   category: { type: String, enum: ['Starter', 'Main', 'Dessert', 'Drink'] },
   image: String,
+  cloudinaryId: String,
   tags: [String],
   ingredients: [String],
   calories: Number,
