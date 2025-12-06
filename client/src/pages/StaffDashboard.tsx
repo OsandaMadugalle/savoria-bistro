@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchAllOrders, updateOrderStatus, fetchReservations, loginUser } from '../services/api';
 import { Order, ReservationData, User } from '../types';
 import { ChefHat, CheckCircle, Clock, Utensils, Calendar, RefreshCcw, Lock, AlertTriangle } from 'lucide-react';
+import ToastContainer, { Toast, ToastType } from '../components/Toast';
 
 interface StaffDashboardProps {
   user: User | null;
@@ -24,6 +25,16 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const showToast = (message: string, type: ToastType = 'success', duration = 3000) => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type, duration }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -53,11 +64,14 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
       const loggedUser = await loginUser(email, password);
       if (loggedUser.role === 'customer') {
         setLoginError('Access Denied: Staff accounts only.');
+        showToast('Access denied for customer accounts.', 'error');
       } else {
         onLogin(loggedUser);
+        showToast(`Welcome back, ${loggedUser.name}!`, 'success');
       }
     } catch (err) {
       setLoginError('Invalid credentials.');
+      showToast('Invalid credentials.', 'error');
     }
   };
 
@@ -68,8 +82,10 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
     try {
       await updateOrderStatus(orderId, newStatus);
       await loadData(); // Re-fetch to ensure sync
+      showToast(`Order #${orderId} moved to ${newStatus}.`, 'success');
     } catch (err) {
       setStatusError('Failed to update order status. Please try again.');
+      showToast('Failed to update order status. Please try again.', 'error');
       await loadData(); // Revert optimistic update
     }
   };
@@ -92,8 +108,11 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
       // Call the actual API function
       await import('../services/api').then(api => api.updateReservationStatus(reservationId, action));
       await loadData();
+      const verb = action === 'complete' ? 'completed' : 'cancelled';
+      showToast(`Reservation ${verb} successfully.`, 'success');
     } catch (err) {
       setReservationActionError('Failed to update reservation.');
+      showToast('Failed to update reservation.', 'error');
     } finally {
       setReservationActionLoading(null);
     }
@@ -158,6 +177,7 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
   return (
     <div className="min-h-screen bg-stone-100">
       {/* Staff Navbar - Similar to Admin Navbar */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
       <nav className="fixed top-0 left-0 w-full bg-gradient-to-r from-stone-900 to-orange-900 border-b border-orange-700 z-40 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">

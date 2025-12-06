@@ -123,7 +123,7 @@ const App: React.FC = () => {
           </Routes>
         </main>
 
-        {user?.role !== 'staff' && <Footer />}
+        {( !user || (user.role !== 'staff' && user.role !== 'admin' && user.role !== 'masterAdmin') ) && <Footer />}
         <AIChef />
       </div>
     </Router>
