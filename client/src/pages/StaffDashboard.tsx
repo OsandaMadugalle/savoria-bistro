@@ -153,7 +153,50 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
   // --- DASHBOARD ---
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-4 relative">
+    <div className="min-h-screen bg-stone-100">
+      {/* Staff Navbar - Similar to Admin Navbar */}
+      <nav className="fixed top-0 left-0 w-full bg-gradient-to-r from-stone-900 to-orange-900 border-b border-orange-700 z-40 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center shadow-lg">
+                <ChefHat size={28} className="text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-serif font-bold text-white tracking-tight">Staff Portal</h1>
+                <p className="text-xs text-orange-200">Kitchen Management System</p>
+              </div>
+            </div>
+
+            {/* Right Side - User Menu & Logout */}
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3 bg-stone-800 bg-opacity-50 px-4 py-2 rounded-lg border border-orange-700">
+                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-bold text-white">
+                  {user?.name?.charAt(0)?.toUpperCase()}
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-sm font-semibold text-white">{user?.name}</p>
+                  <p className="text-xs text-orange-200 capitalize">{user?.role}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  localStorage.removeItem('userEmail');
+                  window.location.href = '/';
+                }}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold text-sm transition-colors shadow-md"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="pt-24 pb-20 px-4 relative">
       {loading && (
         <div className="absolute inset-0 bg-black/10 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center">
@@ -254,7 +297,7 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
                 </thead>
                 <tbody className="divide-y divide-stone-100">
                   {reservations.map((res) => (
-                    <tr key={res._id || res.id || res.date + res.time} className="hover:bg-stone-50">
+                    <tr key={res._id || res.date + res.time} className="hover:bg-stone-50">
                       <td className="p-4 text-sm font-medium">
                         <div className="flex items-center gap-2">
                           <Calendar size={14} className="text-orange-500" />
@@ -275,17 +318,17 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
                         <div className="flex gap-2">
                           <button
                            className="px-3 py-1 rounded-lg bg-green-600 text-white font-bold text-xs disabled:opacity-50"
-                           disabled={reservationActionLoading === (res._id || res.id) || loading}
-                           onClick={() => handleReservationAction(res._id || res.id, 'complete')}
+                           disabled={reservationActionLoading === res._id || loading}
+                           onClick={() => res._id && handleReservationAction(res._id, 'complete')}
                           >
-                           {reservationActionLoading === (res._id || res.id) ? '...' : 'Mark Completed'}
+                           {reservationActionLoading === res._id ? '...' : 'Mark Completed'}
                           </button>
                           <button
                            className="px-3 py-1 rounded-lg bg-red-600 text-white font-bold text-xs disabled:opacity-50"
-                           disabled={reservationActionLoading === (res._id || res.id) || loading}
-                           onClick={() => handleReservationAction(res._id || res.id, 'cancel')}
+                           disabled={reservationActionLoading === res._id || loading}
+                           onClick={() => res._id && handleReservationAction(res._id, 'cancel')}
                           >
-                           {reservationActionLoading === (res._id || res.id) ? '...' : 'Cancel'}
+                           {reservationActionLoading === res._id ? '...' : 'Cancel'}
                           </button>
                         </div>
                        )}
@@ -302,6 +345,7 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin }) => {
               )}
             </div>
         )}
+      </div>
       </div>
     </div>
   );

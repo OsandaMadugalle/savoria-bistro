@@ -24,7 +24,8 @@ const getSystemInstruction = () => {
 };
 
 export const initializeChat = (): Chat => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || '';
+  const ai = new GoogleGenAI({ apiKey });
   
   chatSession = ai.chats.create({
     model: 'gemini-2.5-flash',

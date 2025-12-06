@@ -92,7 +92,9 @@ const App: React.FC = () => {
     <Router>
       <ScrollToTop />
       <div className="flex flex-col min-h-screen">
-        <Navbar cart={cart} user={user} onLogin={handleLogin} onLogout={handleLogout} isLoginModalOpen={isLoginModalOpen} setIsLoginModalOpen={setIsLoginModalOpen} authMode={authMode} setAuthMode={setAuthMode} />
+        {user?.role !== 'staff' && (
+          <Navbar cart={cart} user={user} onLogin={handleLogin} onLogout={handleLogout} isLoginModalOpen={isLoginModalOpen} setIsLoginModalOpen={setIsLoginModalOpen} authMode={authMode} setAuthMode={setAuthMode} />
+        )}
         
         <main className="flex-grow">
           <Routes>
@@ -121,7 +123,7 @@ const App: React.FC = () => {
           </Routes>
         </main>
 
-        <Footer />
+        {user?.role !== 'staff' && <Footer />}
         <AIChef />
       </div>
     </Router>

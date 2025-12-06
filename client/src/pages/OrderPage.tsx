@@ -122,7 +122,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
         <div className="md:col-span-2 space-y-4">
           <h1 className="text-2xl font-bold text-stone-900 mb-6">Your Order</h1>
           {cart.map(item => (
-            <div key={item._id || item.id || item.name} className="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex gap-4 items-center">
+            <div key={item.id || item.name} className="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex gap-4 items-center">
               <img src={item.image} alt={item.name} className="w-20 h-20 rounded-lg object-cover bg-stone-200" />
               <div className="flex-1">
                 <div className="flex justify-between mb-1">
