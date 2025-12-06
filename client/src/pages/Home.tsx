@@ -258,27 +258,9 @@ const Home: React.FC = () => {
                 </div>
               ))
             ) : (
-              // Fallback demo dishes if no featured items
-              [
-                { name: 'Pan-Seared Salmon', desc: 'With lemon butter and roasted vegetables', img: 'https://picsum.photos/400/300?random=1', price: 28 },
-                { name: 'Beef Wellington', desc: 'Tender filet wrapped in mushroom duxelles', img: 'https://picsum.photos/400/300?random=2', price: 35 },
-                { name: 'Truffle Risotto', desc: 'Creamy arborio rice with black truffle shavings', img: 'https://picsum.photos/400/300?random=3', price: 24 },
-              ].map((dish, idx) => (
-                <div key={idx} className="group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2">
-                  <div className="relative h-64 overflow-hidden">
-                    <img src={dish.img} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
-                  </div>
-                  <div className="p-6 bg-stone-50 group-hover:bg-orange-50 transition-colors">
-                    <h4 className="text-xl font-serif font-bold text-stone-900 mb-2">{dish.name}</h4>
-                    <p className="text-stone-600 text-sm mb-2">{dish.desc}</p>
-                    <p className="text-orange-600 font-bold mb-4">${dish.price.toFixed(2)}</p>
-                    <NavLink to="/menu" className="text-orange-600 font-semibold text-sm hover:text-orange-700 flex items-center gap-1">
-                      Order Now <ChevronRight size={14} />
-                    </NavLink>
-                  </div>
-                </div>
-              ))
+              <div className="md:col-span-3 rounded-2xl border border-stone-200 bg-stone-50 p-8 text-center text-stone-500">
+                <p className="text-lg font-medium">Chef's specialties will be added soon—check back later!</p>
+              </div>
             )}
           </div>
         </div>
