@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Star, MessageSquare, AlertCircle, Loader2, Calendar, Upload, X, Mail, Lock } from 'lucide-react';
+import { Star, MessageSquare, AlertCircle, Loader2, Calendar, Upload, X } from 'lucide-react';
 import { fetchApprovedReviews, submitReview, Review } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { User } from '../types';
 
 interface ReviewsPageProps {
   user: User | null;
+  onOpenSignIn?: () => void;
 }
 
-const ReviewsPage: React.FC<ReviewsPageProps> = ({ user }) => {
+const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
   const navigate = useNavigate();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [showSignInModal, setShowSignInModal] = useState(false);
-  const [showSignInFormModal, setShowSignInFormModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -27,9 +26,6 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user }) => {
   const [success, setSuccess] = useState('');
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'highest' | 'lowest'>('newest');
-  const [signInEmail, setSignInEmail] = useState('');
-  const [signInPassword, setSignInPassword] = useState('');
-  const [signInError, setSignInError] = useState('');
 
   useEffect(() => {
     loadReviews();
@@ -127,31 +123,6 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user }) => {
     }
   };
 
-  const handleSignInSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSignInError('');
-
-    // Basic client-side validation
-    if (!signInEmail.trim() || !signInPassword.trim()) {
-      setSignInError('Please enter both email and password');
-      return;
-    }
-
-    try {
-      // Here you would usually dispatch a sign-in action or call an API
-      console.log('Sign In:', { email: signInEmail, password: signInPassword });
-
-      // Simulate successful sign-in
-      setShowSignInFormModal(false);
-      setShowSignInModal(false);
-      setSuccess('Successfully signed in!');
-      setTimeout(() => setSuccess(''), 5000);
-    } catch (err: any) {
-      setSignInError('Failed to sign in. Please check your credentials and try again.');
-      console.error(err);
-    }
-  };
-
   const avgRating = reviews.length > 0
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
     : '0.0';
@@ -240,7 +211,7 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user }) => {
             <button 
               onClick={() => {
                 if (!user) {
-                  setShowSignInModal(true);
+                  onOpenSignIn?.();
                 } else {
                   setIsFormOpen(!isFormOpen);
                 }
@@ -453,86 +424,7 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user }) => {
           </div>
         )}
 
-        {/* Sign In Modal */}
-        {showSignInModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={() => setShowSignInModal(false)}>
-            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8 relative animate-in fade-in" onClick={e => e.stopPropagation()}>
-              <button
-                onClick={() => setShowSignInModal(false)}
-                className="absolute top-3 right-3 text-stone-400 hover:text-orange-500 transition-colors"
-              >
-                <X size={28} />
-              </button>
-              <h2 className="text-2xl font-bold mb-4 text-stone-900 text-center">Sign In Required</h2>
-              <p className="text-stone-600 mb-6 text-center">You must be signed in to write a review.</p>
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => { setShowSignInModal(false); setShowSignInFormModal(true); }}
-                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition-colors w-full"
-                >
-                  Go to Sign In
-                </button>
-                <button
-                  onClick={() => setShowSignInModal(false)}
-                  className="bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold py-2 rounded-lg transition-colors w-full"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Sign In Form Modal */}
-        {showSignInFormModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={() => setShowSignInFormModal(false)}>
-            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8 relative animate-in fade-in" onClick={e => e.stopPropagation()}>
-              <button
-                onClick={() => setShowSignInFormModal(false)}
-                className="absolute top-3 right-3 text-stone-400 hover:text-orange-500 transition-colors"
-              >
-                <X size={28} />
-              </button>
-              <h2 className="text-2xl font-bold mb-4 text-stone-900 text-center">Sign In</h2>
-              <form className="flex flex-col gap-4" onSubmit={handleSignInSubmit}>
-                <div>
-                  <label className="block text-sm font-bold text-stone-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={signInEmail}
-                    onChange={e => setSignInEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-stone-700 mb-1">Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={signInPassword}
-                    onChange={e => setSignInPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border border-stone-200 focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-                {signInError && <div className="text-red-600 text-sm">{signInError}</div>}
-                <button
-                  type="submit"
-                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition-colors w-full"
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowSignInFormModal(false)}
-                  className="bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold py-2 rounded-lg transition-colors w-full"
-                >
-                  Cancel
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

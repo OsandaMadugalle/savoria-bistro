@@ -56,6 +56,8 @@ const ProtectedAdminRoute: React.FC<{ element: React.ReactElement; user: User | 
 const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<User | null>(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   const addToCart = (item: MenuItem) => {
     setCart(prev => {
@@ -90,7 +92,7 @@ const App: React.FC = () => {
     <Router>
       <ScrollToTop />
       <div className="flex flex-col min-h-screen">
-        <Navbar cart={cart} user={user} onLogin={handleLogin} onLogout={handleLogout} />
+        <Navbar cart={cart} user={user} onLogin={handleLogin} onLogout={handleLogout} isLoginModalOpen={isLoginModalOpen} setIsLoginModalOpen={setIsLoginModalOpen} authMode={authMode} setAuthMode={setAuthMode} />
         
         <main className="flex-grow">
           <Routes>
@@ -98,7 +100,7 @@ const App: React.FC = () => {
             <Route path="/menu" element={<MenuPage addToCart={addToCart} />} />
             <Route path="/gallery" element={<GalleryPage user={user} />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/reviews" element={<ReviewsPage user={user} />} />
+            <Route path="/reviews" element={<ReviewsPage user={user} onOpenSignIn={() => { setAuthMode('signin'); setIsLoginModalOpen(true); }} />} />
             
             {/* Customer-only routes - staff/admin/masterAdmin redirected to /admin */}
             <Route path="/reservation" element={<ProtectedCustomerRoute element={<ReservationPage user={user} />} user={user} />} />

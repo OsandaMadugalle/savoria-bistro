@@ -20,11 +20,21 @@ interface NavbarProps {
   user: User | null;
   onLogin: (user: User) => void;
   onLogout: () => void;
+  isLoginModalOpen?: boolean;
+  setIsLoginModalOpen?: (value: boolean) => void;
+  authMode?: 'signin' | 'signup';
+  setAuthMode?: (mode: 'signin' | 'signup') => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout }) => {
-  // Auth Modal State
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, isLoginModalOpen: externalIsLoginModalOpen, setIsLoginModalOpen: externalSetIsLoginModalOpen, authMode: externalAuthMode, setAuthMode: externalSetAuthMode }) => {
+  // Auth Modal State - use external state if provided, otherwise use internal
+  const [internalIsLoginModalOpen, setInternalIsLoginModalOpen] = useState(false);
+  const isLoginModalOpen = externalIsLoginModalOpen !== undefined ? externalIsLoginModalOpen : internalIsLoginModalOpen;
+  const setIsLoginModalOpen = externalSetIsLoginModalOpen || setInternalIsLoginModalOpen;
+  
+  const [internalAuthMode, setInternalAuthMode] = useState<'signin' | 'signup'>('signin');
+  const authMode = externalAuthMode !== undefined ? externalAuthMode : internalAuthMode;
+  const setAuthMode = externalSetAuthMode || setInternalAuthMode;
 
   // Prevent background scroll when modal is open
   useEffect(() => {
@@ -38,7 +48,6 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout })
       document.body.classList.remove('overflow-hidden');
     };
   }, [isLoginModalOpen]);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   
   // Login Form State
   const [loginEmail, setLoginEmail] = useState('');
