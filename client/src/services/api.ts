@@ -178,7 +178,7 @@ export const registerUser = async (userData: any): Promise<User> => {
 };
 
 // --- ORDER API ---
-export const createOrder = async (order: any): Promise<{ orderId: string }> => {
+export const createOrder = async (order: any): Promise<{ orderId: string; pointsEarned: number; userTier: string; message: string }> => {
   const res = await fetch(`${API_URL}/orders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -186,7 +186,12 @@ export const createOrder = async (order: any): Promise<{ orderId: string }> => {
   });
   if (!res.ok) throw new Error('Order failed');
   const data = await res.json();
-  return { orderId: data.orderId || data._id };
+  return { 
+    orderId: data.orderId || data._id,
+    pointsEarned: data.pointsEarned || 0,
+    userTier: data.userTier || 'Bronze',
+    message: data.message || 'Order placed'
+  };
 };
 
 export const fetchAllOrders = async (): Promise<Order[]> => {
@@ -203,6 +208,17 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
   });
+};
+
+export const fetchUserLoyalty = async (userId: string): Promise<{ loyaltyPoints: number; tier: string; pointsToNextTier: number; nextTier: string }> => {
+  try {
+    const res = await fetch(`${API_URL}/orders/loyalty/${userId}`);
+    if (!res.ok) throw new Error('Failed to fetch loyalty info');
+    return await res.json();
+  } catch (e) {
+    console.error('Loyalty fetch error:', e);
+    return { loyaltyPoints: 0, tier: 'Bronze', pointsToNextTier: 500, nextTier: 'Silver' };
+  }
 };
 
 // --- RESERVATION API ---

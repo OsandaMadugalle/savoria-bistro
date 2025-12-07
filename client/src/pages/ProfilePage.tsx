@@ -38,7 +38,7 @@ const ProfilePage: React.FC = () => {
    const [eventInquiries, setEventInquiries] = useState<PrivateEventInquiry[]>([]);
    const [eventsLoading, setEventsLoading] = useState(true);
    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews' | 'events'>('orders');
+   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews' | 'events' | 'loyalty'>('orders');
    const navigate = useNavigate();
 
    useEffect(() => {
@@ -231,7 +231,16 @@ const ProfilePage: React.FC = () => {
                    <div className="flex justify-between items-start mb-8">
                       <div>
                          <p className="text-xs uppercase tracking-widest text-stone-400">Status</p>
-                         <p className="text-2xl font-serif font-bold text-yellow-500">{user.tier} Member</p>
+                         <div className="flex items-center gap-2">
+                            <p className="text-2xl font-serif font-bold text-yellow-500">{user.tier} Member</p>
+                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                              user.tier === 'Gold' ? 'bg-yellow-600' : 
+                              user.tier === 'Silver' ? 'bg-gray-400' : 
+                              'bg-amber-600'
+                            }`}>
+                              {user.tier === 'Gold' ? '⭐' : user.tier === 'Silver' ? '✨' : '🔥'} {user.tier}
+                            </span>
+                         </div>
                       </div>
                       <ChefHat className="text-stone-500" />
                    </div>
@@ -243,13 +252,39 @@ const ProfilePage: React.FC = () => {
                    
                    {/* Progress Bar */}
                    <div className="w-full h-2 bg-stone-700 rounded-full mb-4 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400" style={{ width: `${progress}%` }}></div>
+                      <div className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400" style={{ width: `${Math.min(progress, 100)}%` }}></div>
                    </div>
                    
-                   <p className="text-xs text-stone-400 flex items-center gap-1">
+                   <p className="text-xs text-stone-400 flex items-center gap-1 mb-4">
                       <Gift size={12} className="text-yellow-500" />
-                      {nextRewardPoints - user.loyaltyPoints} points until Free Dessert!
+                      {Math.max(0, nextRewardPoints - user.loyaltyPoints)} points until next reward!
                    </p>
+
+                   {/* Tier Benefits */}
+                   <div className="border-t border-stone-700 pt-3 mt-3">
+                      <p className="text-xs font-bold uppercase text-stone-300 mb-2">Your Benefits</p>
+                      <div className="space-y-1 text-xs text-stone-300">
+                        {user.tier === 'Gold' ? (
+                          <>
+                            <p>✓ Free dessert on special occasions</p>
+                            <p>✓ 20% discount on all orders</p>
+                            <p>✓ Priority reservations</p>
+                          </>
+                        ) : user.tier === 'Silver' ? (
+                          <>
+                            <p>✓ Free dessert at 1000 points</p>
+                            <p>✓ 10% discount on all orders</p>
+                            <p>✓ Early access to events</p>
+                          </>
+                        ) : (
+                          <>
+                            <p>✓ Earn points on every order</p>
+                            <p>✓ Unlock rewards at 1000 points</p>
+                            <p>✓ Exclusive offers via email</p>
+                          </>
+                        )}
+                      </div>
+                   </div>
                 </div>
              </div>
 
@@ -381,13 +416,13 @@ const ProfilePage: React.FC = () => {
                   <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
                      <div className="p-6 border-b border-stone-100">
                         <div className="flex flex-wrap gap-2">
-                           {['orders', 'reservations', 'reviews', 'events'].map(tab => (
+                           {['loyalty', 'orders', 'reservations', 'reviews', 'events'].map(tab => (
                               <button
                                  key={tab}
                                  onClick={() => setProfileTab(tab as typeof profileTab)}
                                  className={`px-4 py-2 rounded-2xl font-bold text-sm transition-all ${profileTab === tab ? 'bg-orange-600 text-white shadow-lg' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
                               >
-                                 {tab === 'orders' ? 'Recent Orders' : tab === 'reservations' ? 'My Reservations' : tab === 'reviews' ? 'My Reviews' : 'Private Events'}
+                                 {tab === 'loyalty' ? '🏅 Loyalty Dashboard' : tab === 'orders' ? 'Recent Orders' : tab === 'reservations' ? 'My Reservations' : tab === 'reviews' ? 'My Reviews' : 'Private Events'}
                               </button>
                            ))}
                         </div>
@@ -563,6 +598,111 @@ const ProfilePage: React.FC = () => {
                                     </div>
                                  ))
                               )}
+                           </div>
+                        )}
+
+                        {/* Loyalty Dashboard Tab */}
+                        {profileTab === 'loyalty' && user && (
+                           <div className="p-6 space-y-6">
+                              {/* Tier Overview */}
+                              <div className="grid md:grid-cols-3 gap-4">
+                                 <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-2xl border-2 border-amber-300">
+                                    <p className="text-xs font-bold text-amber-700 uppercase mb-1">Bronze Tier</p>
+                                    <p className="text-2xl font-bold text-amber-900">0</p>
+                                    <p className="text-xs text-amber-700 mt-1">Entry Level</p>
+                                 </div>
+                                 <div className={`bg-gradient-to-br p-4 rounded-2xl border-2 transition-all ${user.tier === 'Silver' || (user.loyaltyPoints >= 500 && user.tier !== 'Gold') ? 'from-gray-100 to-gray-200 border-gray-400' : 'from-stone-50 to-stone-100 border-stone-300 opacity-60'}`}>
+                                    <p className={`text-xs font-bold uppercase mb-1 ${user.tier === 'Silver' ? 'text-gray-700' : 'text-stone-600'}`}>Silver Tier</p>
+                                    <p className={`text-2xl font-bold ${user.tier === 'Silver' ? 'text-gray-900' : 'text-stone-700'}`}>500+</p>
+                                    <p className={`text-xs mt-1 ${user.tier === 'Silver' ? 'text-gray-700' : 'text-stone-600'}`}>Premium Member</p>
+                                 </div>
+                                 <div className={`bg-gradient-to-br p-4 rounded-2xl border-2 transition-all ${user.tier === 'Gold' ? 'from-yellow-100 to-yellow-200 border-yellow-400' : 'from-stone-50 to-stone-100 border-stone-300 opacity-60'}`}>
+                                    <p className={`text-xs font-bold uppercase mb-1 ${user.tier === 'Gold' ? 'text-yellow-700' : 'text-stone-600'}`}>Gold Tier</p>
+                                    <p className={`text-2xl font-bold ${user.tier === 'Gold' ? 'text-yellow-900' : 'text-stone-700'}`}>1500+</p>
+                                    <p className={`text-xs mt-1 ${user.tier === 'Gold' ? 'text-yellow-700' : 'text-stone-600'}`}>VIP Member</p>
+                                 </div>
+                              </div>
+
+                              {/* Current Status */}
+                              <div className="bg-orange-50 p-6 rounded-2xl border-2 border-orange-300">
+                                 <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                       <p className="text-sm text-orange-700 font-semibold">Current Status</p>
+                                       <p className="text-3xl font-bold text-orange-900 mt-1">{user.loyaltyPoints.toLocaleString()} Points</p>
+                                    </div>
+                                    <div className={`text-5xl ${user.tier === 'Gold' ? '⭐' : user.tier === 'Silver' ? '✨' : '🔥'}`}></div>
+                                 </div>
+                                 <p className="text-sm text-orange-700">{user.tier} Member • Member since {user.memberSince || new Date().getFullYear()}</p>
+                              </div>
+
+                              {/* Progress to Next Tier */}
+                              {user.tier !== 'Gold' && (
+                                 <div className="bg-white p-6 rounded-2xl border-2 border-orange-200">
+                                    <p className="text-sm font-bold text-stone-900 mb-3">Progress to {user.tier === 'Silver' ? 'Gold' : 'Silver'} Tier</p>
+                                    <div className="space-y-2">
+                                       <div className="flex justify-between text-xs text-stone-600">
+                                          <span>{user.loyaltyPoints} points</span>
+                                          <span>{user.tier === 'Silver' ? '1500' : '500'} points</span>
+                                       </div>
+                                       <div className="w-full h-3 bg-stone-200 rounded-full overflow-hidden">
+                                          <div 
+                                             className="h-full bg-gradient-to-r from-orange-500 to-orange-600 transition-all duration-500"
+                                             style={{ 
+                                                width: `${user.tier === 'Silver' 
+                                                   ? Math.min((user.loyaltyPoints / 1500) * 100, 100)
+                                                   : Math.min((user.loyaltyPoints / 500) * 100, 100)
+                                                }%`
+                                             }}
+                                          ></div>
+                                       </div>
+                                       <p className="text-xs text-orange-700 font-semibold">
+                                          {user.tier === 'Silver' 
+                                             ? `${1500 - user.loyaltyPoints} points until Gold`
+                                             : `${500 - user.loyaltyPoints} points until Silver`
+                                          }
+                                       </p>
+                                    </div>
+                                 </div>
+                              )}
+
+                              {/* Tier Benefits */}
+                              <div className="space-y-3">
+                                 <h4 className="font-bold text-stone-900 text-lg">Your Benefits</h4>
+                                 <div className="grid md:grid-cols-2 gap-4">
+                                    <div className={`p-4 rounded-xl border-2 ${user.tier === 'Gold' || user.loyaltyPoints >= 500 ? 'border-orange-400 bg-orange-50' : 'border-stone-300 bg-stone-50'}`}>
+                                       <p className={`font-bold text-sm mb-2 ${user.tier === 'Gold' || user.loyaltyPoints >= 500 ? 'text-orange-700' : 'text-stone-600'}`}>💰 10% Discount</p>
+                                       <p className={`text-xs ${user.tier === 'Gold' || user.loyaltyPoints >= 500 ? 'text-orange-600' : 'text-stone-600'}`}>Available at Silver tier and above</p>
+                                    </div>
+                                    <div className={`p-4 rounded-xl border-2 ${user.tier === 'Silver' ? 'border-gray-400 bg-gray-50' : user.tier === 'Gold' ? 'border-yellow-400 bg-yellow-50' : 'border-stone-300 bg-stone-50'}`}>
+                                       <p className={`font-bold text-sm mb-2 ${user.tier === 'Silver' ? 'text-gray-700' : user.tier === 'Gold' ? 'text-yellow-700' : 'text-stone-600'}`}>🎂 Free Dessert</p>
+                                       <p className={`text-xs ${user.tier === 'Silver' ? 'text-gray-600' : user.tier === 'Gold' ? 'text-yellow-600' : 'text-stone-600'}`}>Unlock at {user.tier === 'Gold' ? 'Gold tier (current!)' : user.tier === 'Silver' ? 'Silver tier (current!)' : '1000 points'}</p>
+                                    </div>
+                                    <div className={`p-4 rounded-xl border-2 ${user.tier === 'Gold' ? 'border-yellow-400 bg-yellow-50' : 'border-stone-300 bg-stone-50'}`}>
+                                       <p className={`font-bold text-sm mb-2 ${user.tier === 'Gold' ? 'text-yellow-700' : 'text-stone-600'}`}>🏅 Priority Support</p>
+                                       <p className={`text-xs ${user.tier === 'Gold' ? 'text-yellow-600' : 'text-stone-600'}`}>Available at Gold tier{user.tier === 'Gold' ? ' (current!)' : ''}</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border-2 border-orange-400 bg-orange-50">
+                                       <p className="font-bold text-sm mb-2 text-orange-700">⭐ Earn Points</p>
+                                       <p className="text-xs text-orange-600">10 points per $1 spent on all orders</p>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Quick Stats */}
+                              <div className="grid md:grid-cols-3 gap-4 bg-stone-50 p-4 rounded-2xl">
+                                 <div className="text-center">
+                                    <p className="text-2xl font-bold text-orange-600">{orders.length}</p>
+                                    <p className="text-xs text-stone-600 mt-1">Total Orders</p>
+                                 </div>
+                                 <div className="text-center">
+                                    <p className="text-2xl font-bold text-orange-600">${orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(0)}</p>
+                                    <p className="text-xs text-stone-600 mt-1">Total Spent</p>
+                                 </div>
+                                 <div className="text-center">
+                                    <p className="text-2xl font-bold text-orange-600">{(orders.reduce((sum, o) => sum + (o.total || 0), 0) * 10).toFixed(0)}</p>
+                                    <p className="text-xs text-stone-600 mt-1">Points Earned</p>
+                                 </div>
+                              </div>
                            </div>
                         )}
                      </div>

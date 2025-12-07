@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { ShoppingBag, Minus, Plus, Trash2, Trophy, Check } from 'lucide-react';
 import { CartItem, User } from '../types';
 import { createOrder } from '../services/api';
+import { notificationService } from '../services/notificationService';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -34,9 +35,22 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
     'SAVE10': 10,
   };
 
+  // Tier-based discounts
+  const getTierDiscount = () => {
+    if (!user) return 0;
+    if (user.tier === 'Gold') return 20; // 20% discount for Gold
+    if (user.tier === 'Silver') return 10; // 10% discount for Silver
+    return 0; // No discount for Bronze
+  };
+
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const discount = appliedCode ? (total * (VALID_PROMOS[appliedCode] / 100)) : 0;
-  const finalTotal = total - discount;
+  const tierDiscount = (total * getTierDiscount()) / 100;
+  const promoDiscount = appliedCode ? (total * (VALID_PROMOS[appliedCode] / 100)) : 0;
+  
+  // Use tier discount if available and better than promo code, otherwise use promo code
+  const discount = Math.max(tierDiscount, promoDiscount);
+  const discountSource = tierDiscount > promoDiscount ? `${user?.tier} Tier (${getTierDiscount()}%)` : appliedCode || 'None';
+  const finalTotal = Math.max(0, total - discount);
 
   const fetchClientSecret = useCallback(async () => {
     if (!user || finalTotal <= 0) return;
@@ -160,6 +174,17 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
       }
 
       try {
+        // Verify payment status before creating order
+        const verifyRes = await fetch(`${API_BASE}/payments/verify-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentIntentId: result.paymentIntent.id })
+        });
+        
+        if (!verifyRes.ok) {
+          throw new Error('Payment verification failed');
+        }
+
         const orderData = {
           userId: user.id,
           items: cart.map(i => ({ itemId: i.id, name: i.name, quantity: i.quantity, price: i.price })),
@@ -167,13 +192,28 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
           discountCode: appliedCode,
           originalTotal: total,
           paymentIntentId: result.paymentIntent.id,
+          requesterEmail: user.email,
         };
-        const { orderId } = await createOrder(orderData);
+        const response = await createOrder(orderData);
+        const { orderId, pointsEarned, userTier, message } = response;
         clearCart();
         handleClosePayment();
+        
+        // Send notification for order placement
+        if (user?.email) {
+          notificationService.init(user.email);
+          notificationService.notifyOrderPlaced(orderId, finalTotal, pointsEarned || 0, userTier || 'Bronze');
+        }
+        
+        // Show success with loyalty points feedback
+        const loyaltyMsg = pointsEarned ? ` | Earned ${pointsEarned} loyalty points (Tier: ${userTier})` : '';
+        console.log(`Order placed successfully: ${orderId}${loyaltyMsg}`);
+        
         navigate(`/tracker?demo=true&orderId=${orderId}`);
       } catch (err) {
-        setCardError('Order finalization failed.');
+        const errorMsg = err instanceof Error ? err.message : 'Order finalization failed';
+        setCardError(errorMsg);
+        console.error('Order creation error:', err);
       } finally {
         setIsSubmitting(false);
       }
@@ -310,9 +350,16 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
                 <span className="text-sm text-stone-600">Subtotal</span>
                 <span className="font-semibold text-stone-900">${total.toFixed(2)}</span>
               </div>
-              {appliedCode && (
-                <div className="flex justify-between items-center text-green-600">
-                  <span className="text-sm font-medium">Discount ({VALID_PROMOS[appliedCode]}%)</span>
+              {discount > 0 && (
+                <div className={`flex justify-between items-center ${tierDiscount > promoDiscount ? 'text-blue-600' : 'text-green-600'}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      Discount {tierDiscount > promoDiscount ? `(${user?.tier} Tier ${getTierDiscount()}%)` : `(${appliedCode})`}
+                    </span>
+                    {tierDiscount > promoDiscount && (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-bold">Tier Benefit</span>
+                    )}
+                  </div>
                   <span className="font-bold">-${discount.toFixed(2)}</span>
                 </div>
               )}
@@ -323,7 +370,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
                 <span className="font-bold text-stone-900">Total</span>
                 <span className="text-2xl font-bold text-orange-600">${finalTotal.toFixed(2)}</span>
               </div>
-              {appliedCode && (
+              {discount > 0 && (
                 <p className="text-xs text-orange-700">You're saving ${discount.toFixed(2)}!</p>
               )}
             </div>
@@ -331,9 +378,17 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
             {paymentError && <p className="text-sm text-red-600">{paymentError}</p>}
 
             {user && (
-              <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg flex items-start gap-2 border border-yellow-200">
-                <Trophy size={14} className="mt-0.5 flex-shrink-0" />
-                <span><span className="font-bold">{Math.floor(finalTotal * 10)}</span> reward points earned</span>
+              <div className="space-y-2">
+                <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg flex items-start gap-2 border border-yellow-200">
+                  <Trophy size={14} className="mt-0.5 flex-shrink-0" />
+                  <span><span className="font-bold">{Math.floor(finalTotal * 10)}</span> reward points earned</span>
+                </div>
+                {getTierDiscount() > 0 && (
+                  <div className={`text-xs p-3 rounded-lg flex items-start gap-2 border ${getTierDiscount() === 20 ? 'bg-yellow-50 text-yellow-800 border-yellow-200' : 'bg-gray-50 text-gray-800 border-gray-200'}`}>
+                    <span className={getTierDiscount() === 20 ? '⭐' : '✨'} className="mt-0.5 flex-shrink-0" />
+                    <span><span className="font-bold">{user.tier}</span> Member: {getTierDiscount()}% discount applied!</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -364,11 +419,11 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
         </div>
       </div>
       {showPaymentModal && publishableKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl animate-in fade-in scale-in-95">
             <button
               onClick={handleClosePayment}
-              className="absolute right-4 top-4 text-stone-500 hover:text-stone-700"
+              className="absolute right-4 top-4 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-full p-1 transition-colors"
               aria-label="Close payment modal"
             >
               ✕
