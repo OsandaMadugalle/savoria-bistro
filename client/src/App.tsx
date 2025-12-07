@@ -101,7 +101,7 @@ const App: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<MenuPage addToCart={addToCart} />} />
             <Route path="/gallery" element={<GalleryPage user={user} />} />
-            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/contact" element={<ContactPage user={user} />} />
             <Route path="/reviews" element={<ReviewsPage user={user} onOpenSignIn={() => { setAuthMode('signin'); setIsLoginModalOpen(true); }} />} />
             
             {/* Customer-only routes - staff/admin/masterAdmin redirected to /admin */}

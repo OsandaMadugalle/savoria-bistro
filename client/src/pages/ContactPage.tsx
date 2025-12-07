@@ -1,28 +1,94 @@
-import React, { useState } from 'react';
-import { Phone, Mail, MapPin, Calendar, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, Mail, MapPin, Calendar, CheckCircle, User as UserIcon } from 'lucide-react';
 import { submitPrivateEventInquiry } from '../services/api';
+import { User } from '../types';
 
-const ContactPage: React.FC = () => {
-  const initialFormState = {
-    name: '',
-    email: '',
-    phone: '',
-    eventType: 'wedding',
-    guestCount: '',
-    eventDate: '',
-    message: ''
-  };
-  const [formData, setFormData] = useState(initialFormState);
+interface ContactPageProps {
+  user: User | null;
+}
+
+const buildInitialFormState = (user: User | null) => ({
+  name: user?.name || '',
+  email: user?.email || '',
+  phone: user?.phone || '',
+  eventType: 'wedding',
+  guestCount: '',
+  eventDate: '',
+  message: ''
+});
+
+const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
+  const [formData, setFormData] = useState(buildInitialFormState(user));
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const todayDateString = new Date().toISOString().split('T')[0];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Enforce name: letters, spaces, apostrophes, hyphens only
+    if (name === 'name') {
+      const filtered = value.replace(/[^a-zA-ZÀ-ž'\-\s]/g, '');
+      setFormData({ ...formData, [name]: filtered });
+      return;
+    }
+    
+    // Enforce phone: digits and + only
+    if (name === 'phone') {
+      const filtered = value.replace(/[^0-9+]/g, '');
+      setFormData({ ...formData, [name]: filtered });
+      return;
+    }
+    
+    // Enforce guestCount: digits only
+    if (name === 'guestCount') {
+      const filtered = value.replace(/[^0-9]/g, '');
+      setFormData({ ...formData, [name]: filtered });
+      return;
+    }
+    
+    setFormData({ ...formData, [name]: value });
+  };
+
+  useEffect(() => {
+    setFormData(buildInitialFormState(user));
+  }, [user]);
+
+  const validateForm = () => {
+    if (!formData.name.trim()) return 'Full name is required.';
+    if (!formData.email.trim()) return 'Email address is required.';
+    if (!formData.phone.trim()) return 'Phone number is required.';
+    const normalizedPhone = formData.phone.replace(/[^0-9+]/g, '');
+    if (!/^[+]?[0-9]{8,15}$/.test(normalizedPhone)) return 'Phone number must contain 8–15 digits.';
+    if (!formData.eventDate) return 'Preferred event date is required.';
+    if (!formData.guestCount) return 'Guest count is required.';
+    const guestCountNumber = Number(formData.guestCount);
+    if (Number.isNaN(guestCountNumber) || guestCountNumber < 10) {
+      return 'Guest count should be at least 10 guests.';
+    }
+    if (formData.eventDate) {
+      const selectedDate = new Date(formData.eventDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        return 'Please choose a future date for the event.';
+      }
+    }
+    const nameRegex = /^[a-zA-ZÀ-ž'\-\s]+$/;
+    if (!nameRegex.test(formData.name.trim())) {
+      return 'Full name should contain only letters, spaces, apostrophes, or hyphens.';
+    }
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationError = validateForm();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
     setFormError('');
     setIsSubmitting(true);
     try {
@@ -30,13 +96,13 @@ const ContactPage: React.FC = () => {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        eventType: formData.eventType,
+        eventType: formData.eventType as 'wedding' | 'birthday' | 'corporate' | 'anniversary' | 'other',
         guestCount: formData.guestCount ? Number(formData.guestCount) : undefined,
         eventDate: formData.eventDate || undefined,
         message: formData.message
       });
       setSubmitted(true);
-      setFormData(initialFormState);
+      setFormData(buildInitialFormState(user));
       setTimeout(() => setSubmitted(false), 3000);
     } catch (err: any) {
       setFormError(err.message || 'We could not submit your inquiry right now.');
@@ -123,6 +189,12 @@ const ContactPage: React.FC = () => {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
+                {user && (
+                   <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl text-sm text-orange-800 flex items-center gap-3 mb-3 shadow-sm">
+                      <UserIcon size={18} className="flex-shrink-0" />
+                      <span>Your profile information is pre-filled. Update any field before submitting.</span>
+                   </div>
+                )}
                 {formError && (
                   <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">
                     {formError}
@@ -187,12 +259,13 @@ const ContactPage: React.FC = () => {
                   <div>
                     <label className="block text-sm font-bold text-stone-600 mb-2">Guest Count *</label>
                     <input
-                      type="number"
+                      type="text"
                       name="guestCount"
                       value={formData.guestCount}
                       onChange={handleChange}
+                      onKeyPress={(e) => !/[0-9]/.test(e.key) && e.preventDefault()}
                       required
-                      min="10"
+                      inputMode="numeric"
                       className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
                       placeholder="e.g., 50"
                     />
@@ -201,14 +274,15 @@ const ContactPage: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-bold text-stone-600 mb-2">Preferred Date *</label>
-                  <input
-                    type="date"
-                    name="eventDate"
-                    value={formData.eventDate}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
-                  />
+                    <input
+                      type="date"
+                      name="eventDate"
+                      min={todayDateString}
+                      value={formData.eventDate}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                    />
                 </div>
 
                 <div>

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar, MapPin, X } from 'lucide-react';
-import { User, Order, ReservationData } from '../types';
-import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations, fetchUserReviews } from '../services/api';
+import { User, Order, ReservationData, PrivateEventInquiry } from '../types';
+import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations, fetchUserReviews, fetchPrivateEventInquiries } from '../services/api';
 
 const ProfilePage: React.FC = () => {
 
@@ -35,8 +35,10 @@ const ProfilePage: React.FC = () => {
    const [reservationsLoading, setReservationsLoading] = useState(true);
    const [reviews, setReviews] = useState<any[]>([]);
    const [reviewsLoading, setReviewsLoading] = useState(true);
+   const [eventInquiries, setEventInquiries] = useState<PrivateEventInquiry[]>([]);
+   const [eventsLoading, setEventsLoading] = useState(true);
    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews'>('orders');
+   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews' | 'events'>('orders');
    const navigate = useNavigate();
 
    useEffect(() => {
@@ -97,12 +99,22 @@ const ProfilePage: React.FC = () => {
               .then(setReviews)
               .catch(() => setReviews([]))
               .finally(() => setReviewsLoading(false));
+            
+            // Fetch user's private event inquiries
+            fetchPrivateEventInquiries()
+              .then(allInquiries => {
+                const userInquiries = allInquiries.filter(inq => inq.email === profile.email);
+                setEventInquiries(userInquiries);
+              })
+              .catch(() => setEventInquiries([]))
+              .finally(() => setEventsLoading(false));
          })
          .catch(() => {
             setError('Could not load profile.');
             setLoading(false);
             setOrdersLoading(false);
             setReviewsLoading(false);
+            setEventsLoading(false);
          });
    }, []);
 
@@ -369,13 +381,13 @@ const ProfilePage: React.FC = () => {
                   <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
                      <div className="p-6 border-b border-stone-100">
                         <div className="flex flex-wrap gap-2">
-                           {['orders', 'reservations', 'reviews'].map(tab => (
+                           {['orders', 'reservations', 'reviews', 'events'].map(tab => (
                               <button
                                  key={tab}
                                  onClick={() => setProfileTab(tab as typeof profileTab)}
                                  className={`px-4 py-2 rounded-2xl font-bold text-sm transition-all ${profileTab === tab ? 'bg-orange-600 text-white shadow-lg' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
                               >
-                                 {tab === 'orders' ? 'Recent Orders' : tab === 'reservations' ? 'My Reservations' : 'My Reviews'}
+                                 {tab === 'orders' ? 'Recent Orders' : tab === 'reservations' ? 'My Reservations' : tab === 'reviews' ? 'My Reviews' : 'Private Events'}
                               </button>
                            ))}
                         </div>
@@ -502,6 +514,50 @@ const ProfilePage: React.FC = () => {
                                        {review.status === 'rejected' && review.adminNotes && (
                                           <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
                                              <strong>Admin feedback:</strong> {review.adminNotes}
+                                          </div>
+                                       )}
+                                    </div>
+                                 ))
+                              )}
+                           </div>
+                        )}
+                        {profileTab === 'events' && (
+                           <div>
+                              {eventsLoading ? (
+                                 <div className="p-6 text-center text-stone-500">Loading events...</div>
+                              ) : eventInquiries.length === 0 ? (
+                                 <div className="p-6 text-center text-stone-500">No private event inquiries yet.</div>
+                              ) : (
+                                 eventInquiries.map(inquiry => (
+                                    <div key={inquiry._id} className="p-6 hover:bg-stone-50 transition-colors border-b border-stone-100 last:border-b-0">
+                                       <div className="flex justify-between items-start mb-3">
+                                          <div>
+                                             <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-bold text-stone-900">{inquiry.eventType.charAt(0).toUpperCase() + inquiry.eventType.slice(1)} Event</span>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${inquiry.status === 'contacted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{inquiry.status || 'new'}</span>
+                                             </div>
+                                             <p className="text-sm text-stone-500 mb-1">
+                                                <Calendar size={14} className="inline mr-1" />
+                                                {inquiry.eventDate ? new Date(inquiry.eventDate).toLocaleDateString() : 'Date TBD'} • {inquiry.guestCount} guests
+                                             </p>
+                                          </div>
+                                          <p className="text-xs text-stone-400">{inquiry.createdAt ? new Date(inquiry.createdAt).toLocaleDateString() : 'Recently'}</p>
+                                       </div>
+                                       {inquiry.message && (
+                                          <p className="text-sm text-stone-600 mb-3 italic">"{inquiry.message}"</p>
+                                       )}
+                                       {inquiry.contactHistory && inquiry.contactHistory.length > 0 && (
+                                          <div className="mt-4 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                                             <p className="text-xs font-semibold text-stone-600 mb-2">Staff Replies:</p>
+                                             <div className="space-y-2">
+                                                {inquiry.contactHistory.map((reply, idx) => (
+                                                   <div key={idx} className="bg-white p-2 rounded text-xs border-l-2 border-orange-500">
+                                                      <div className="font-semibold text-stone-900">{reply.subject || 'Follow-up'}</div>
+                                                      <div className="text-stone-600 mt-1">{reply.body}</div>
+                                                      <div className="text-[11px] text-stone-400 mt-1">{reply.staffName || 'Staff'} • {reply.sentAt ? new Date(reply.sentAt).toLocaleString() : 'Recently'}</div>
+                                                   </div>
+                                                ))}
+                                             </div>
                                           </div>
                                        )}
                                     </div>
