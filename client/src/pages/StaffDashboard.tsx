@@ -24,6 +24,10 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState('');
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
+  const [replyModalInquiry, setReplyModalInquiry] = useState<PrivateEventInquiry | null>(null);
+  const [replySubject, setReplySubject] = useState('');
+  const [replyBody, setReplyBody] = useState('');
   
   // Login State
   const [email, setEmail] = useState('');
@@ -123,18 +127,36 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
     }
   };
 
-  const handleSendInquiryEmail = async (inquiry: PrivateEventInquiry) => {
-    const defaultMessage = `Hi ${inquiry.name},\n\nThanks for reaching out about your ${inquiry.eventType} event. We'll be happy to assist with seating ${inquiry.guestCount || 'your guests'} on ${inquiry.eventDate || 'your preferred date'}.`;    
-    const body = window.prompt('Message to customer', defaultMessage);
-    if (!body) return;
-    setSendingEmailId(inquiry._id || null);
+  const openReplyModal = (inquiry: PrivateEventInquiry) => {
+    const defaultMessage = `Hi ${inquiry.name},\n\nThanks for reaching out about your ${inquiry.eventType} event. We'll be happy to assist with seating ${inquiry.guestCount || 'your guests'} on ${inquiry.eventDate || 'your preferred date'}.`;
+    setReplySubject('Follow-up on your private event inquiry');
+    setReplyBody(defaultMessage);
+    setReplyModalInquiry(inquiry);
+    setReplyModalOpen(true);
+  };
+
+  const closeReplyModal = () => {
+    setReplyModalOpen(false);
+    setReplyModalInquiry(null);
+  };
+
+  const handleSendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyModalInquiry) return;
+    if (!replyBody.trim()) {
+      showToast('Response body cannot be empty.', 'error');
+      return;
+    }
+    setSendingEmailId(replyModalInquiry._id || null);
     try {
-      await sendPrivateEventEmail(inquiry._id || '', {
-        subject: 'Follow-up on your private event inquiry',
-        body,
+      const updated = await sendPrivateEventEmail(replyModalInquiry._id || '', {
+        subject: replySubject || 'Follow-up on your private event inquiry',
+        body: replyBody,
         staffName: user?.name
       });
+      setEventInquiries(prev => prev.map(item => (item._id === updated._id ? updated : item)));
       showToast('Email sent to customer.', 'success');
+      closeReplyModal();
     } catch (err: any) {
       showToast(err.message || 'Failed to send email.', 'error');
     } finally {
@@ -482,6 +504,7 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
                         <th className="p-3 font-bold text-stone-600">Date</th>
                         <th className="p-3 font-bold text-stone-600">Guests</th>
                         <th className="p-3 font-bold text-stone-600">Notes</th>
+                        <th className="p-3 font-bold text-stone-600">Last Reply</th>
                         <th className="p-3 font-bold text-stone-600">Status</th>
                         <th className="p-3 font-bold text-stone-600">Action</th>
                       </tr>
@@ -499,6 +522,19 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
                           </td>
                           <td className="p-3 text-stone-600">{inquiry.guestCount || '-'}</td>
                           <td className="p-3 text-stone-500 italic">{inquiry.message || '-'}</td>
+                          <td className="p-3 text-stone-600">
+                            {(() => {
+                              const latest = inquiry.contactHistory?.[inquiry.contactHistory.length - 1];
+                              if (!latest) return <span className="text-stone-400">—</span>;
+                              return (
+                                <div className="space-y-1 text-xs">
+                                  <div className="font-semibold text-stone-900">{latest.staffName || 'Staff'}</div>
+                                  <div className="text-stone-500">{latest.subject || 'Follow-up sent'}</div>
+                                  <div className="text-stone-400">{latest.sentAt ? new Date(latest.sentAt).toLocaleString() : 'Just now'}</div>
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td className="p-3">
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${inquiry.status === 'contacted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
                               {inquiry.status || 'new'}
@@ -513,7 +549,7 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
                               {inquiry.status === 'contacted' ? 'Contacted' : 'Mark Contacted'}
                             </button>
                             <button
-                              onClick={() => handleSendInquiryEmail(inquiry)}
+                              onClick={() => openReplyModal(inquiry)}
                               disabled={sendingEmailId === inquiry._id}
                               className="px-3 py-1 rounded-lg bg-orange-600 text-white text-xs font-bold disabled:bg-orange-200"
                             >
@@ -531,6 +567,48 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
         )}
       </div>
       </div>
+      {replyModalOpen && replyModalInquiry && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4 py-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-stone-200">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-stone-100">
+              <div>
+                <h3 className="text-lg font-bold">Respond to {replyModalInquiry.name}</h3>
+                <p className="text-sm text-stone-500">You can edit the subject/body before sending.</p>
+              </div>
+              <button onClick={closeReplyModal} className="text-stone-500 hover:text-stone-900">✕</button>
+            </div>
+            <form onSubmit={handleSendReply} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-semibold uppercase text-stone-500">Subject</label>
+                <input
+                  value={replySubject}
+                  onChange={e => setReplySubject(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase text-stone-500">Message</label>
+                <textarea
+                  rows={6}
+                  value={replyBody}
+                  onChange={e => setReplyBody(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3">
+                <button type="button" onClick={closeReplyModal} className="px-4 py-2 rounded-lg border border-stone-200 text-stone-600">Cancel</button>
+                <button
+                  type="submit"
+                  disabled={sendingEmailId === replyModalInquiry._id}
+                  className="px-4 py-2 rounded-lg bg-orange-600 text-white font-bold disabled:opacity-50"
+                >
+                  {sendingEmailId === replyModalInquiry._id ? 'Sending…' : 'Send Reply'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

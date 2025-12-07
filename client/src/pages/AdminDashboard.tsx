@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
-import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin } from '../services/api';
+import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin, fetchPrivateEventInquiries } from '../services/api';
 import type { MenuItemPayload } from '../services/api';
-import { MenuItem, User, Order } from '../types';
-import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X } from 'lucide-react';
+import { MenuItem, User, Order, PrivateEventInquiry } from '../types';
+import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X, Calendar } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
 
 const DIETARY_TAGS = ['Vegetarian', 'Vegan', 'GF'];
@@ -94,11 +94,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [editMsg, setEditMsg] = useState('');
 
   // ===== STATE: TABS & LISTS =====
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter' | 'promos'>('analytics');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'eventsHistory' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter' | 'promos'>('analytics');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [eventInquiries, setEventInquiries] = useState<PrivateEventInquiry[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState('');
   const [allReviews, setAllReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState('');
@@ -470,6 +473,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     }
   }, []);
 
+  const loadEventInquiries = useCallback(async () => {
+    setEventsLoading(true);
+    setEventsError('');
+    try {
+      const inquiries = await fetchPrivateEventInquiries();
+      setEventInquiries(inquiries);
+    } catch (err: any) {
+      setEventsError(err.message || 'Failed to load event history');
+    } finally {
+      setEventsLoading(false);
+    }
+  }, []);
+
   // ===== HANDLERS: FORM SUBMISSIONS =====
   const loadAdmins = useCallback(async () => {
     try {
@@ -540,12 +556,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   // ===== HANDLERS: MASTER ADMIN OPERATIONS =====
   const handleRefreshData = useCallback(async () => {
     try {
-      await Promise.all([loadData(), loadUsers()]);
+      await Promise.all([loadData(), loadUsers(), loadEventInquiries()]);
       showToast('Data refreshed successfully!', 'success');
     } catch (err: any) {
       showToast('Failed to refresh data', 'error');
     }
-  }, [loadData, loadUsers]);
+  }, [loadData, loadUsers, loadEventInquiries]);
 
   const handleBulkDeleteStaff = useCallback(async () => {
     const count = users.filter(u => u.role === 'staff').length;
@@ -631,8 +647,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       if (user.role === 'masterAdmin') {
         loadAdmins();
       }
+      if (user.role === 'admin' || user.role === 'masterAdmin') {
+        loadEventInquiries();
+      }
     }
-  }, [user, loadData, loadUsers, loadAdmins]);
+  }, [user, loadData, loadUsers, loadAdmins, loadEventInquiries]);
 
   useEffect(() => {
     if (user && user.role === 'masterAdmin' && activeTab === 'logs') {
@@ -677,6 +696,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         .finally(() => setNewsletterLoading(false));
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'eventsHistory') {
+      loadEventInquiries();
+    }
+  }, [activeTab, loadEventInquiries]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -896,6 +921,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <div className="border-t border-stone-200"></div>
 
                       {/* Profile */}
+                          <button
+                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'eventsHistory' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                            onClick={() => setActiveTab('eventsHistory')}
+                          >
+                            🎉 Event History
+                          </button>
                       <div>
                         <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Account</p>
                         <button 
@@ -1066,6 +1097,86 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                   ))}
                                 </tbody>
                               </table>
+                            </div>
+                          )}
+                          {activeTab === 'eventsHistory' && (
+                            <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                              <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+                                <div>
+                                  <h2 className="text-xl font-bold">Private Event History</h2>
+                                  <p className="text-sm text-stone-500">Monitor every inquiry that has been submitted through the concierge.</p>
+                                </div>
+                                <button
+                                  className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg font-semibold text-sm hover:bg-stone-200 transition"
+                                  onClick={loadEventInquiries}
+                                  disabled={eventsLoading}
+                                >
+                                  Refresh Inquiries
+                                </button>
+                              </div>
+                              {eventsLoading ? (
+                                <div className="text-center py-12 text-stone-500">Loading inquiries…</div>
+                              ) : eventsError ? (
+                                <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm">{eventsError}</div>
+                              ) : eventInquiries.length === 0 ? (
+                                <div className="text-center py-12 text-stone-500">No private event inquiries yet.</div>
+                              ) : (
+                                <div className="overflow-x-auto">
+                                  <table className="min-w-full text-sm text-left">
+                                    <thead className="bg-stone-50 border-b border-stone-200">
+                                      <tr>
+                                        <th className="p-3 font-bold text-stone-600">Name</th>
+                                        <th className="p-3 font-bold text-stone-600">Email</th>
+                                        <th className="p-3 font-bold text-stone-600">Phone</th>
+                                        <th className="p-3 font-bold text-stone-600">Event</th>
+                                        <th className="p-3 font-bold text-stone-600">Date</th>
+                                        <th className="p-3 font-bold text-stone-600">Guests</th>
+                                        <th className="p-3 font-bold text-stone-600">Status</th>
+                                        <th className="p-3 font-bold text-stone-600">Replies</th>
+                                        <th className="p-3 font-bold text-stone-600">Submitted</th>
+                                        <th className="p-3 font-bold text-stone-600">Notes</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-stone-100">
+                                      {eventInquiries.map(inquiry => (
+                                        <tr key={inquiry._id} className="hover:bg-stone-50">
+                                          <td className="p-3 font-semibold text-stone-900">{inquiry.name}</td>
+                                          <td className="p-3 text-stone-600">{inquiry.email}</td>
+                                          <td className="p-3 text-stone-600">{inquiry.phone || '-'}</td>
+                                          <td className="p-3 text-stone-600 uppercase tracking-wide text-xs">{inquiry.eventType}</td>
+                                          <td className="p-3 text-stone-600 flex items-center gap-2">
+                                            <Calendar size={14} className="text-orange-500" />
+                                            {inquiry.eventDate ? new Date(inquiry.eventDate).toLocaleDateString() : 'TBD'}
+                                          </td>
+                                          <td className="p-3 text-stone-600">{inquiry.guestCount ?? '-'}</td>
+                                          <td className="p-3">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${inquiry.status === 'contacted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                              {inquiry.status || 'new'}
+                                            </span>
+                                          </td>
+                                          <td className="p-3">
+                                            {inquiry.contactHistory && inquiry.contactHistory.length > 0 ? (
+                                              <ul className="space-y-2 text-xs text-stone-600">
+                                                {inquiry.contactHistory.map((reply, idx) => (
+                                                  <li key={`${reply.sentAt || idx}-${idx}`} className="border border-stone-100 rounded-xl p-2 bg-stone-50">
+                                                    <div className="font-semibold text-stone-900">{reply.subject || 'Follow-up'}</div>
+                                                    <div className="text-stone-500">{reply.body}</div>
+                                                    <div className="text-stone-400 text-[11px]">{reply.staffName || 'Staff'} · {reply.sentAt ? new Date(reply.sentAt).toLocaleString() : 'Just now'}</div>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            ) : (
+                                              <span className="text-stone-400 text-xs">No replies yet</span>
+                                            )}
+                                          </td>
+                                          <td className="p-3 text-stone-600 text-xs">{inquiry.createdAt ? new Date(inquiry.createdAt).toLocaleString() : '-'}</td>
+                                          <td className="p-3 text-stone-500 italic">{inquiry.message || '-'}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
                             </div>
                           )}
             <div>

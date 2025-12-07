@@ -19,4 +19,15 @@ const privateEventInquirySchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+privateEventInquirySchema.add({
+  contactHistory: [
+    {
+      staffName: String,
+      subject: String,
+      body: String,
+      sentAt: { type: Date, default: Date.now }
+    }
+  ]
+});
+
 module.exports = mongoose.model('PrivateEventInquiry', privateEventInquirySchema);

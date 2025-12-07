@@ -41,6 +41,12 @@ export interface PrivateEventInquiry {
   message?: string;
   status?: 'new' | 'contacted';
   createdAt?: string;
+  contactHistory?: {
+    staffName?: string;
+    subject?: string;
+    body: string;
+    sentAt?: string;
+  }[];
 }
 
 export interface Review {

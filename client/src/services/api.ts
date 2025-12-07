@@ -294,7 +294,7 @@ export interface PrivateEventContactPayload {
   staffName?: string;
 }
 
-export const sendPrivateEventEmail = async (inquiryId: string, payload: PrivateEventContactPayload): Promise<{ message: string }> => {
+export const sendPrivateEventEmail = async (inquiryId: string, payload: PrivateEventContactPayload): Promise<PrivateEventInquiry> => {
   const res = await fetch(`${API_URL}/private-events/inquiries/${inquiryId}/contact`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

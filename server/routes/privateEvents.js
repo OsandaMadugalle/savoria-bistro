@@ -42,7 +42,16 @@ router.post('/inquiries/:id/contact', async (req, res) => {
     if (!body) return res.status(400).json({ message: 'Message body is required' });
     const success = await sendPrivateEventFollowup(inquiry.email, inquiry.name, staffName || 'Savoria Bistro', body);
     if (!success) return res.status(500).json({ message: 'Failed to send email' });
-    res.json({ message: 'Email sent' });
+    inquiry.status = 'contacted';
+    inquiry.contactHistory = inquiry.contactHistory || [];
+    inquiry.contactHistory.push({
+      staffName: staffName || 'Savoria Bistro Team',
+      subject: subject || 'Follow-up on your private event inquiry',
+      body,
+      sentAt: new Date()
+    });
+    await inquiry.save();
+    res.json(inquiry);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
