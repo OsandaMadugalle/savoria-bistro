@@ -790,151 +790,158 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               {/* Left Vertical Sidebar */}
               <div className="w-56 flex-shrink-0">
                 <div className="sticky top-28">
-                  <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
-                    <div className="space-y-2 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
-                      <h3 className="text-xs font-bold uppercase text-stone-500 px-2 mb-3">Navigation</h3>
-                      
-                      {/* Staff Management */}
-                      <div>
-                        <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Staff</p>
-                        {user?.role === 'masterAdmin' && (
-                          <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addAdmin' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                            onClick={() => setActiveTab('addAdmin')}
-                          >
-                            👨‍💼 Admins
-                          </button>
-                        )}
-                        {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
-                          <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addStaff' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                            onClick={() => setActiveTab('addStaff')}
-                          >
-                            👥 Staff
-                          </button>
-                        )}
+                  <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                    <div className="max-h-[calc(100vh-8rem)] overflow-y-auto">
+                      {/* Quick Stats Mini-Bar */}
+                      <div className="bg-gradient-to-r from-orange-50 to-orange-100/50 border-b border-stone-200 px-4 py-3">
+                        <div className="text-xs font-bold text-stone-600 uppercase tracking-wide">Dashboard</div>
                       </div>
 
-                      <div className="border-t border-stone-200"></div>
-
-                      {/* Customer Management */}
-                      {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
-                        <div>
-                          <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Customers</p>
+                      <div className="p-3 space-y-1">
+                        {/* Core Operations */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-lg">📦</span>
+                            <p className="text-xs font-bold text-stone-600 uppercase tracking-wide flex-1">Orders</p>
+                          </div>
                           <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'customers' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                            onClick={() => setActiveTab('customers')}
+                            className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'orders' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                            onClick={() => setActiveTab('orders')}
                           >
-                            👤 All Customers
+                            All Orders
                           </button>
-                        </div>
-                      )}
-
-                      <div className="border-t border-stone-200"></div>
-
-                      {/* Business Management */}
-                      <div>
-                        <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Business</p>
-                        {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
-                          <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'menu' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                            onClick={() => setActiveTab('menu')}
-                          >
-                            🍽️ Menu
-                          </button>
-                        )}
-                        <button 
-                          className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'orders' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                          onClick={() => setActiveTab('orders')}
-                        >
-                          📦 Orders
-                        </button>
-                      </div>
-
-                      <div className="border-t border-stone-200"></div>
-
-                      {/* Reviews & Feedback */}
-                      {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
-                        <div>
-                          <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Feedback</p>
-                          <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all relative ${activeTab === 'reviews' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                            onClick={() => setActiveTab('reviews')}
-                          >
-                            ⭐ Reviews
-                            {allReviews.filter((r: any) => r.status === 'pending').length > 0 && (
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                                {allReviews.filter((r: any) => r.status === 'pending').length}
-                              </span>
-                            )}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Gallery Management */}
-                      {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
-                        <div>
-                          <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'gallery' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                            onClick={() => setActiveTab('gallery')}
-                          >
-                            🖼️ Gallery
-                          </button>
-                          <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'newsletter' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                            onClick={() => setActiveTab('newsletter')}
-                          >
-                            📧 Newsletter
-                          </button>
-                          <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'promos' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                            onClick={() => setActiveTab('promos')}
-                          >
-                            🎟️ Promo Codes
-                          </button>
-                        </div>
-                      )}
-
-                      <div className="border-t border-stone-200"></div>
-
-                      {/* Analytics & Monitoring */}
-                      <div>
-                        <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Insights</p>
-                        {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
-                          <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'analytics' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
-                            onClick={() => setActiveTab('analytics')}
-                          >
-                            📊 Analytics
-                          </button>
-                        )}
-                        {user?.role === 'masterAdmin' && (
-                          <button 
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'logs' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
-                            onClick={() => setActiveTab('logs')}
-                          >
-                            📋 Logs
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="border-t border-stone-200"></div>
-
-                      {/* Profile */}
                           <button
-                            className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'eventsHistory' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                            className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'eventsHistory' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
                             onClick={() => setActiveTab('eventsHistory')}
                           >
-                            🎉 Event History
+                            Event History
                           </button>
-                      <div>
-                        <p className="text-xs font-bold text-stone-600 px-2 py-1 uppercase tracking-wide">Account</p>
-                        <button 
-                          className={`w-full text-left px-3 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'profile' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
-                          onClick={() => setActiveTab('profile')}
-                        >
-                          👤 My Profile
-                        </button>
+                        </div>
+
+                        <div className="border-t border-stone-200"></div>
+
+                        {/* Menu & Content */}
+                        {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 px-3 py-2">
+                              <span className="text-lg">🍽️</span>
+                              <p className="text-xs font-bold text-stone-600 uppercase tracking-wide flex-1">Content</p>
+                            </div>
+                            <button 
+                              className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'menu' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                              onClick={() => setActiveTab('menu')}
+                            >
+                              Menu Items
+                            </button>
+                            <button 
+                              className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'gallery' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                              onClick={() => setActiveTab('gallery')}
+                            >
+                              Gallery
+                            </button>
+                            <button 
+                              className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'newsletter' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                              onClick={() => setActiveTab('newsletter')}
+                            >
+                              Newsletter
+                            </button>
+                            <button 
+                              className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'promos' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                              onClick={() => setActiveTab('promos')}
+                            >
+                              Promo Codes
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="border-t border-stone-200"></div>
+
+                        {/* People Management */}
+                        {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 px-3 py-2">
+                              <span className="text-lg">👥</span>
+                              <p className="text-xs font-bold text-stone-600 uppercase tracking-wide flex-1">People</p>
+                            </div>
+                            {user?.role === 'masterAdmin' && (
+                              <button 
+                                className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addAdmin' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                                onClick={() => setActiveTab('addAdmin')}
+                              >
+                                Admins
+                              </button>
+                            )}
+                            {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                              <button 
+                                className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addStaff' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                                onClick={() => setActiveTab('addStaff')}
+                              >
+                                Staff
+                              </button>
+                            )}
+                            <button 
+                              className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'customers' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                              onClick={() => setActiveTab('customers')}
+                            >
+                              Customers
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="border-t border-stone-200"></div>
+
+                        {/* Feedback & Analytics */}
+                        {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 px-3 py-2">
+                              <span className="text-lg">📊</span>
+                              <p className="text-xs font-bold text-stone-600 uppercase tracking-wide flex-1">Insights</p>
+                            </div>
+                            <button 
+                              className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all relative ${activeTab === 'reviews' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                              onClick={() => setActiveTab('reviews')}
+                            >
+                              <span className="flex items-center justify-between">
+                                Reviews
+                                {allReviews.filter((r: any) => r.status === 'pending').length > 0 && (
+                                  <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                                    {allReviews.filter((r: any) => r.status === 'pending').length}
+                                  </span>
+                                )}
+                              </span>
+                            </button>
+                            <button 
+                              className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'analytics' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                              onClick={() => setActiveTab('analytics')}
+                            >
+                              Analytics
+                            </button>
+                            {user?.role === 'masterAdmin' && (
+                              <button 
+                                className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'logs' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                                onClick={() => setActiveTab('logs')}
+                              >
+                                Logs
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="border-t border-stone-200"></div>
+
+                        {/* Account */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-lg">⚙️</span>
+                            <p className="text-xs font-bold text-stone-600 uppercase tracking-wide flex-1">Account</p>
+                          </div>
+                          <button 
+                            className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'profile' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                            onClick={() => setActiveTab('profile')}
+                          >
+                            My Profile
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
