@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
+  AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
 import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin, fetchPrivateEventInquiries } from '../services/api';
 import type { MenuItemPayload } from '../services/api';
@@ -76,6 +77,136 @@ const getUsersByDay = (users: any[]) => {
   return Object.entries(map).map(([date, users]) => ({ date, users: Number(users) }));
 };
 
+/**
+ * Popular Items Analysis
+ */
+const getPopularItems = (orders: any[]) => {
+  const itemFrequency: Record<string, { name: string; count: number; revenue: number }> = {};
+  orders.forEach(o => {
+    o.items?.forEach((item: any) => {
+      if (!itemFrequency[item.itemId]) {
+        itemFrequency[item.itemId] = { name: item.name, count: 0, revenue: 0 };
+      }
+      itemFrequency[item.itemId].count += item.quantity;
+      itemFrequency[item.itemId].revenue += (item.price * item.quantity);
+    });
+  });
+  return Object.values(itemFrequency)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+    .map((item, idx) => ({ rank: idx + 1, ...item }));
+};
+
+/**
+ * Revenue Analysis by Category
+ */
+const getRevenueByCategory = (menuItems: any[], orders: any[]) => {
+  const categoryRevenue: Record<string, number> = {};
+  orders.forEach(o => {
+    o.items?.forEach((item: any) => {
+      const menuItem = menuItems.find(m => m.id === item.itemId || m._id === item.itemId);
+      const category = menuItem?.category || 'Other';
+      categoryRevenue[category] = (categoryRevenue[category] || 0) + (item.price * item.quantity);
+    });
+  });
+  return Object.entries(categoryRevenue)
+    .map(([category, revenue]) => ({ category, revenue: Number(revenue) }))
+    .sort((a, b) => b.revenue - a.revenue);
+};
+
+/**
+ * Customer Demographics
+ */
+const getCustomerDemographics = (users: any[]) => {
+  const demographics = {
+    totalCustomers: users.filter(u => u.role === 'customer').length,
+    byTier: {
+      Bronze: users.filter(u => u.tier === 'Bronze').length,
+      Silver: users.filter(u => u.tier === 'Silver').length,
+      Gold: users.filter(u => u.tier === 'Gold').length,
+    },
+    averageOrderValue: 0,
+    averageLoyaltyPoints: 0,
+    totalLoyaltyPoints: 0,
+  };
+
+  if (demographics.totalCustomers > 0) {
+    demographics.averageLoyaltyPoints = users.reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0) / demographics.totalCustomers;
+    demographics.totalLoyaltyPoints = users.reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0);
+  }
+
+  return demographics;
+};
+
+/**
+ * Booking Patterns Analysis
+ */
+const getBookingPatterns = (reservations: any[]) => {
+  const byDayOfWeek: Record<string, number> = {};
+  const byHour: Record<number, number> = {};
+  const byMonth: Record<string, number> = {};
+
+  reservations.forEach(r => {
+    if (r.date) {
+      const date = new Date(r.date);
+      const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
+      byDayOfWeek[dayName] = (byDayOfWeek[dayName] || 0) + 1;
+
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      byMonth[monthName] = (byMonth[monthName] || 0) + 1;
+    }
+
+    if (r.time) {
+      const hour = parseInt(r.time.split(':')[0]);
+      byHour[hour] = (byHour[hour] || 0) + 1;
+    }
+  });
+
+  return {
+    byDayOfWeek: Object.entries(byDayOfWeek).map(([day, count]) => ({ day, count })),
+    byHour: Object.entries(byHour)
+      .map(([hour, count]) => ({ hour: parseInt(hour), count }))
+      .sort((a, b) => a.hour - b.hour),
+    byMonth: Object.entries(byMonth).map(([month, count]) => ({ month, count })),
+  };
+};
+
+/**
+ * Order Status Distribution
+ */
+const getOrderStatusDistribution = (orders: any[]) => {
+  const distribution: Record<string, number> = {};
+  orders.forEach(o => {
+    const status = o.status || 'Pending';
+    distribution[status] = (distribution[status] || 0) + 1;
+  });
+  return Object.entries(distribution).map(([status, count]) => ({ status, count, percentage: ((count / orders.length) * 100).toFixed(1) }));
+};
+
+/**
+ * Revenue Trend (Last 30 days)
+ */
+const getRevenueTrend = (orders: any[]) => {
+  const last30Days: Record<string, number> = {};
+  const today = new Date();
+
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toLocaleDateString();
+    last30Days[dateStr] = 0;
+  }
+
+  orders.forEach(o => {
+    const d = new Date(o.createdAt).toLocaleDateString();
+    if (last30Days.hasOwnProperty(d)) {
+      last30Days[d] += o.total || 0;
+    }
+  });
+
+  return Object.entries(last30Days).map(([date, revenue]) => ({ date, revenue: Number(revenue) }));
+};
+
 // ===== COMPONENT =====
 interface AdminDashboardProps {
   user: User | null;
@@ -99,6 +230,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [reservations, setReservations] = useState<any[]>([]);
   const [eventInquiries, setEventInquiries] = useState<PrivateEventInquiry[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState('');
@@ -449,9 +581,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
   // ===== DATA LOADING =====
   const loadData = useCallback(async () => {
-    const [menuData, ordersData] = await Promise.all([fetchMenu(), fetchAllOrders()]);
-    setMenuItems(menuData);
-    setOrders(ordersData);
+    try {
+      const [menuData, ordersData, reservationsData] = await Promise.all([
+        fetchMenu(),
+        fetchAllOrders(),
+        fetch('/api/reservations').then(r => r.json()).catch(() => [])
+      ]);
+      setMenuItems(menuData);
+      setOrders(ordersData);
+      setReservations(reservationsData);
+    } catch (err) {
+      console.error('Failed to load data:', err);
+      const [menuData, ordersData] = await Promise.all([fetchMenu(), fetchAllOrders()]);
+      setMenuItems(menuData);
+      setOrders(ordersData);
+    }
   }, []);
 
   const loadUsers = useCallback(async () => {
@@ -982,31 +1126,272 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 {/* Analytics Tab: Summary Stats and Charts */}
                 {activeTab === 'analytics' && (
                   <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mb-6 animate-in fade-in slide-in-from-bottom-2">
-                    <h2 className="text-xl font-bold mb-4">Analytics & Statistics</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-                      <div className="bg-orange-50 p-4 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-orange-700">{users.length}</div>
-                        <div className="text-stone-700 mt-1">Total Users</div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold">Analytics & Statistics</h2>
+                      <div className="flex gap-2 flex-wrap">
+                        <button 
+                          onClick={async () => {
+                            const { generateRevenueReport, exportToCSV } = await import('../services/reportingService');
+                            const reportData = generateRevenueReport(orders);
+                            exportToCSV('revenue-report', reportData, ['Order ID', 'Date', 'Customer', 'Items Count', 'Subtotal', 'Discount', 'Tax', 'Total', 'Payment Status', 'Order Status']);
+                          }}
+                          className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 font-semibold"
+                          title="Export all orders and revenue data"
+                        >
+                          📊 Revenue Report
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            const { generateCustomerReport, exportToCSV } = await import('../services/reportingService');
+                            const reportData = generateCustomerReport(users);
+                            exportToCSV('customer-report', reportData, ['Customer ID', 'Name', 'Email', 'Phone', 'Member Since', 'Total Orders', 'Loyalty Points', 'Tier', 'Total Spent']);
+                          }}
+                          className="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 font-semibold"
+                          title="Export customer and loyalty data"
+                        >
+                          👥 Customer Report
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            const { generatePopularItemsReport, exportToCSV } = await import('../services/reportingService');
+                            const reportData = generatePopularItemsReport(orders);
+                            exportToCSV('popular-items-report', reportData, ['Rank', 'Item Name', 'Units Sold', 'Revenue', 'Avg Price']);
+                          }}
+                          className="px-3 py-1 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 font-semibold"
+                          title="Export top selling items"
+                        >
+                          🍽️ Popular Items
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            const { generateReservationReport, exportToCSV } = await import('../services/reportingService');
+                            const reportData = generateReservationReport(reservations);
+                            exportToCSV('reservations-report', reportData, ['Reservation ID', 'Customer Name', 'Email', 'Phone', 'Date', 'Time', 'Guests', 'Special Requests', 'Status', 'Created']);
+                          }}
+                          className="px-3 py-1 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 font-semibold"
+                          title="Export all reservations"
+                        >
+                          📅 Reservations
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            const { generateTierReport, exportToCSV } = await import('../services/reportingService');
+                            const reportData = generateTierReport(users);
+                            exportToCSV('tier-report', reportData, ['Tier', 'Count', 'Percentage', 'Avg Points', 'Avg Spent']);
+                          }}
+                          className="px-3 py-1 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-600 font-semibold"
+                          title="Export loyalty tier analysis"
+                        >
+                          ⭐ Tier Analysis
+                        </button>
                       </div>
-                      <div className="bg-orange-50 p-4 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-orange-700">{orders.length}</div>
-                        <div className="text-stone-700 mt-1">Total Orders</div>
+                    </div>
+
+                    {/* Summary Stats Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div className="text-2xl font-bold text-blue-700">{users.filter(u => u.role === 'customer').length}</div>
+                        <div className="text-sm text-blue-600 mt-1">Total Customers</div>
                       </div>
-                      <div className="bg-orange-50 p-4 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-orange-700">${orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</div>
-                        <div className="text-stone-700 mt-1">Total Revenue</div>
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div className="text-2xl font-bold text-green-700">{orders.length}</div>
+                        <div className="text-sm text-green-600 mt-1">Total Orders</div>
                       </div>
-                      <div className="bg-orange-50 p-4 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-orange-700">{menuItems.length}</div>
-                        <div className="text-stone-700 mt-1">Menu Items</div>
+                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <div className="text-2xl font-bold text-purple-700">${orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(0)}</div>
+                        <div className="text-sm text-purple-600 mt-1">Total Revenue</div>
                       </div>
-                      <div className="bg-orange-50 p-4 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-orange-700">{users.filter(u => u.role === 'admin').length}</div>
-                        <div className="text-stone-700 mt-1">Admins</div>
+                      <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                        <div className="text-2xl font-bold text-orange-700">${orders.length > 0 ? (orders.reduce((sum, o) => sum + (o.total || 0), 0) / orders.length).toFixed(2) : '0'}</div>
+                        <div className="text-sm text-orange-600 mt-1">Avg Order Value</div>
                       </div>
-                      <div className="bg-orange-50 p-4 rounded-lg text-center">
-                        <div className="text-3xl font-bold text-orange-700">{users.filter(u => u.role === 'staff').length}</div>
-                        <div className="text-stone-700 mt-1">Staff</div>
+                    </div>
+
+                    {/* Customer Demographics */}
+                    <div className="bg-stone-50 p-4 rounded-lg mb-8 border border-stone-200">
+                      <h3 className="text-lg font-bold mb-4">Customer Demographics</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <div className="text-sm font-semibold text-stone-700 mb-3">Tier Distribution</div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-stone-600">🥉 Bronze</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-32 h-2 bg-stone-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-amber-600" 
+                                    style={{ width: `${users.filter(u => u.tier === 'Bronze').length > 0 ? (users.filter(u => u.tier === 'Bronze').length / users.filter(u => u.role === 'customer').length) * 100 : 0}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-semibold text-stone-700 w-10">{users.filter(u => u.tier === 'Bronze').length}</span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-stone-600">🥈 Silver</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-32 h-2 bg-stone-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-gray-400" 
+                                    style={{ width: `${users.filter(u => u.tier === 'Silver').length > 0 ? (users.filter(u => u.tier === 'Silver').length / users.filter(u => u.role === 'customer').length) * 100 : 0}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-semibold text-stone-700 w-10">{users.filter(u => u.tier === 'Silver').length}</span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-stone-600">🥇 Gold</span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-32 h-2 bg-stone-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-yellow-500" 
+                                    style={{ width: `${users.filter(u => u.tier === 'Gold').length > 0 ? (users.filter(u => u.tier === 'Gold').length / users.filter(u => u.role === 'customer').length) * 100 : 0}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-semibold text-stone-700 w-10">{users.filter(u => u.tier === 'Gold').length}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-stone-700 mb-3">Loyalty Metrics</div>
+                          <div className="space-y-3">
+                            <div>
+                              <div className="text-sm text-stone-600">Total Loyalty Points</div>
+                              <div className="text-2xl font-bold text-purple-700">{users.reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0).toLocaleString()}</div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-stone-600">Avg Points per Customer</div>
+                              <div className="text-2xl font-bold text-purple-700">{users.filter(u => u.role === 'customer').length > 0 ? (users.reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0) / users.filter(u => u.role === 'customer').length).toFixed(0) : 0}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Revenue Trend */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-2">Revenue Trend (Last 30 Days)</h3>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <AreaChart data={getRevenueTrend(orders)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Area type="monotone" dataKey="revenue" fill="#ea580c" stroke="#d4380d" name="Revenue" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Popular Items */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-2">Top 10 Popular Items</h3>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={getPopularItems(orders)} margin={{ top: 10, right: 30, left: 0, bottom: 50 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                          <YAxis yAxisId="left" />
+                          <YAxis yAxisId="right" orientation="right" />
+                          <Tooltip />
+                          <Legend />
+                          <Bar yAxisId="left" dataKey="count" fill="#3b82f6" name="Units Sold" />
+                          <Bar yAxisId="right" dataKey="revenue" fill="#f59e0b" name="Revenue" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Revenue by Category */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-2">Revenue by Category</h3>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                          <Pie
+                            data={getRevenueByCategory(menuItems, orders)}
+                            dataKey="revenue"
+                            nameKey="category"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            label
+                          >
+                            {getRevenueByCategory(menuItems, orders).map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={['#ea580c', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'][index % 6]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Booking Patterns */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-2">Reservation Booking Patterns</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="text-sm font-semibold text-stone-700 mb-3">By Day of Week</h4>
+                          <ResponsiveContainer width="100%" height={200}>
+                            <BarChart data={getBookingPatterns(reservations).byDayOfWeek} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="day" />
+                              <YAxis />
+                              <Tooltip />
+                              <Bar dataKey="count" fill="#10b981" name="Bookings" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-stone-700 mb-3">By Time of Day</h4>
+                          <ResponsiveContainer width="100%" height={200}>
+                            <LineChart data={getBookingPatterns(reservations).byHour} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="hour" label={{ value: 'Hour (24h)', position: 'insideBottomRight', offset: -5 }} />
+                              <YAxis />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="count" stroke="#f59e0b" name="Reservations" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Order Status Distribution */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-2">Order Status Distribution</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <PieChart>
+                              <Pie
+                                data={getOrderStatusDistribution(orders)}
+                                dataKey="count"
+                                nameKey="status"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={80}
+                                label
+                              >
+                                {getOrderStatusDistribution(orders).map((_, index) => (
+                                  <Cell key={`cell-${index}`} fill={['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 4]} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div>
+                          <div className="space-y-2">
+                            {getOrderStatusDistribution(orders).map((stat: any) => (
+                              <div key={stat.status} className="flex justify-between items-center p-3 bg-stone-50 rounded-lg">
+                                <span className="font-semibold text-stone-700">{stat.status}</span>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm text-stone-600">{stat.percentage}%</span>
+                                  <span className="font-bold text-stone-900 text-lg">{stat.count}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
