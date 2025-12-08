@@ -63,10 +63,13 @@ const TrackerPage: React.FC<TrackerPageProps> = ({ user }) => {
 
   const handleTrack = async (e: React.FormEvent) => {
      e.preventDefault();
-     if(orderId.trim()) {
-        setOrderError('');
-        setIsTracking(true);
+     if (!orderId.trim()) {
+        setOrderError('Please enter an order ID');
+        setIsTracking(false);
+        return;
      }
+     setOrderError('');
+     setIsTracking(true);
   };
 
   const steps = [
@@ -112,7 +115,7 @@ const TrackerPage: React.FC<TrackerPageProps> = ({ user }) => {
         </div>
 
         {/* Tracking Results */}
-        {isTracking && (
+        {isTracking && order && !orderError && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Header Card */}
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center text-white border border-white/10">

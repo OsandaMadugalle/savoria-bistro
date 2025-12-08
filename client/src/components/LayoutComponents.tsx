@@ -613,13 +613,6 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                   >
                     {isLoggingIn ? 'Signing In...' : 'Sign In'}
                   </button>
-                  
-                  {/* Quick Login Helpers for Demo */}
-                  <div className="mt-4 p-3 bg-stone-50 rounded-lg border border-stone-100 text-xs text-stone-500">
-                     <p className="font-bold mb-1">Demo Credentials:</p>
-                     <p>Staff: <code className="bg-white px-1 rounded">staff@savoria.com</code> / <code className="bg-white px-1 rounded">staff123</code></p>
-                     <p>Admin: <code className="bg-white px-1 rounded">admin@savoria.com</code> / <code className="bg-white px-1 rounded">admin123</code></p>
-                  </div>
                 </form>
               ) : (
                 /* SIGN UP FORM */
