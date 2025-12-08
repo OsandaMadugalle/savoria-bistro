@@ -116,29 +116,7 @@ const getRevenueByCategory = (menuItems: any[], orders: any[]) => {
     .sort((a, b) => b.revenue - a.revenue);
 };
 
-/**
- * Customer Demographics
- */
-const getCustomerDemographics = (users: any[]) => {
-  const demographics = {
-    totalCustomers: users.filter(u => u.role === 'customer').length,
-    byTier: {
-      Bronze: users.filter(u => u.tier === 'Bronze').length,
-      Silver: users.filter(u => u.tier === 'Silver').length,
-      Gold: users.filter(u => u.tier === 'Gold').length,
-    },
-    averageOrderValue: 0,
-    averageLoyaltyPoints: 0,
-    totalLoyaltyPoints: 0,
-  };
-
-  if (demographics.totalCustomers > 0) {
-    demographics.averageLoyaltyPoints = users.reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0) / demographics.totalCustomers;
-    demographics.totalLoyaltyPoints = users.reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0);
-  }
-
-  return demographics;
-};
+// Customer demographics data is now filtered directly in the component render
 
 /**
  * Booking Patterns Analysis
@@ -239,7 +217,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [allReviews, setAllReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState('');
-  const [reviewMessage, setReviewMessage] = useState('');
   const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
@@ -253,7 +230,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [campaignContent, setCampaignContent] = useState('');
   const [campaignSubject, setCampaignSubject] = useState('');
   const [campaignSending, setCampaignSending] = useState(false);
-  const [campaignMessage, setCampaignMessage] = useState('');
   
   // ===== STATE: FORMS =====
   const [adminForm, setAdminForm] = useState<{ name: string; email: string; password: string; phone?: string }>({ name: '', email: '', password: '', phone: '' });
@@ -2456,11 +2432,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       ))}
                     </div>
                   )}
-                  {reviewMessage && (
-                    <div className="mt-4 bg-green-100 text-green-700 p-3 rounded-lg text-sm">
-                      {reviewMessage}
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -2729,11 +2700,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             <Send size={16} /> {campaignSending ? 'Sending...' : 'Send Campaign'}
                           </button>
                         </div>
-                        {campaignMessage && (
-                          <div className={`p-3 rounded-lg text-sm font-medium ${campaignMessage.includes('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {campaignMessage}
-                          </div>
-                        )}
                       </form>
                       </div>
                     </div>

@@ -220,13 +220,11 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
 // Admin Navbar Component - For Master Admin and Admin users
 const AdminNavbar: React.FC<{ user: User; onLogout: () => void }> = ({ user, onLogout }) => {
   const navigate = useNavigate();
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
     onLogout();
     localStorage.removeItem('userEmail');
     navigate('/');
-    setIsUserMenuOpen(false);
   };
 
   return (
@@ -235,9 +233,9 @@ const AdminNavbar: React.FC<{ user: User; onLogout: () => void }> = ({ user, onL
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <NavLink to="/" className="text-2xl font-serif font-bold text-white tracking-tight">
+            <div className="text-2xl font-serif font-bold text-white tracking-tight cursor-default">
               Savoria<span className="text-orange-400">.</span>
-            </NavLink>
+            </div>
             <span className="ml-3 px-3 py-1 bg-orange-600 text-white text-xs font-bold rounded-full">
               {user.role === 'masterAdmin' ? 'Master Admin' : 'Admin'}
             </span>
