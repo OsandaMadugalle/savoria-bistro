@@ -385,7 +385,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
                 </div>
                 {getTierDiscount() > 0 && (
                   <div className={`text-xs p-3 rounded-lg flex items-start gap-2 border ${getTierDiscount() === 20 ? 'bg-yellow-50 text-yellow-800 border-yellow-200' : 'bg-gray-50 text-gray-800 border-gray-200'}`}>
-                    <span className={getTierDiscount() === 20 ? '⭐' : '✨'} className="mt-0.5 flex-shrink-0" />
+                    <span className={`${getTierDiscount() === 20 ? '⭐' : '✨'} mt-0.5 flex-shrink-0`} />
                     <span><span className="font-bold">{user.tier}</span> Member: {getTierDiscount()}% discount applied!</span>
                   </div>
                 )}

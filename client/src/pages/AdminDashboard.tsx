@@ -1276,6 +1276,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     </div>
 
                     {/* Customer Demographics */}
+                    {users.filter(u => u.role === 'customer').length > 0 && (
                     <div className="bg-stone-50 p-4 rounded-lg mb-8 border border-stone-200">
                       <h3 className="text-lg font-bold mb-4">Customer Demographics</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1288,10 +1289,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                 <div className="w-32 h-2 bg-stone-200 rounded-full overflow-hidden">
                                   <div 
                                     className="h-full bg-amber-600" 
-                                    style={{ width: `${users.filter(u => u.tier === 'Bronze').length > 0 ? (users.filter(u => u.tier === 'Bronze').length / users.filter(u => u.role === 'customer').length) * 100 : 0}%` }}
+                                    style={{ width: `${users.filter(u => u.role === 'customer' && u.tier === 'Bronze').length > 0 ? (users.filter(u => u.role === 'customer' && u.tier === 'Bronze').length / users.filter(u => u.role === 'customer').length) * 100 : 0}%` }}
                                   ></div>
                                 </div>
-                                <span className="text-sm font-semibold text-stone-700 w-10">{users.filter(u => u.tier === 'Bronze').length}</span>
+                                <span className="text-sm font-semibold text-stone-700 w-10">{users.filter(u => u.role === 'customer' && u.tier === 'Bronze').length}</span>
                               </div>
                             </div>
                             <div className="flex justify-between items-center">
@@ -1300,10 +1301,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                 <div className="w-32 h-2 bg-stone-200 rounded-full overflow-hidden">
                                   <div 
                                     className="h-full bg-gray-400" 
-                                    style={{ width: `${users.filter(u => u.tier === 'Silver').length > 0 ? (users.filter(u => u.tier === 'Silver').length / users.filter(u => u.role === 'customer').length) * 100 : 0}%` }}
+                                    style={{ width: `${users.filter(u => u.role === 'customer' && u.tier === 'Silver').length > 0 ? (users.filter(u => u.role === 'customer' && u.tier === 'Silver').length / users.filter(u => u.role === 'customer').length) * 100 : 0}%` }}
                                   ></div>
                                 </div>
-                                <span className="text-sm font-semibold text-stone-700 w-10">{users.filter(u => u.tier === 'Silver').length}</span>
+                                <span className="text-sm font-semibold text-stone-700 w-10">{users.filter(u => u.role === 'customer' && u.tier === 'Silver').length}</span>
                               </div>
                             </div>
                             <div className="flex justify-between items-center">
@@ -1312,10 +1313,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                 <div className="w-32 h-2 bg-stone-200 rounded-full overflow-hidden">
                                   <div 
                                     className="h-full bg-yellow-500" 
-                                    style={{ width: `${users.filter(u => u.tier === 'Gold').length > 0 ? (users.filter(u => u.tier === 'Gold').length / users.filter(u => u.role === 'customer').length) * 100 : 0}%` }}
+                                    style={{ width: `${users.filter(u => u.role === 'customer' && u.tier === 'Gold').length > 0 ? (users.filter(u => u.role === 'customer' && u.tier === 'Gold').length / users.filter(u => u.role === 'customer').length) * 100 : 0}%` }}
                                   ></div>
                                 </div>
-                                <span className="text-sm font-semibold text-stone-700 w-10">{users.filter(u => u.tier === 'Gold').length}</span>
+                                <span className="text-sm font-semibold text-stone-700 w-10">{users.filter(u => u.role === 'customer' && u.tier === 'Gold').length}</span>
                               </div>
                             </div>
                           </div>
@@ -1325,16 +1326,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           <div className="space-y-3">
                             <div>
                               <div className="text-sm text-stone-600">Total Loyalty Points</div>
-                              <div className="text-2xl font-bold text-purple-700">{users.reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0).toLocaleString()}</div>
+                              <div className="text-2xl font-bold text-purple-700">{users.filter(u => u.role === 'customer').reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0).toLocaleString()}</div>
                             </div>
                             <div>
                               <div className="text-sm text-stone-600">Avg Points per Customer</div>
-                              <div className="text-2xl font-bold text-purple-700">{users.filter(u => u.role === 'customer').length > 0 ? (users.reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0) / users.filter(u => u.role === 'customer').length).toFixed(0) : 0}</div>
+                              <div className="text-2xl font-bold text-purple-700">{users.filter(u => u.role === 'customer').length > 0 ? (users.filter(u => u.role === 'customer').reduce((sum, u) => sum + (u.loyaltyPoints || 0), 0) / users.filter(u => u.role === 'customer').length).toFixed(0) : 0}</div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
+                    )}
 
                     {/* Revenue Trend */}
                     <div className="mb-8">
