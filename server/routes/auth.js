@@ -13,6 +13,17 @@ async function logActivity(userEmail, action, details = '') {
   }
 }
 
+// Helper function to clean customer fields from non-customer users
+function cleanCustomerFields(userResponse) {
+  if (['admin', 'staff', 'masterAdmin'].includes(userResponse.role)) {
+    delete userResponse.tier;
+    delete userResponse.loyaltyPoints;
+    delete userResponse.memberSince;
+    delete userResponse.history;
+  }
+  return userResponse;
+}
+
 // Get all activity logs (masterAdmin only)
 router.get('/activity-logs', requireRole(['masterAdmin'], true), async (req, res) => {
   try {
@@ -56,7 +67,7 @@ router.put('/update-user', async (req, res) => {
     await logActivity(requesterEmail, 'Update User', `Updated user: ${email}`);
     const userResponse = user.toObject();
     delete userResponse.password;
-    res.json(userResponse);
+    res.json(cleanCustomerFields(userResponse));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -153,7 +164,7 @@ router.put('/me', async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     const userResponse = user.toObject();
     delete userResponse.password;
-    res.json(userResponse);
+    res.json(cleanCustomerFields(userResponse));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -178,18 +189,20 @@ router.get('/me', async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    // Fetch recent orders for this user
-    const Order = require('../models/Order');
-    const orders = await Order.find({ userId: user._id }).sort({ createdAt: -1 }).limit(5);
-    userResponse.history = orders.map(order => ({
-      id: order.orderId,
-      date: order.createdAt,
-      items: order.items.map(i => i.name),
-      total: order.total,
-      status: order.status
-    }));
+    // Fetch recent orders for this user (only for customer role)
+    if (userResponse.role === 'customer') {
+      const Order = require('../models/Order');
+      const orders = await Order.find({ userId: user._id }).sort({ createdAt: -1 }).limit(5);
+      userResponse.history = orders.map(order => ({
+        id: order.orderId,
+        date: order.createdAt,
+        items: order.items.map(i => i.name),
+        total: order.total,
+        status: order.status
+      }));
+    }
 
-    res.json(userResponse);
+    res.json(cleanCustomerFields(userResponse));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -280,7 +293,7 @@ router.put('/admins/:id', requireRole(['masterAdmin']), async (req, res) => {
 
     const adminResponse = admin.toObject();
     delete adminResponse.password;
-    res.json(adminResponse);
+    res.json(cleanCustomerFields(adminResponse));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -325,8 +338,8 @@ router.post('/login', async (req, res) => {
 
     const userResponse = user.toObject();
     delete userResponse.password;
-    console.log('Login successful:', userResponse);
-    res.json(userResponse);
+    console.log('Login successful:', cleanCustomerFields(userResponse));
+    res.json(cleanCustomerFields(userResponse));
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: err.message });
