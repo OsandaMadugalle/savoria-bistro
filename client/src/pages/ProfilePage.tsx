@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar, MapPin, X } from 'lucide-react';
 import { User, Order, ReservationData, PrivateEventInquiry } from '../types';
-import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations, fetchUserReviews, fetchPrivateEventInquiries } from '../services/api';
+import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations, fetchUserReviews, fetchPrivateEventInquiries, getUserFeedbackHistory } from '../services/api';
 
 const ProfilePage: React.FC = () => {
 
@@ -38,7 +38,9 @@ const ProfilePage: React.FC = () => {
    const [eventInquiries, setEventInquiries] = useState<PrivateEventInquiry[]>([]);
    const [eventsLoading, setEventsLoading] = useState(true);
    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews' | 'events' | 'loyalty'>('orders');
+   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews' | 'events' | 'loyalty' | 'feedback'>('orders');
+   const [feedback, setFeedback] = useState<any[]>([]);
+   const [feedbackLoading, setFeedbackLoading] = useState(true);
    const navigate = useNavigate();
 
    useEffect(() => {
@@ -84,9 +86,17 @@ const ProfilePage: React.FC = () => {
                 .then(setOrders)
                 .catch(() => setOrders([]))
                 .finally(() => setOrdersLoading(false));
+              
+              // Fetch user's feedback
+              getUserFeedbackHistory(userId)
+                .then(setFeedback)
+                .catch(() => setFeedback([]))
+                .finally(() => setFeedbackLoading(false));
             } else {
               setOrders([]);
               setOrdersLoading(false);
+              setFeedback([]);
+              setFeedbackLoading(false);
             }
             // Fetch user's reservations
             fetchUserReservations(profile.email)
@@ -416,13 +426,13 @@ const ProfilePage: React.FC = () => {
                   <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
                      <div className="p-6 border-b border-stone-100">
                         <div className="flex flex-wrap gap-2">
-                           {['loyalty', 'orders', 'reservations', 'reviews', 'events'].map(tab => (
+                           {['loyalty', 'orders', 'reservations', 'reviews', 'events', 'feedback'].map(tab => (
                               <button
                                  key={tab}
                                  onClick={() => setProfileTab(tab as typeof profileTab)}
                                  className={`px-4 py-2 rounded-2xl font-bold text-sm transition-all ${profileTab === tab ? 'bg-orange-600 text-white shadow-lg' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
                               >
-                                 {tab === 'loyalty' ? '🏅 Loyalty Dashboard' : tab === 'orders' ? 'Recent Orders' : tab === 'reservations' ? 'My Reservations' : tab === 'reviews' ? 'My Reviews' : 'Private Events'}
+                                 {tab === 'loyalty' ? '🏅 Loyalty Dashboard' : tab === 'orders' ? 'Recent Orders' : tab === 'reservations' ? 'My Reservations' : tab === 'reviews' ? 'My Reviews' : tab === 'events' ? 'Private Events' : '⭐ My Feedback'}
                               </button>
                            ))}
                         </div>
@@ -703,6 +713,92 @@ const ProfilePage: React.FC = () => {
                                     <p className="text-xs text-stone-600 mt-1">Points Earned</p>
                                  </div>
                               </div>
+                           </div>
+                        )}
+
+                        {/* Feedback Tab */}
+                        {profileTab === 'feedback' && (
+                           <div>
+                              {feedbackLoading ? (
+                                 <div className="p-6 text-center text-stone-500">Loading feedback...</div>
+                              ) : feedback.length === 0 ? (
+                                 <div className="p-6 text-center text-stone-500">
+                                    <p className="text-lg font-semibold mb-2">No feedback submitted yet</p>
+                                    <p className="text-sm">Your order feedback will appear here after you submit it</p>
+                                 </div>
+                              ) : (
+                                 <div className="space-y-4 p-6">
+                                    {feedback.map((item, index) => (
+                                       <div key={index} className="bg-stone-50 rounded-lg p-4 border border-stone-200">
+                                          <div className="flex justify-between items-start mb-3">
+                                             <div>
+                                                <p className="font-semibold text-gray-900">Order #{item.orderId}</p>
+                                                <p className="text-xs text-stone-600 mt-1">
+                                                   {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'}
+                                                </p>
+                                             </div>
+                                             <div className="text-right">
+                                                <div className="text-2xl">{'⭐'.repeat(item.overallRating)}</div>
+                                                <p className="text-sm font-bold text-orange-600 mt-1">{item.overallRating}/5</p>
+                                             </div>
+                                          </div>
+
+                                          {/* Rating Summary */}
+                                          <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+                                             {item.serviceRating && (
+                                                <div className="bg-white p-2 rounded border border-stone-200">
+                                                   <p className="text-stone-600 font-semibold">Service</p>
+                                                   <p className="font-bold text-orange-600">{item.serviceRating}★</p>
+                                                </div>
+                                             )}
+                                             {item.deliveryRating && (
+                                                <div className="bg-white p-2 rounded border border-stone-200">
+                                                   <p className="text-stone-600 font-semibold">Delivery</p>
+                                                   <p className="font-bold text-orange-600">{item.deliveryRating}★</p>
+                                                </div>
+                                             )}
+                                             <div className="bg-white p-2 rounded border border-stone-200">
+                                                <p className="text-stone-600 font-semibold">Recommend</p>
+                                                <p className="font-bold text-green-600">{item.wouldRecommend ? '✅ Yes' : '❌ No'}</p>
+                                             </div>
+                                          </div>
+
+                                          {/* Items Rated */}
+                                          {item.items && item.items.length > 0 && (
+                                             <div className="mb-3">
+                                                <p className="text-xs font-semibold text-stone-700 mb-2">Items Rated:</p>
+                                                <div className="space-y-1">
+                                                   {item.items.map((menuItem: any, idx: number) => (
+                                                      menuItem.itemRating && (
+                                                         <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded border border-stone-200">
+                                                            <span className="text-gray-700">{menuItem.itemName}</span>
+                                                            <span className="text-orange-600 font-bold">{menuItem.itemRating}⭐</span>
+                                                         </div>
+                                                      )
+                                                   ))}
+                                                </div>
+                                             </div>
+                                          )}
+
+                                          {/* Comment */}
+                                          {item.comment && (
+                                             <div className="bg-white p-3 rounded border-l-4 border-orange-500 mb-2">
+                                                <p className="text-xs font-semibold text-stone-700 mb-1">Your Comment:</p>
+                                                <p className="text-sm text-gray-700">{item.comment}</p>
+                                             </div>
+                                          )}
+
+                                          {/* Suggestions */}
+                                          {item.improvementSuggestions && (
+                                             <div className="bg-white p-3 rounded border-l-4 border-blue-500">
+                                                <p className="text-xs font-semibold text-stone-700 mb-1">Suggestions for Improvement:</p>
+                                                <p className="text-sm text-gray-700">{item.improvementSuggestions}</p>
+                                             </div>
+                                          )}
+                                       </div>
+                                    ))}
+                                 </div>
+                              )}
                            </div>
                         )}
                      </div>

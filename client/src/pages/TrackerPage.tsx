@@ -148,56 +148,109 @@ const TrackerPage: React.FC<TrackerPageProps> = ({ user }) => {
 
                  {/* Timeline Content */}
                  <div className="p-8">
-
-                 <div className="relative">
-                    <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-stone-100 md:hidden"></div>
-                    <div className="hidden md:block absolute top-5 left-0 w-full h-0.5 bg-stone-100"></div>
-                    <div className="hidden md:block absolute top-5 left-0 h-0.5 bg-orange-500 transition-all duration-1000 ease-in-out" style={{ width: `${(trackingStep / 3) * 100}%` }}></div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-4 relative z-10">
-                       {steps.map((step, index) => (
-                          <div key={index} className={`flex md:flex-col items-center gap-4 md:gap-2 transition-colors duration-500 ${index <= trackingStep ? 'opacity-100' : 'opacity-40'}`}>
-                             <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
-                                index <= trackingStep ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-stone-200 text-stone-400'
-                             }`}>
-                                {step.icon}
+                    {orderStatus === 'Delivered' ? (
+                       // Completed Order Summary
+                       <div className="space-y-6">
+                          <div className="text-center">
+                             <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-400 to-green-600 text-white flex items-center justify-center mx-auto shadow-2xl">
+                                <CheckCircle size={64} />
                              </div>
-                             <div className="md:text-center">
-                                <h4 className={`font-bold text-sm ${index <= trackingStep ? 'text-stone-900' : 'text-stone-500'}`}>{step.label}</h4>
-                                <p className="text-xs text-stone-400 hidden md:block">{step.desc}</p>
-                             </div>
+                             <h3 className="text-2xl font-bold text-gray-900 mt-6">Order Delivered!</h3>
+                             <p className="text-gray-600 mt-2">Thank you for your order</p>
                           </div>
-                       ))}
-                    </div>
-                 </div>
 
-                 <div className="mt-12 text-center">
-                    {trackingStep === 3 ? (
-                        <div className="space-y-4">
-                           <div className="p-4 bg-green-50 text-green-700 rounded-lg inline-block">
-                              <p className="font-bold">Enjoy your meal! 🍽️</p>
-                           </div>
-                           {user && order && (
-                              <div className="mt-6">
-                                 {hasFeedback ? (
-                                    <div className="p-4 bg-blue-50 text-blue-700 rounded-lg inline-block">
-                                       <p className="font-bold">✅ Thank you for your feedback!</p>
-                                    </div>
-                                 ) : (
-                                    <button
-                                       onClick={() => setShowFeedbackForm(true)}
-                                       className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold transition-colors"
-                                    >
-                                       📝 Leave Feedback & Rate Your Order
-                                    </button>
-                                 )}
-                              </div>
-                           )}
-                        </div>
+                          {/* Order Summary Card */}
+                          <div className="bg-stone-50 rounded-xl p-6 border border-stone-200">
+                             <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div>
+                                   <p className="text-sm text-stone-600 font-semibold">Order ID</p>
+                                   <p className="text-lg font-bold text-gray-900">#{orderId}</p>
+                                </div>
+                                <div>
+                                   <p className="text-sm text-stone-600 font-semibold">Total Amount</p>
+                                   <p className="text-lg font-bold text-orange-600">${order?.total?.toFixed(2) || 'N/A'}</p>
+                                </div>
+                                <div>
+                                   <p className="text-sm text-stone-600 font-semibold">Items Ordered</p>
+                                   <p className="text-lg font-bold text-gray-900">{order?.items?.length || 0} item(s)</p>
+                                </div>
+                                <div>
+                                   <p className="text-sm text-stone-600 font-semibold">Status</p>
+                                   <p className="text-lg font-bold text-green-600">✅ Delivered</p>
+                                </div>
+                             </div>
+
+                             {/* Items List */}
+                             {order?.items && order.items.length > 0 && (
+                                <div className="border-t border-stone-200 pt-4">
+                                   <p className="font-semibold text-stone-700 mb-3">Items Delivered:</p>
+                                   <ul className="space-y-2">
+                                      {order.items.map((item, index) => (
+                                         <li key={index} className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-700">{item.name}</span>
+                                            <span className="text-stone-600">x{item.quantity}</span>
+                                         </li>
+                                      ))}
+                                   </ul>
+                                </div>
+                             )}
+                          </div>
+
+                          {/* Feedback Section */}
+                          {user && order && (
+                             <div className="mt-6">
+                                {hasFeedback ? (
+                                   <div className="p-4 bg-blue-50 text-blue-700 rounded-lg text-center border border-blue-200">
+                                      <p className="font-bold">✅ Thank you for your feedback!</p>
+                                      <p className="text-sm mt-1">We appreciate your ratings and comments</p>
+                                   </div>
+                                ) : (
+                                   <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
+                                      <h4 className="font-bold text-orange-900 mb-2">Share Your Experience</h4>
+                                      <p className="text-sm text-orange-800 mb-4">Help us improve by rating your order and leaving feedback</p>
+                                      <button
+                                         onClick={() => setShowFeedbackForm(true)}
+                                         className="w-full px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold transition-colors"
+                                      >
+                                         📝 Leave Feedback & Rate Your Order
+                                      </button>
+                                   </div>
+                                )}
+                             </div>
+                          )}
+
+                          <div className="text-center pt-4">
+                             <p className="text-stone-600 text-sm">Enjoy your meal! 🍽️</p>
+                          </div>
+                       </div>
                     ) : (
-                       <p className="text-stone-500 text-sm animate-pulse">Waiting for status update...</p>
+                       // Live Tracking View
+                       <div className="relative">
+                          <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-stone-100 md:hidden"></div>
+                          <div className="hidden md:block absolute top-5 left-0 w-full h-0.5 bg-stone-100"></div>
+                          <div className="hidden md:block absolute top-5 left-0 h-0.5 bg-orange-500 transition-all duration-1000 ease-in-out" style={{ width: `${(trackingStep / 3) * 100}%` }}></div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-4 relative z-10">
+                             {steps.map((step, index) => (
+                                <div key={index} className={`flex md:flex-col items-center gap-4 md:gap-2 transition-colors duration-500 ${index <= trackingStep ? 'opacity-100' : 'opacity-40'}`}>
+                                   <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
+                                      index <= trackingStep ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-stone-200 text-stone-400'
+                                   }`}>
+                                      {step.icon}
+                                   </div>
+                                   <div className="md:text-center">
+                                      <h4 className={`font-bold text-sm ${index <= trackingStep ? 'text-stone-900' : 'text-stone-500'}`}>{step.label}</h4>
+                                      <p className="text-xs text-stone-400 hidden md:block">{step.desc}</p>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+
+                          <div className="mt-12 text-center">
+                             <p className="text-stone-500 text-sm animate-pulse">Waiting for status update...</p>
+                          </div>
+                       </div>
                     )}
-                 </div>
                  </div>
               </div>
             </div>

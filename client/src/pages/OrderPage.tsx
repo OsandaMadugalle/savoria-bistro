@@ -56,11 +56,18 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
     if (!user || finalTotal <= 0) return;
     setIntentLoading(true);
     try {
+      const amountInCents = Math.round(finalTotal * 100);
+      if (amountInCents < 50) {
+        setPaymentError('Minimum order amount is $0.50');
+        setIntentLoading(false);
+        return;
+      }
+
       const response = await fetch(`${API_BASE}/payments/create-intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: Math.round(finalTotal * 100),
+          amount: amountInCents,
           currency: 'usd'
         })
       });
@@ -69,10 +76,17 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
         setClientSecret(data.clientSecret);
         setPaymentError('');
       } else {
-        setPaymentError(data.error || 'Unable to prepare payment.');
+        // Handle specific error codes
+        if (data.code === 'STRIPE_NOT_CONFIGURED') {
+          setPaymentError('Payment service is not configured. Please contact support.');
+        } else if (data.code === 'STRIPE_AUTH_ERROR') {
+          setPaymentError('Payment service authentication failed. Please contact support.');
+        } else {
+          setPaymentError(data.error || 'Unable to prepare payment.');
+        }
       }
     } catch (err) {
-      setPaymentError('Could not reach payment service.');
+      setPaymentError('Could not reach payment service. Please check your connection.');
     } finally {
       setIntentLoading(false);
     }
