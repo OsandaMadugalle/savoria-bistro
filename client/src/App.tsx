@@ -15,6 +15,8 @@ import ProfilePage from './pages/ProfilePage';
 import AdminDashboard from './pages/AdminDashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import NotFoundPage from './pages/NotFoundPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
 
 import AIChef from './components/AIChef';
 import { MenuItem, CartItem, User } from './types';
@@ -103,6 +105,8 @@ const App: React.FC = () => {
             <Route path="/gallery" element={<GalleryPage user={user} />} />
             <Route path="/contact" element={<ContactPage user={user} />} />
             <Route path="/reviews" element={<ReviewsPage user={user} onOpenSignIn={() => { setAuthMode('signin'); setIsLoginModalOpen(true); }} />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-of-service" element={<TermsOfServicePage />} />
             
             {/* Customer-only routes - staff/admin/masterAdmin redirected to /admin */}
             <Route path="/reservation" element={<ProtectedCustomerRoute element={<ReservationPage user={user} />} user={user} />} />

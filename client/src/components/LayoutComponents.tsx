@@ -891,9 +891,8 @@ export const Footer: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-stone-500">
           <span>&copy; {new Date().getFullYear()} Savoria Bistro. All rights reserved. | Crafted with ❤️</span>
           <div className="flex gap-4">
-            <a href="#" className="hover:text-orange-600 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-orange-600 transition-colors">Terms of Service</a>
-            <NavLink to="/staff" className="hover:text-orange-600 transition-colors">Staff Portal</NavLink>
+            <NavLink to="/privacy-policy" className="hover:text-orange-600 transition-colors">Privacy Policy</NavLink>
+            <NavLink to="/terms-of-service" className="hover:text-orange-600 transition-colors">Terms of Service</NavLink>
           </div>
         </div>
       </div>
