@@ -293,7 +293,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [showGalleryUpload, setShowGalleryUpload] = useState(false);
   const [galleryUploadForm, setGalleryUploadForm] = useState({ caption: '', category: '', file: null as File | null });
   const [galleryUploading, setGalleryUploading] = useState(false);
-  const [galleryMessage, setGalleryMessage] = useState('');
 
   // ===== STATE: PROMOS =====
   const [promos, setPromos] = useState<any[]>([
@@ -319,6 +318,158 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
+  // ===== VALIDATION FUNCTIONS =====
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password: string): boolean => {
+    return password.length >= 6;
+  };
+
+  const validatePhoneNumber = (phone: string): boolean => {
+    if (!phone.trim()) return true; // Optional field
+    const phoneRegex = /^[\d\s\-()]{10,}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const validateMenuForm = (): boolean => {
+    if (!menuForm.name?.trim()) {
+      showToast('Dish name is required', 'error');
+      return false;
+    }
+    if (menuForm.name.trim().length < 3) {
+      showToast('Dish name must be at least 3 characters', 'error');
+      return false;
+    }
+    if (!menuForm.price || menuForm.price <= 0) {
+      showToast('Valid price is required (must be greater than 0)', 'error');
+      return false;
+    }
+    if (!menuForm.description?.trim()) {
+      showToast('Description is required', 'error');
+      return false;
+    }
+    if (menuForm.description.trim().length < 10) {
+      showToast('Description must be at least 10 characters', 'error');
+      return false;
+    }
+    return true;
+  };
+
+  const validateAdminForm = (): boolean => {
+    if (!adminForm.name?.trim()) {
+      showToast('Admin name is required', 'error');
+      return false;
+    }
+    if (adminForm.name.trim().length < 3) {
+      showToast('Admin name must be at least 3 characters', 'error');
+      return false;
+    }
+    if (!adminForm.email?.trim()) {
+      showToast('Admin email is required', 'error');
+      return false;
+    }
+    if (!validateEmail(adminForm.email)) {
+      showToast('Please enter a valid email address', 'error');
+      return false;
+    }
+    if (!adminForm.password?.trim()) {
+      showToast('Admin password is required', 'error');
+      return false;
+    }
+    if (!validatePassword(adminForm.password)) {
+      showToast('Password must be at least 6 characters', 'error');
+      return false;
+    }
+    if (adminForm.phone && !validatePhoneNumber(adminForm.phone)) {
+      showToast('Please enter a valid phone number', 'error');
+      return false;
+    }
+    return true;
+  };
+
+  const validateStaffForm = (): boolean => {
+    if (!staffForm.name?.trim()) {
+      showToast('Staff name is required', 'error');
+      return false;
+    }
+    if (staffForm.name.trim().length < 3) {
+      showToast('Staff name must be at least 3 characters', 'error');
+      return false;
+    }
+    if (!staffForm.email?.trim()) {
+      showToast('Staff email is required', 'error');
+      return false;
+    }
+    if (!validateEmail(staffForm.email)) {
+      showToast('Please enter a valid email address', 'error');
+      return false;
+    }
+    if (!staffForm.password?.trim()) {
+      showToast('Staff password is required', 'error');
+      return false;
+    }
+    if (!validatePassword(staffForm.password)) {
+      showToast('Password must be at least 6 characters', 'error');
+      return false;
+    }
+    if (staffForm.phone && !validatePhoneNumber(staffForm.phone)) {
+      showToast('Please enter a valid phone number', 'error');
+      return false;
+    }
+    return true;
+  };
+
+  const validatePromoForm = (): boolean => {
+    if (!promoForm.code?.trim()) {
+      showToast('Promo code is required', 'error');
+      return false;
+    }
+    if (promoForm.code.trim().length < 3) {
+      showToast('Promo code must be at least 3 characters', 'error');
+      return false;
+    }
+    if (!promoForm.discount || promoForm.discount <= 0 || promoForm.discount > 100) {
+      showToast('Discount must be between 1 and 100 percent', 'error');
+      return false;
+    }
+    if (promoForm.expiryDate && new Date(promoForm.expiryDate) <= new Date()) {
+      showToast('Expiry date must be in the future', 'error');
+      return false;
+    }
+    return true;
+  };
+
+  const validateAdminEditForm = (): boolean => {
+    if (!adminEditForm.name?.trim()) {
+      showToast('Admin name is required', 'error');
+      return false;
+    }
+    if (adminEditForm.name.trim().length < 3) {
+      showToast('Admin name must be at least 3 characters', 'error');
+      return false;
+    }
+    if (!adminEditForm.email?.trim()) {
+      showToast('Admin email is required', 'error');
+      return false;
+    }
+    if (!validateEmail(adminEditForm.email)) {
+      showToast('Please enter a valid email address', 'error');
+      return false;
+    }
+    if (adminEditForm.password && !validatePassword(adminEditForm.password)) {
+      showToast('Password must be at least 6 characters', 'error');
+      return false;
+    }
+    if (adminEditForm.phone && !validatePhoneNumber(adminEditForm.phone)) {
+      showToast('Please enter a valid phone number', 'error');
+      return false;
+    }
+    return true;
+  };
+
   // ===== HANDLERS: MENU MANAGEMENT =====
   const readFileAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -332,8 +483,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     setMenuError('');
     setMenuMessage('');
 
-    if (!menuForm.name?.trim()) {
-      setMenuError('Dish name is required');
+    if (!validateMenuForm()) {
       return;
     }
 
@@ -395,8 +545,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     setPromoError('');
     setPromoMessage('');
 
-    if (!promoForm.code.trim()) {
-      setPromoError('Promo code is required');
+    if (!validatePromoForm()) {
       return;
     }
 
@@ -620,6 +769,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
   const handleAddAdmin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateAdminForm()) {
+      return;
+    }
     try {
       await addAdmin({ ...adminForm, requesterEmail: user?.email } as any);
       showToast('Admin added successfully!', 'success');
@@ -629,7 +781,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     } catch (err: any) {
       showToast(err.message || 'Failed to add admin', 'error');
     }
-  }, [adminForm, user, loadAdmins, loadUsers, showToast]);
+  }, [adminForm, user, loadAdmins, loadUsers, showToast, validateAdminForm]);
 
   const handleEditAdminStart = (admin: User) => {
     if (admin._id) {
@@ -641,6 +793,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const handleSaveAdmin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAdminId) return;
+    if (!validateAdminEditForm()) {
+      return;
+    }
     try {
       await updateAdmin(editingAdminId, adminEditForm);
       showToast('Admin updated successfully!', 'success');
@@ -650,7 +805,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     } catch (err: any) {
       showToast(err.message || 'Failed to update admin', 'error');
     }
-  }, [editingAdminId, adminEditForm, loadAdmins, showToast]);
+  }, [editingAdminId, adminEditForm, loadAdmins, showToast, validateAdminEditForm]);
 
   const handleDeleteAdmin = useCallback(async (adminId: string) => {
     if (!window.confirm('Are you sure you want to delete this admin?')) return;
@@ -665,6 +820,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
   const handleAddStaff = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateStaffForm()) {
+      return;
+    }
     try {
       await addStaff({ ...staffForm, requesterEmail: user?.email } as any);
       showToast('Staff added successfully!', 'success');
@@ -673,7 +831,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     } catch (err: any) {
       showToast(err.message || 'Failed to add staff', 'error');
     }
-  }, [staffForm, user, loadUsers, showToast]);
+  }, [staffForm, user, loadUsers, showToast, validateStaffForm]);
 
   // ===== HANDLERS: MASTER ADMIN OPERATIONS =====
   const handleRefreshData = useCallback(async () => {
@@ -2505,7 +2663,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         <form onSubmit={async (e) => {
                         e.preventDefault();
                         if (!galleryUploadForm.caption || !galleryUploadForm.category || !galleryUploadForm.file) {
-                          setGalleryMessage('All fields required');
+                          showToast('All fields required', 'error');
                           return;
                         }
                         try {
@@ -2522,13 +2680,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             });
                             setGalleryUploadForm({ caption: '', category: '', file: null });
                             setShowGalleryUpload(false);
-                            setGalleryMessage('Image uploaded successfully!');
+                            showToast('Image uploaded successfully!', 'success');
                             loadGalleryImages();
-                            setTimeout(() => setGalleryMessage(''), 3000);
                           };
                           reader.readAsDataURL(galleryUploadForm.file);
                         } catch (error) {
-                          setGalleryMessage('Failed to upload image');
+                          showToast('Failed to upload image', 'error');
                         } finally {
                           setGalleryUploading(false);
                         }
@@ -2583,11 +2740,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     </div>
                   )}
 
-                  {galleryMessage && (
-                    <div className="fixed top-4 right-4 px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg shadow-lg z-40 animate-in fade-in slide-in-from-top-2">
-                      {galleryMessage}
-                    </div>
-                  )}
+
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {Array.isArray(galleryImages) && galleryImages.map((img: any) => (

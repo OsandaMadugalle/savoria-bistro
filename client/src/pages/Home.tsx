@@ -111,7 +111,7 @@ const Home: React.FC = () => {
       <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://picsum.photos/1920/1080?grayscale&blur=2" 
+            src="/src/assets/hero.jpg" 
             alt="Restaurant Interior" 
             className="w-full h-full object-cover"
           />
@@ -215,7 +215,7 @@ const Home: React.FC = () => {
           <div className="order-2 md:order-1 relative">
             <div className="absolute -top-4 -left-4 w-24 h-24 bg-orange-100 rounded-full -z-10" />
             <img 
-              src="https://picsum.photos/600/800?random=10" 
+              src="/src/assets/Introduction.jpg" 
               alt="Chef Plating" 
               className="rounded-lg shadow-xl w-full object-cover h-[500px]"
             />
