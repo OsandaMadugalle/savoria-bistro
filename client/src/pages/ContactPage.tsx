@@ -167,8 +167,8 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
               </div>
             </div>
 
-            {/* Location Map */}
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            {/* Location Map with Locations Info */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col">
               <iframe
                 title="Savoria Bistro Locations"
                 className="w-full h-64"
@@ -178,35 +178,35 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
-            </div>
-
-            {/* Multiple Locations Info */}
-            <div className="bg-gradient-to-br from-orange-50 to-stone-50 rounded-2xl shadow-lg p-6 border border-orange-200">
-              <h3 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
-                <MapPin size={20} className="text-orange-600" />
-                Our Locations
-              </h3>
-              <div className="space-y-3">
-                <div className="p-3 bg-white rounded-lg border-l-4 border-orange-600">
-                  <p className="font-semibold text-stone-900 text-sm">Main Branch</p>
-                  <p className="text-stone-600 text-xs">123 Culinary Avenue, Food District, NY 10012</p>
-                  <p className="text-orange-600 text-xs font-bold mt-1">📞 (555) 123-4567</p>
-                </div>
-                <div className="p-3 bg-white rounded-lg border-l-4 border-orange-600">
-                  <p className="font-semibold text-stone-900 text-sm">Downtown Branch</p>
-                  <p className="text-stone-600 text-xs">456 Gourmet Street, Downtown, NY 10001</p>
-                  <p className="text-orange-600 text-xs font-bold mt-1">📞 (555) 987-6543</p>
+              
+              {/* Multiple Locations Info - Inside Map Card */}
+              <div className="p-4 border-t border-stone-100 bg-gradient-to-br from-orange-50 to-stone-50">
+                <h3 className="text-sm font-bold text-stone-900 mb-3 flex items-center gap-2">
+                  <MapPin size={16} className="text-orange-600" />
+                  Our Locations
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-xs">
+                    <p className="font-semibold text-stone-900">Main Branch</p>
+                    <p className="text-stone-600">123 Culinary Avenue, Food District, NY 10012</p>
+                    <p className="text-orange-600 font-bold mt-0.5">📞 (555) 123-4567</p>
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-semibold text-stone-900">Downtown Branch</p>
+                    <p className="text-stone-600">456 Gourmet Street, Downtown, NY 10001</p>
+                    <p className="text-orange-600 font-bold mt-0.5">📞 (555) 987-6543</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Event Inquiry Form */}
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-serif font-bold text-stone-900 mb-6">Private Events Inquiry</h2>
+          <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col h-fit">
+            <h2 className="text-xl font-serif font-bold text-stone-900 mb-4">Private Events Inquiry</h2>
             
             {submitted ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8">
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
                   <CheckCircle size={32} />
                 </div>
@@ -214,66 +214,66 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                 <p className="text-stone-600">We've received your inquiry and will be in touch soon.</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-0">
                 {user && (
-                   <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl text-sm text-orange-800 flex items-center gap-3 mb-3 shadow-sm">
-                      <UserIcon size={18} className="flex-shrink-0" />
+                   <div className="bg-orange-50 border border-orange-200 p-3 rounded-xl text-xs text-orange-800 flex items-center gap-2 mb-4 shadow-sm">
+                      <UserIcon size={16} className="flex-shrink-0" />
                       <span>Your profile information is pre-filled. Update any field before submitting.</span>
                    </div>
                 )}
                 {formError && (
-                  <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">
+                  <div className="p-2 bg-red-50 text-red-600 rounded-lg text-xs border border-red-100 mb-4">
                     {formError}
                   </div>
                 )}
-                <div>
-                  <label className="block text-sm font-bold text-stone-600 mb-2">Full Name *</label>
+                <div className="mb-4">
+                  <label className="block text-xs font-bold text-stone-600 mb-1.5">Full Name *</label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                    className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
                     placeholder="Your name"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 mb-4">
                   <div>
-                    <label className="block text-sm font-bold text-stone-600 mb-2">Email *</label>
+                    <label className="block text-xs font-bold text-stone-600 mb-1.5">Email *</label>
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
                       placeholder="your@email.com"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-stone-600 mb-2">Phone *</label>
+                    <label className="block text-xs font-bold text-stone-600 mb-1.5">Phone *</label>
                     <input
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
                       placeholder="(555) 000-0000"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 mb-4">
                   <div>
-                    <label className="block text-sm font-bold text-stone-600 mb-2">Event Type *</label>
+                    <label className="block text-xs font-bold text-stone-600 mb-1.5">Event Type *</label>
                     <select
                       name="eventType"
                       value={formData.eventType}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white"
+                      className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white text-sm"
                     >
                       <option value="wedding">Wedding</option>
                       <option value="birthday">Birthday Party</option>
@@ -283,7 +283,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-stone-600 mb-2">Guest Count *</label>
+                    <label className="block text-xs font-bold text-stone-600 mb-1.5">Guest Count *</label>
                     <input
                       type="text"
                       name="guestCount"
@@ -292,14 +292,14 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                       onKeyPress={(e) => !/[0-9]/.test(e.key) && e.preventDefault()}
                       required
                       inputMode="numeric"
-                      className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
                       placeholder="e.g., 50"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-stone-600 mb-2">Preferred Date *</label>
+                <div className="mb-4">
+                  <label className="block text-xs font-bold text-stone-600 mb-1.5">Preferred Date *</label>
                     <input
                       type="date"
                       name="eventDate"
@@ -307,18 +307,18 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                       value={formData.eventDate}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
                     />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-stone-600 mb-2">Message</label>
+                <div className="mb-4 flex-1">
+                  <label className="block text-xs font-bold text-stone-600 mb-1.5">Message</label>
                   <textarea
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
-                    rows={4}
-                    className="w-full px-4 py-2.5 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all resize-none"
+                    rows={3}
+                    className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all resize-none text-sm"
                     placeholder="Tell us about your event, dietary preferences, theme ideas, etc."
                   />
                 </div>
@@ -326,7 +326,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="mt-auto pt-3 w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-2.5 rounded-lg transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed text-sm"
                 >
                   {isSubmitting ? 'Sending…' : 'Submit Inquiry'}
                 </button>
