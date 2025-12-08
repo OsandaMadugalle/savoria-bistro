@@ -167,10 +167,36 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
               </div>
             </div>
 
-            {/* Map Placeholder */}
+            {/* Location Map */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="h-64 bg-gradient-to-br from-stone-200 to-stone-300 flex items-center justify-center">
-                <MapPin size={48} className="text-stone-400" />
+              <iframe
+                title="Savoria Bistro Locations"
+                className="w-full h-64"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3024.2219901290355!2d-74.00601!3d40.71455!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a2aabe4f6d7%3A0x1c9e8b8b8b8b8b8b!2s123%20Culinary%20Avenue%2C%20New%20York%2C%20NY%2010012!5e0!3m2!1sen!2sus!4v1639846800000!5m2!1sen!2sus"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+
+            {/* Multiple Locations Info */}
+            <div className="bg-gradient-to-br from-orange-50 to-stone-50 rounded-2xl shadow-lg p-6 border border-orange-200">
+              <h3 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
+                <MapPin size={20} className="text-orange-600" />
+                Our Locations
+              </h3>
+              <div className="space-y-3">
+                <div className="p-3 bg-white rounded-lg border-l-4 border-orange-600">
+                  <p className="font-semibold text-stone-900 text-sm">Main Branch</p>
+                  <p className="text-stone-600 text-xs">123 Culinary Avenue, Food District, NY 10012</p>
+                  <p className="text-orange-600 text-xs font-bold mt-1">📞 (555) 123-4567</p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border-l-4 border-orange-600">
+                  <p className="font-semibold text-stone-900 text-sm">Downtown Branch</p>
+                  <p className="text-stone-600 text-xs">456 Gourmet Street, Downtown, NY 10001</p>
+                  <p className="text-orange-600 text-xs font-bold mt-1">📞 (555) 987-6543</p>
+                </div>
               </div>
             </div>
           </div>
