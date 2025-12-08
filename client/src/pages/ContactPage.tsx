@@ -21,6 +21,13 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
   const [formData, setFormData] = useState(buildInitialFormState(user));
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    eventDate?: string;
+    guestCount?: string;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const todayDateString = new Date().toISOString().split('T')[0];
 
@@ -56,39 +63,64 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
   }, [user]);
 
   const validateForm = () => {
-    if (!formData.name.trim()) return 'Full name is required.';
-    if (!formData.email.trim()) return 'Email address is required.';
-    if (!formData.phone.trim()) return 'Phone number is required.';
-    const normalizedPhone = formData.phone.replace(/[^0-9+]/g, '');
-    if (!/^[+]?[0-9]{8,15}$/.test(normalizedPhone)) return 'Phone number must contain 8–15 digits.';
-    if (!formData.eventDate) return 'Preferred event date is required.';
-    if (!formData.guestCount) return 'Guest count is required.';
-    const guestCountNumber = Number(formData.guestCount);
-    if (Number.isNaN(guestCountNumber) || guestCountNumber < 10) {
-      return 'Guest count should be at least 10 guests.';
+    const errors: typeof fieldErrors = {};
+    
+    if (!formData.name.trim()) {
+      errors.name = 'Full name is required.';
+    } else {
+      const nameRegex = /^[a-zA-ZÀ-ž'\-\s]+$/;
+      if (!nameRegex.test(formData.name.trim())) {
+        errors.name = 'Name should contain only letters, spaces, apostrophes, or hyphens.';
+      }
     }
-    if (formData.eventDate) {
+    
+    if (!formData.email.trim()) {
+      errors.email = 'Email address is required.';
+    } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address.';
+    }
+    
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required.';
+    } else {
+      const normalizedPhone = formData.phone.replace(/[^0-9+]/g, '');
+      if (!/^[+]?[0-9]{8,15}$/.test(normalizedPhone)) {
+        errors.phone = 'Phone number must contain 8–15 digits.';
+      }
+    }
+    
+    if (!formData.eventDate) {
+      errors.eventDate = 'Preferred event date is required.';
+    } else {
       const selectedDate = new Date(formData.eventDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (selectedDate < today) {
-        return 'Please choose a future date for the event.';
+        errors.eventDate = 'Please choose a future date for the event.';
       }
     }
-    const nameRegex = /^[a-zA-ZÀ-ž'\-\s]+$/;
-    if (!nameRegex.test(formData.name.trim())) {
-      return 'Full name should contain only letters, spaces, apostrophes, or hyphens.';
+    
+    if (!formData.guestCount) {
+      errors.guestCount = 'Guest count is required.';
+    } else {
+      const guestCountNumber = Number(formData.guestCount);
+      if (Number.isNaN(guestCountNumber) || guestCountNumber < 10) {
+        errors.guestCount = 'Guest count should be at least 10 guests.';
+      }
     }
-    return null;
+    
+    return Object.keys(errors).length > 0 ? errors : null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const validationError = validateForm();
-    if (validationError) {
-      setFormError(validationError);
+    const validationErrors = validateForm();
+    if (validationErrors) {
+      setFieldErrors(validationErrors);
+      setFormError('');
       return;
     }
+    setFieldErrors({});
     setFormError('');
     setIsSubmitting(true);
     try {
@@ -234,9 +266,10 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-orange-500 outline-none transition-all text-sm ${fieldErrors.name ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                     placeholder="Your name"
                   />
+                  {fieldErrors.name && <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.name}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-4">
@@ -248,9 +281,10 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-orange-500 outline-none transition-all text-sm ${fieldErrors.email ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                       placeholder="your@email.com"
                     />
+                    {fieldErrors.email && <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.email}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-stone-600 mb-1.5">Phone *</label>
@@ -260,9 +294,10 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                       value={formData.phone}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-orange-500 outline-none transition-all text-sm ${fieldErrors.phone ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                       placeholder="(555) 000-0000"
                     />
+                    {fieldErrors.phone && <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.phone}</p>}
                   </div>
                 </div>
 
@@ -292,9 +327,10 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                       onKeyPress={(e) => !/[0-9]/.test(e.key) && e.preventDefault()}
                       required
                       inputMode="numeric"
-                      className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-orange-500 outline-none transition-all text-sm ${fieldErrors.guestCount ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                       placeholder="e.g., 50"
                     />
+                    {fieldErrors.guestCount && <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.guestCount}</p>}
                   </div>
                 </div>
 
@@ -307,8 +343,9 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                       value={formData.eventDate}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-orange-500 outline-none transition-all text-sm ${fieldErrors.eventDate ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                     />
+                    {fieldErrors.eventDate && <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.eventDate}</p>}
                 </div>
 
                 <div className="mb-4 flex-1">
