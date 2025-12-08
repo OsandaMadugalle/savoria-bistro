@@ -369,7 +369,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Featured Reviews Section */}
+      {/* Featured Reviews Section - Rating Breakdown */}
       <section className="py-20 bg-gradient-to-br from-stone-900 via-orange-900 to-stone-900 text-white px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
@@ -378,20 +378,49 @@ const Home: React.FC = () => {
           </div>
           
           {reviews.length > 0 ? (
-            <div className="space-y-8">
-              {reviews.slice(0, 3).map((review: Review, idx: number) => (
-                <div key={idx} className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:border-orange-400/50 transition-all">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex gap-1 text-orange-400">
-                      {[...Array(5)].map((_, i) => <Star key={i} fill="currentColor" size={20} />)}
-                    </div>
-                  </div>
-                  <blockquote className="text-lg md:text-xl font-serif italic leading-relaxed mb-4 text-white/90">
-                    "{review.text}"
-                  </blockquote>
-                  <cite className="not-italic text-stone-300 font-semibold">— {review.author}</cite>
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-12 border border-white/20">
+              {/* Average Rating */}
+              <div className="text-center mb-12">
+                <div className="text-6xl font-bold text-orange-400 mb-3">
+                  {(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)}
                 </div>
-              ))}
+                <div className="flex justify-center gap-1 text-orange-400 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Star 
+                      key={i} 
+                      fill={i < Math.round(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length) ? "currentColor" : "none"} 
+                      size={24}
+                      className={i < Math.round(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length) ? "" : "text-stone-500"}
+                    />
+                  ))}
+                </div>
+                <p className="text-stone-300 text-sm">Based on {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</p>
+              </div>
+
+              {/* Rating Breakdown */}
+              <div className="space-y-4">
+                {[5, 4, 3, 2, 1].map((rating) => {
+                  const count = reviews.filter(r => r.rating === rating).length;
+                  const percentage = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0;
+                  return (
+                    <div key={rating} className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 w-16">
+                        <span className="font-semibold text-orange-400">{rating}</span>
+                        <Star fill="currentColor" size={14} className="text-orange-400" />
+                      </div>
+                      <div className="flex-1 bg-white/20 rounded-full h-3 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-orange-400 to-orange-500 h-full transition-all duration-500"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <div className="w-16 text-right">
+                        <span className="font-bold text-orange-400">{percentage}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ) : (
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-12 border border-white/20 text-center">

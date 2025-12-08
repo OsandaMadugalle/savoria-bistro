@@ -26,10 +26,14 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
   const [success, setSuccess] = useState('');
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'highest' | 'lowest'>('newest');
+  const [userReviews, setUserReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     loadReviews();
-  }, []);
+    if (user?.email) {
+      loadUserReviews();
+    }
+  }, [user]);
 
   const loadReviews = async () => {
     try {
@@ -42,6 +46,19 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
       console.error('Failed to load reviews:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUserReviews = async () => {
+    if (!user?.email) return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/reviews/user/${encodeURIComponent(user.email)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserReviews(data);
+      }
+    } catch (err) {
+      console.error('Failed to load user reviews:', err);
     }
   };
 
@@ -115,7 +132,13 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
       setSuccess('Thank you for your review! It will appear after admin approval.');
       setFormData({ title: '', rating: 5, text: '', image: null });
       setIsFormOpen(false);
-      setTimeout(() => setSuccess(''), 5000);
+      
+      // Reload reviews and user reviews
+      setTimeout(() => {
+        loadReviews();
+        loadUserReviews();
+        setSuccess('');
+      }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to submit review');
     } finally {
@@ -341,6 +364,40 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
         {loading && (
           <div className="flex justify-center items-center py-20">
             <Loader2 size={40} className="animate-spin text-orange-600" />
+          </div>
+        )}
+
+        {/* User's Reviews Section */}
+        {user && userReviews.length > 0 && !loading && (
+          <div className="mb-12 bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
+            <h2 className="text-2xl font-serif font-bold text-stone-900 mb-4">Your Reviews</h2>
+            <div className="space-y-4">
+              {userReviews.map((review) => (
+                <div key={review._id} className="bg-white p-4 rounded-xl border border-blue-100">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold text-stone-900">{review.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex text-orange-500">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} fill={i < review.rating ? "currentColor" : "none"} size={14} className={i < review.rating ? "" : "text-stone-300"} />
+                          ))}
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                          review.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {review.status === 'approved' ? 'Approved' : 'Pending Review'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-stone-500">
+                      {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Recently'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-stone-700">"{review.text}"</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
