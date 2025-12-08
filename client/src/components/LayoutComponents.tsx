@@ -67,27 +67,42 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
   const [signupError, setSignupError] = useState('');
   const [signupAddress, setSignupAddress] = useState('');
   const [signupBirthday, setSignupBirthday] = useState('');
+  // Field-specific error states
+  const [signupFieldErrors, setSignupFieldErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+  const [loginFieldErrors, setLoginFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
 
   const navigate = useNavigate();
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    // Basic validation
-    if (!loginEmail || !loginPassword) {
-      setLoginError('Email and password are required.');
+    const errors: typeof loginFieldErrors = {};
+    
+    // Field validation
+    if (!loginEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(loginEmail)) {
+      errors.email = 'Email is invalid.';
+    }
+    
+    if (!loginPassword) {
+      errors.password = 'Password is required.';
+    }
+    
+    // If there are field errors, display them and return
+    if (Object.keys(errors).length > 0) {
+      setLoginFieldErrors(errors);
       return;
     }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(loginEmail)) {
-      setLoginError('Please enter a valid email address.');
-      return;
-    }
-    // Strong password validation
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
-    if (!strongPasswordRegex.test(loginPassword)) {
-      setLoginError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
-      return;
-    }
+    
+    setLoginFieldErrors({});
     setIsLoggingIn(true);
     try {
       const loggedInUser = await loginUser(loginEmail, loginPassword);
@@ -114,33 +129,42 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupError('');
-    // Basic validation
+    const errors: typeof signupFieldErrors = {};
+    
+    // Field validation
     if (!signupName.trim()) {
-      setSignupError('Full name is required.');
-      return;
+      errors.name = 'Full name is required.';
     }
+    
     if (!signupEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(signupEmail)) {
-      setSignupError('Please enter a valid email address.');
-      return;
+      errors.email = 'Please enter a valid email address.';
     }
+    
     if (!signupPhone || !/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/.test(signupPhone)) {
-      setSignupError('Please enter a valid phone number.');
-      return;
+      errors.phone = 'Please enter a valid phone number (e.g., (555) 123-4567).';
     }
-    if (!signupPassword || !signupConfirmPassword) {
-      setSignupError('Please enter and confirm your password.');
-      return;
-    }
+    
     // Strong password validation
     const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
-    if (!strongPasswordRegex.test(signupPassword)) {
-      setSignupError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
+    if (!signupPassword) {
+      errors.password = 'Password is required.';
+    } else if (!strongPasswordRegex.test(signupPassword)) {
+      errors.password = 'Password must be 8+ chars with uppercase, lowercase, number & special character.';
+    }
+    
+    if (!signupConfirmPassword) {
+      errors.confirmPassword = 'Please confirm your password.';
+    } else if (signupPassword !== signupConfirmPassword) {
+      errors.confirmPassword = 'Passwords do not match.';
+    }
+    
+    // If there are field errors, display them and return
+    if (Object.keys(errors).length > 0) {
+      setSignupFieldErrors(errors);
       return;
     }
-    if (signupPassword !== signupConfirmPassword) {
-      setSignupError('Passwords do not match.');
-      return;
-    }
+    
+    setSignupFieldErrors({});
     try {
       await import('../services/api').then(mod => mod.registerUser({
         name: signupName,
@@ -209,6 +233,10 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
           showSignupConfirmPassword={showSignupConfirmPassword}
           setShowSignupConfirmPassword={setShowSignupConfirmPassword}
           signupError={signupError}
+          signupFieldErrors={signupFieldErrors}
+          setSignupFieldErrors={setSignupFieldErrors}
+          loginFieldErrors={loginFieldErrors}
+          setLoginFieldErrors={setLoginFieldErrors}
           handleLoginSubmit={handleLoginSubmit}
           handleSignupSubmit={handleSignupSubmit}
         />
@@ -319,6 +347,10 @@ interface CustomerNavbarProps {
   setSignupAddress: (value: string) => void;
   signupBirthday: string;
   setSignupBirthday: (value: string) => void;
+  signupFieldErrors: { name?: string; email?: string; phone?: string; password?: string; confirmPassword?: string };
+  setSignupFieldErrors: (errors: { name?: string; email?: string; phone?: string; password?: string; confirmPassword?: string }) => void;
+  loginFieldErrors: { email?: string; password?: string };
+  setLoginFieldErrors: (errors: { email?: string; password?: string }) => void;
   handleLoginSubmit: (e: React.FormEvent) => Promise<void>;
   handleSignupSubmit: (e: React.FormEvent) => Promise<void>;
 }
@@ -359,6 +391,10 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
   showSignupConfirmPassword,
   setShowSignupConfirmPassword,
   signupError,
+  signupFieldErrors,
+  setSignupFieldErrors,
+  loginFieldErrors,
+  setLoginFieldErrors,
   handleLoginSubmit,
   handleSignupSubmit,
 }) => {
@@ -578,11 +614,12 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                       <input 
                         type="email" 
                         value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        onChange={(e) => { setLoginEmail(e.target.value); if (loginFieldErrors.email) setLoginFieldErrors({ ...loginFieldErrors, email: undefined }); }}
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${loginFieldErrors.email ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                         placeholder="you@example.com"
                       />
                     </div>
+                    {loginFieldErrors.email && <p className="text-red-600 text-xs mt-1 font-medium">{loginFieldErrors.email}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Password</label>
@@ -591,8 +628,8 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                       <input 
                         type={showPassword ? "text" : "password"}
                         value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        onChange={(e) => { setLoginPassword(e.target.value); if (loginFieldErrors.password) setLoginFieldErrors({ ...loginFieldErrors, password: undefined }); }}
+                        className={`w-full pl-10 pr-10 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${loginFieldErrors.password ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                         placeholder="••••••••"
                       />
                       <button
@@ -605,6 +642,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
+                    {loginFieldErrors.password && <p className="text-red-600 text-xs mt-1 font-medium">{loginFieldErrors.password}</p>}
                   </div>
                   <button 
                     type="submit" 
@@ -627,10 +665,11 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         type="text" 
                         value={signupName}
                         onChange={(e) => setSignupName(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${(signupFieldErrors as any).name ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                         placeholder="John Doe"
                       />
                     </div>
+                    {(signupFieldErrors as any).name && <p className="text-red-600 text-xs mt-1 font-medium">{(signupFieldErrors as any).name}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Email</label>
@@ -641,10 +680,11 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         type="email" 
                         value={signupEmail}
                         onChange={(e) => setSignupEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${(signupFieldErrors as any).email ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                         placeholder="john@example.com"
                       />
                     </div>
+                    {(signupFieldErrors as any).email && <p className="text-red-600 text-xs mt-1 font-medium">{(signupFieldErrors as any).email}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Phone Number</label>
@@ -654,11 +694,12 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         required
                         type="tel" 
                         value={signupPhone}
-                        onChange={(e) => setSignupPhone(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        onChange={(e) => { const phoneValue = e.target.value.replace(/[^0-9()\s\-]/g, ''); setSignupPhone(phoneValue); if (signupFieldErrors.phone) setSignupFieldErrors({ ...signupFieldErrors, phone: undefined }); }}
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${signupFieldErrors.phone ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                         placeholder="(555) 000-0000"
                       />
                     </div>
+                    {signupFieldErrors.phone && <p className="text-red-600 text-xs mt-1 font-medium">{signupFieldErrors.phone}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Address</label>
@@ -681,6 +722,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         type="date"
                         value={signupBirthday}
                         onChange={(e) => setSignupBirthday(e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                         placeholder="MM/DD/YYYY"
                       />
@@ -694,8 +736,8 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         required
                         type={showSignupPassword ? "text" : "password"}
                         value={signupPassword}
-                        onChange={(e) => setSignupPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        onChange={(e) => { setSignupPassword(e.target.value); if (signupFieldErrors.password) setSignupFieldErrors({ ...signupFieldErrors, password: undefined }); }}
+                        className={`w-full pl-10 pr-10 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${signupFieldErrors.password ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                         placeholder="Create a password"
                       />
                       <button
@@ -708,6 +750,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         {showSignupPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
+                    {signupFieldErrors.password && <p className="text-red-600 text-xs mt-1 font-medium">{signupFieldErrors.password}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Confirm Password</label>
@@ -717,8 +760,8 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         required
                         type={showSignupConfirmPassword ? "text" : "password"}
                         value={signupConfirmPassword}
-                        onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        onChange={(e) => { setSignupConfirmPassword(e.target.value); if (signupFieldErrors.confirmPassword) setSignupFieldErrors({ ...signupFieldErrors, confirmPassword: undefined }); }}
+                        className={`w-full pl-10 pr-10 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${signupFieldErrors.confirmPassword ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
                         placeholder="Confirm your password"
                       />
                       <button
@@ -731,6 +774,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         {showSignupConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
+                    {signupFieldErrors.confirmPassword && <p className="text-red-600 text-xs mt-1 font-medium">{signupFieldErrors.confirmPassword}</p>}
                   </div>
                   <button 
                     type="submit" 

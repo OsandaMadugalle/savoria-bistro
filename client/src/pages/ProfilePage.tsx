@@ -128,8 +128,18 @@ const ProfilePage: React.FC = () => {
          });
    }, []);
 
-   const nextRewardPoints = 1000;
-   const progress = user ? (user.loyaltyPoints / nextRewardPoints) * 100 : 0;
+   // Calculate next tier threshold based on current tier
+   const getTierThresholds = () => {
+      if (!user) return { current: 0, next: 500 };
+      if (user.tier === 'Bronze') return { current: 0, next: 500 };
+      if (user.tier === 'Silver') return { current: 500, next: 1500 };
+      return { current: 1500, next: 1500 }; // Gold is max
+   };
+   
+   const tiers = getTierThresholds();
+   const pointsTowardsTier = user ? user.loyaltyPoints - tiers.current : 0;
+   const pointsNeededForTier = tiers.next - tiers.current;
+   const progress = user && user.tier !== 'Gold' ? Math.min((pointsTowardsTier / pointsNeededForTier) * 100, 100) : 100;
 
    // Edit profile handlers
    const handleEditClick = () => {
@@ -257,7 +267,7 @@ const ProfilePage: React.FC = () => {
                    
                    <div className="mb-2 flex justify-between items-end">
                       <span className="text-4xl font-bold">{user.loyaltyPoints}</span>
-                      <span className="text-sm text-stone-400">/ {nextRewardPoints} pts</span>
+                      <span className="text-sm text-stone-400">/ {tiers.next} pts</span>
                    </div>
                    
                    {/* Progress Bar */}
@@ -267,7 +277,7 @@ const ProfilePage: React.FC = () => {
                    
                    <p className="text-xs text-stone-400 flex items-center gap-1 mb-4">
                       <Gift size={12} className="text-yellow-500" />
-                      {Math.max(0, nextRewardPoints - user.loyaltyPoints)} points until next reward!
+                      {user.tier === 'Gold' ? 'You are at max tier! 🏆' : `${Math.max(0, tiers.next - user.loyaltyPoints)} points until next tier!`}
                    </p>
 
                    {/* Tier Benefits */}

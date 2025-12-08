@@ -69,9 +69,9 @@ router.post('/', async (req, res) => {
       { new: true }
     );
     
-    // Update tier based on new points total
+    // Update tier based on new points total (user already has updated loyaltyPoints from $inc)
     if (user) {
-      const newTier = calculateTier(user.loyaltyPoints + pointsEarned);
+      const newTier = calculateTier(user.loyaltyPoints);
       await User.findByIdAndUpdate(newOrder.userId, { tier: newTier });
     }
 
