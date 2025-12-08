@@ -55,6 +55,14 @@ const ProtectedAdminRoute: React.FC<{ element: React.ReactElement; user: User | 
   return element;
 };
 
+// Protected Route Component - Only authenticated users can access
+const ProtectedAuthRoute: React.FC<{ element: React.ReactElement; user: User | null }> = ({ element, user }) => {
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  return element;
+};
+
 const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<User | null>(null);
@@ -114,7 +122,7 @@ const App: React.FC = () => {
             <Route path="/tracker" element={<ProtectedCustomerRoute element={<TrackerPage user={user} />} user={user} />} />
             
             {/* Profile route - accessible to all authenticated users */}
-            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile" element={<ProtectedAuthRoute element={<ProfilePage />} user={user} />} />
             
             {/* Protected Dashboard Routes - admin and masterAdmin only */}
             <Route path="/admin" element={<ProtectedAdminRoute element={<AdminDashboard user={user} />} user={user} />} />
