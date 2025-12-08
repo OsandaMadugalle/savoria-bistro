@@ -1184,6 +1184,50 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         >
                           ⭐ Tier Analysis
                         </button>
+                        <button 
+                          onClick={async () => {
+                            const { generateSalesReport, exportToCSV } = await import('../services/reportingService');
+                            const reportData = generateSalesReport(orders);
+                            exportToCSV('sales-report', reportData, ['Date', 'Orders', 'Total Revenue', 'Avg Order Value', 'Total Items']);
+                          }}
+                          className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 font-semibold"
+                          title="Export detailed sales report"
+                        >
+                          📈 Sales Report
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            const { generateStaffPerformanceReport, exportToCSV } = await import('../services/reportingService');
+                            const reportData = generateStaffPerformanceReport(users, orders);
+                            exportToCSV('staff-performance', reportData, ['Staff Name', 'Email', 'Phone', 'Total Orders', 'Total Revenue', 'Avg Revenue per Order', 'Shift Hours', 'Status']);
+                          }}
+                          className="px-3 py-1 bg-indigo-500 text-white rounded-lg text-sm hover:bg-indigo-600 font-semibold"
+                          title="Export staff performance metrics"
+                        >
+                          👔 Staff Performance
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            const { generateInventoryReport, exportToCSV } = await import('../services/reportingService');
+                            const reportData = generateInventoryReport(menuItems);
+                            exportToCSV('inventory-report', reportData, ['Item ID', 'Item Name', 'Category', 'Price', 'Availability', 'Dietary', 'Prep Time (min)', 'Calories', 'Featured']);
+                          }}
+                          className="px-3 py-1 bg-teal-500 text-white rounded-lg text-sm hover:bg-teal-600 font-semibold"
+                          title="Export inventory and menu management"
+                        >
+                          📦 Inventory
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            const { generateComprehensiveReport, exportToPDF } = await import('../services/reportingService');
+                            const reportContent = await generateComprehensiveReport(orders, users, reservations, menuItems);
+                            exportToPDF('comprehensive-report', 'Comprehensive Business Report', reportContent);
+                          }}
+                          className="px-3 py-1 bg-pink-500 text-white rounded-lg text-sm hover:bg-pink-600 font-semibold"
+                          title="Export complete business report as PDF"
+                        >
+                          📄 PDF Report
+                        </button>
                       </div>
                     </div>
 

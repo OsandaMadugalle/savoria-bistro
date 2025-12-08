@@ -280,3 +280,191 @@ export const generateComprehensiveReport = async (
 
   return sections.join('\n');
 };
+
+/**
+ * Generate sales report by date range
+ */
+export const generateSalesReport = (orders: any[], startDate?: Date, endDate?: Date): any[] => {
+  const start = startDate || new Date(new Date().getFullYear(), 0, 1);
+  const end = endDate || new Date();
+
+  const filteredOrders = orders.filter(o => {
+    const orderDate = new Date(o.createdAt);
+    return orderDate >= start && orderDate <= end;
+  });
+
+  const reportByDate: Record<string, any> = {};
+  
+  filteredOrders.forEach(order => {
+    const dateKey = new Date(order.createdAt).toLocaleDateString();
+    if (!reportByDate[dateKey]) {
+      reportByDate[dateKey] = {
+        'Date': dateKey,
+        'Orders': 0,
+        'Revenue': 0,
+        'Avg Order': 0,
+        'Items': 0,
+      };
+    }
+    reportByDate[dateKey].Orders += 1;
+    reportByDate[dateKey].Revenue += order.total || 0;
+    reportByDate[dateKey].Items += order.items?.length || 0;
+  });
+
+  // Calculate averages and format
+  return Object.values(reportByDate)
+    .map((day: any) => ({
+      'Date': day.Date,
+      'Orders': day.Orders,
+      'Total Revenue': day.Revenue.toFixed(2),
+      'Avg Order Value': (day.Revenue / day.Orders).toFixed(2),
+      'Total Items': day.Items,
+    }))
+    .sort((a: any, b: any) => new Date(a.Date).getTime() - new Date(b.Date).getTime());
+};
+
+/**
+ * Generate staff performance report
+ */
+export const generateStaffPerformanceReport = (users: any[], orders: any[]): any[] => {
+  const staffUsers = users.filter(u => u.role === 'staff');
+
+  return staffUsers.map(staff => {
+    // Count orders handled by this staff member (using email or name reference)
+    const staffOrders = orders.filter(o => 
+      o.handledBy === staff.email || o.staffId === staff._id
+    );
+
+    const totalRevenue = staffOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalOrders = staffOrders.length;
+
+    return {
+      'Staff Name': staff.name,
+      'Email': staff.email,
+      'Phone': staff.phone || '-',
+      'Total Orders': totalOrders,
+      'Total Revenue': totalRevenue.toFixed(2),
+      'Avg Revenue per Order': totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : '0',
+      'Shift Hours': staff.shiftHours || 'TBD',
+      'Status': staff.status || 'Active',
+    };
+  });
+};
+
+/**
+ * Generate inventory management report
+ */
+export const generateInventoryReport = (menuItems: any[]): any[] => {
+  return menuItems.map(item => ({
+    'Item ID': item._id || item.id,
+    'Item Name': item.name,
+    'Category': item.category,
+    'Price': item.price?.toFixed(2),
+    'Availability': item.available !== false ? 'In Stock' : 'Out of Stock',
+    'Dietary': (item.dietary || []).join(', ') || 'None',
+    'Prep Time (min)': item.prepTime || '-',
+    'Calories': item.calories || '-',
+    'Featured': item.featured ? 'Yes' : 'No',
+  }));
+};
+
+/**
+ * Generate simple PDF document (text-based, no library needed)
+ */
+export const generatePDFReport = (reportTitle: string, content: string): Blob => {
+  // Create a simple PDF-like structure using text
+  // For production, use jsPDF library
+  const lines = content.split('\n');
+  let pdfContent = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources 4 0 R /MediaBox [0 0 612 792] /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >>
+endobj
+5 0 obj
+<< /Length ${lines.join(' ').length} >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+(${reportTitle}) Tj
+0 -20 Td
+`;
+
+  lines.forEach((line) => {
+    pdfContent += `(${line}) Tj\n0 -15 Td\n`;
+  });
+
+  pdfContent += `ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000223 00000 n 
+0000000304 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+${pdfContent.length}
+%%EOF`;
+
+  return new Blob([pdfContent], { type: 'application/pdf' });
+};
+
+/**
+ * Export data to PDF (uses text-based PDF or requires jsPDF)
+ */
+export const exportToPDF = (filename: string, reportTitle: string, content: string): void => {
+  try {
+    // Try to use jsPDF if available
+    if ((window as any).jsPDF) {
+      const { jsPDF } = (window as any);
+      const doc = new jsPDF();
+      const lines = content.split('\n');
+      let yPosition = 20;
+
+      doc.setFontSize(16);
+      doc.text(reportTitle, 15, yPosition);
+      yPosition += 15;
+
+      doc.setFontSize(10);
+      lines.forEach(line => {
+        if (yPosition > 280) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        doc.text(line, 15, yPosition);
+        yPosition += 5;
+      });
+
+      doc.save(`${filename}-${new Date().toISOString().split('T')[0]}.pdf`);
+    } else {
+      // Fallback: Download as text file
+      const blob = new Blob([content], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${filename}-${new Date().toISOString().split('T')[0]}.txt`;
+      link.click();
+      console.warn('jsPDF not available. Exported as text file instead.');
+    }
+  } catch (error) {
+    console.error('Error exporting PDF:', error);
+    // Fallback to text export
+    const blob = new Blob([content], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}-${new Date().toISOString().split('T')[0]}.txt`;
+    link.click();
+  }
+};
