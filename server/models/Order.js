@@ -11,6 +11,8 @@ const orderSchema = new mongoose.Schema({
   }],
   total: Number,
   status: { type: String, enum: ['Confirmed', 'Preparing', 'Quality Check', 'Ready', 'Delivered'], default: 'Confirmed' },
+  hasFeedback: { type: Boolean, default: false },
+  feedbackSubmittedAt: Date,
   createdAt: { type: Date, default: Date.now }
 });
 

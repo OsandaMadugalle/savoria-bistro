@@ -488,3 +488,117 @@ export const sendNewsletterCampaign = async (content: string, subject?: string):
   }
   return res.json();
 };
+
+// --- STOCK MANAGEMENT API ---
+export const getStockAlerts = async () => {
+  const res = await fetch(`${API_URL}/stock/alerts`);
+  if (!res.ok) throw new Error('Failed to fetch stock alerts');
+  return res.json();
+};
+
+export const getActiveStockAlerts = async () => {
+  const res = await fetch(`${API_URL}/stock/alerts/active`);
+  if (!res.ok) throw new Error('Failed to fetch active alerts');
+  return res.json();
+};
+
+export const getLowStockItems = async () => {
+  const res = await fetch(`${API_URL}/stock/low-stock`);
+  if (!res.ok) throw new Error('Failed to fetch low stock items');
+  return res.json();
+};
+
+export const getOutOfStockItems = async () => {
+  const res = await fetch(`${API_URL}/stock/out-of-stock`);
+  if (!res.ok) throw new Error('Failed to fetch out of stock items');
+  return res.json();
+};
+
+export const updateItemStock = async (
+  itemId: string,
+  quantity: number,
+  reason: string,
+  requesterEmail: string
+) => {
+  const res = await fetch(`${API_URL}/stock/${itemId}/stock`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quantity, reason, requesterEmail })
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to update stock');
+  }
+  return res.json();
+};
+
+export const setLowStockThreshold = async (
+  itemId: string,
+  threshold: number,
+  requesterEmail: string
+) => {
+  const res = await fetch(`${API_URL}/stock/${itemId}/threshold`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ threshold, requesterEmail })
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to set threshold');
+  }
+  return res.json();
+};
+
+export const acknowledgeStockAlert = async (alertId: string, requesterEmail: string) => {
+  const res = await fetch(`${API_URL}/stock/alerts/${alertId}/acknowledge`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requesterEmail })
+  });
+  if (!res.ok) throw new Error('Failed to acknowledge alert');
+  return res.json();
+};
+
+export const getStockStats = async () => {
+  const res = await fetch(`${API_URL}/stock/stats`);
+  if (!res.ok) throw new Error('Failed to fetch stock stats');
+  return res.json();
+};
+
+// --- ORDER FEEDBACK API ---
+export const submitOrderFeedback = async (feedback: any) => {
+  const res = await fetch(`${API_URL}/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(feedback)
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to submit feedback');
+  }
+  return res.json();
+};
+
+export const getOrderFeedback = async (orderId: string) => {
+  const res = await fetch(`${API_URL}/feedback/order/${orderId}`);
+  if (!res.ok) return null;
+  return res.json();
+};
+
+export const getUserFeedbackHistory = async (userId: string) => {
+  const res = await fetch(`${API_URL}/feedback/user/${userId}`);
+  if (!res.ok) throw new Error('Failed to fetch feedback history');
+  return res.json();
+};
+
+export const getFeedbackStats = async (requesterEmail: string) => {
+  const res = await fetch(`${API_URL}/feedback/stats/summary?requesterEmail=${encodeURIComponent(requesterEmail)}`);
+  if (!res.ok) throw new Error('Failed to fetch feedback stats');
+  return res.json();
+};
+
+export const getItemFeedback = async (itemId: string) => {
+  const res = await fetch(`${API_URL}/feedback/item/${itemId}/feedback`);
+  if (!res.ok) throw new Error('Failed to fetch item feedback');
+  return res.json();
+};

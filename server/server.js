@@ -16,6 +16,8 @@ const galleryRoutes = require('./routes/gallery');
 const newsletterRoutes = require('./routes/newsletter');
 const paymentRoutes = require('./routes/payments');
 const privateEventRoutes = require('./routes/privateEvents');
+const stockRoutes = require('./routes/stock');
+const feedbackRoutes = require('./routes/feedback');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +37,8 @@ app.use('/api', galleryRoutes);
 app.use('/api', newsletterRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/private-events', privateEventRoutes);
+app.use('/api/stock', stockRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 
 // Database Connection

@@ -8,6 +8,8 @@ import type { MenuItemPayload } from '../services/api';
 import { MenuItem, User, Order, PrivateEventInquiry } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X, Calendar } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
+import StockManagement from '../components/StockManagement';
+import FeedbackAnalytics from '../components/FeedbackAnalytics';
 
 const DIETARY_TAGS = ['Vegetarian', 'Vegan', 'GF'];
 
@@ -225,7 +227,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [editMsg, setEditMsg] = useState('');
 
   // ===== STATE: TABS & LISTS =====
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'eventsHistory' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter' | 'promos'>('analytics');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'eventsHistory' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter' | 'promos' | 'stock' | 'feedback'>('analytics');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -1070,6 +1072,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             )}
                           </div>
                         )}
+
+                        <div className="border-t border-stone-200"></div>
+
+                        {/* Operations */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-lg">📦</span>
+                            <p className="text-xs font-bold text-stone-600 uppercase tracking-wide flex-1">Operations</p>
+                          </div>
+                          <button 
+                            className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'stock' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                            onClick={() => setActiveTab('stock')}
+                          >
+                            Stock Management
+                          </button>
+                          <button 
+                            className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'feedback' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                            onClick={() => setActiveTab('feedback')}
+                          >
+                            Feedback & Ratings
+                          </button>
+                        </div>
 
                         <div className="border-t border-stone-200"></div>
 
@@ -2437,6 +2461,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   )}
                 </div>
               )}
+
+              {activeTab === 'stock' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <h2 className="text-xl font-bold mb-6">📦 Stock Management</h2>
+                  {user && <StockManagement userEmail={user.email} />}
+                </div>
+              )}
+
+              {activeTab === 'feedback' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <h2 className="text-xl font-bold mb-6">⭐ Feedback & Ratings Analytics</h2>
+                  {user && <FeedbackAnalytics userEmail={user.email} />}
+                </div>
+              )}
+
               {activeTab === 'profile' && (
                 <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                   <h2 className="text-xl font-bold mb-6">My Profile</h2>

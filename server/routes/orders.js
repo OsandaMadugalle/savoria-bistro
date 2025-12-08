@@ -34,10 +34,29 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Payment verification required.' });
     }
 
+    // Check stock availability before creating order
+    const MenuItem = require('../models/MenuItem');
+    for (const item of req.body.items) {
+      const menuItem = await MenuItem.findOne({ id: item.itemId });
+      if (!menuItem || menuItem.stock < item.quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock for ${item.name}. Available: ${menuItem?.stock || 0}, Requested: ${item.quantity}`
+        });
+      }
+    }
+
     // Generate unique orderId
     const orderId = 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
     const newOrder = new Order({ ...req.body, orderId, status: 'Confirmed', createdAt: new Date() });
     await newOrder.save();
+
+    // Deduct stock for ordered items
+    for (const item of req.body.items) {
+      await MenuItem.findOneAndUpdate(
+        { id: item.itemId },
+        { $inc: { stock: -item.quantity } }
+      );
+    }
 
     // Award loyalty points to user (10 points per $1 spent) and update tier
     const User = require('../models/User');

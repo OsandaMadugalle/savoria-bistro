@@ -123,3 +123,39 @@ export enum Page {
   GALLERY = 'GALLERY',
   REVIEWS = 'REVIEWS'
 }
+
+export interface OrderFeedback {
+  _id?: string;
+  orderId: string;
+  userId: string;
+  overallRating: number;
+  items?: Array<{
+    itemId: string;
+    itemName: string;
+    quantity: number;
+    itemRating?: number;
+    comment?: string;
+  }>;
+  serviceRating?: number;
+  deliveryRating?: number;
+  comment?: string;
+  wouldRecommend?: boolean;
+  improvementSuggestions?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface StockAlert {
+  _id?: string;
+  itemId: string;
+  itemName: string;
+  currentStock: number;
+  lowStockThreshold: number;
+  alertType: 'LOW_STOCK' | 'OUT_OF_STOCK' | 'BACK_IN_STOCK';
+  isActive: boolean;
+  acknowledged: boolean;
+  acknowledgedBy?: string;
+  acknowledgedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

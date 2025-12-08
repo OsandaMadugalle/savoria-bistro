@@ -13,7 +13,13 @@ const menuItemSchema = new mongoose.Schema({
   dietary: [String],
   calories: Number,
   prepTime: Number,
-  featured: { type: Boolean, default: false }
+  featured: { type: Boolean, default: false },
+  // Stock tracking fields
+  stock: { type: Number, default: 0, min: 0 },
+  lowStockThreshold: { type: Number, default: 5, min: 0 },
+  isAvailable: { type: Boolean, default: true },
+  averageRating: { type: Number, default: 0, min: 0, max: 5 },
+  totalRatings: { type: Number, default: 0 }
 }, { timestamps: true });
 
 menuItemSchema.pre('save', function(next) {

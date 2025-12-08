@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, CheckCircle, ChefHat, Search, Bike } from 'lucide-react';
-import { fetchOrderById } from '../services/api';
+import { fetchOrderById, getOrderFeedback } from '../services/api';
+import FeedbackForm from '../components/FeedbackForm';
+import type { User, Order } from '../types';
 
 
 const statusToStep: Record<string, number> = {
@@ -12,27 +14,42 @@ const statusToStep: Record<string, number> = {
    'Delivered': 3,
 };
 
-const TrackerPage: React.FC = () => {
+interface TrackerPageProps {
+   user?: User | null;
+}
+
+const TrackerPage: React.FC<TrackerPageProps> = ({ user }) => {
    const [searchParams] = useSearchParams();
    const [orderId, setOrderId] = useState(searchParams.get('orderId') || '');
    const [isTracking, setIsTracking] = useState(!!searchParams.get('orderId'));
    const [trackingStep, setTrackingStep] = useState(0);
    const [orderStatus, setOrderStatus] = useState<string>('');
    const [orderError, setOrderError] = useState('');
+   const [order, setOrder] = useState<Order | null>(null);
+   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+   const [hasFeedback, setHasFeedback] = useState(false);
    const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
    useEffect(() => {
       if (isTracking && orderId) {
          let cancelled = false;
          const pollOrder = async () => {
-            const order = await fetchOrderById(orderId);
-            if (!order) {
+            const fetchedOrder = await fetchOrderById(orderId);
+            if (!fetchedOrder) {
                setOrderError('Order not found.');
                return;
             }
-            setOrderStatus(order.status);
-            setTrackingStep(statusToStep[order.status] ?? 0);
-            if (order.status !== 'Delivered' && !cancelled) {
+            setOrder(fetchedOrder);
+            setOrderStatus(fetchedOrder.status);
+            setTrackingStep(statusToStep[fetchedOrder.status] ?? 0);
+            
+            // Check if feedback already exists
+            if (fetchedOrder.status === 'Delivered') {
+               const feedback = await getOrderFeedback(orderId);
+               setHasFeedback(!!feedback);
+            }
+            
+            if (fetchedOrder.status !== 'Delivered' && !cancelled) {
                pollRef.current = setTimeout(pollOrder, 4000);
             }
          };
@@ -153,8 +170,26 @@ const TrackerPage: React.FC = () => {
 
                  <div className="mt-12 text-center">
                     {trackingStep === 3 ? (
-                        <div className="p-4 bg-green-50 text-green-700 rounded-lg inline-block">
-                           <p className="font-bold">Enjoy your meal! 🍽️</p>
+                        <div className="space-y-4">
+                           <div className="p-4 bg-green-50 text-green-700 rounded-lg inline-block">
+                              <p className="font-bold">Enjoy your meal! 🍽️</p>
+                           </div>
+                           {user && order && (
+                              <div className="mt-6">
+                                 {hasFeedback ? (
+                                    <div className="p-4 bg-blue-50 text-blue-700 rounded-lg inline-block">
+                                       <p className="font-bold">✅ Thank you for your feedback!</p>
+                                    </div>
+                                 ) : (
+                                    <button
+                                       onClick={() => setShowFeedbackForm(true)}
+                                       className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold transition-colors"
+                                    >
+                                       📝 Leave Feedback & Rate Your Order
+                                    </button>
+                                 )}
+                              </div>
+                           )}
                         </div>
                     ) : (
                        <p className="text-stone-500 text-sm animate-pulse">Waiting for status update...</p>
@@ -163,6 +198,16 @@ const TrackerPage: React.FC = () => {
                  </div>
               </div>
             </div>
+        )}
+
+        {/* Feedback Form Modal */}
+        {showFeedbackForm && order && user && (
+           <FeedbackForm
+              order={order}
+              user={user}
+              onClose={() => setShowFeedbackForm(false)}
+              onSuccess={() => setHasFeedback(true)}
+           />
         )}
       </div>
     </div>
