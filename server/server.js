@@ -5,6 +5,7 @@ const cors = require('cors');
 
 // Import Models for Seeding
 const MenuItem = require('./models/MenuItem');
+const Promo = require('./models/Promo');
 
 // Import Routes
 const menuRoutes = require('./routes/menu');
@@ -109,7 +110,22 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/savoria')
   .then(async () => {
     console.log('✅ Connected to MongoDB');
     
-    // No seeding of mock data
+    // Seed default promo if none exists
+    try {
+      const existingPromos = await Promo.countDocuments();
+      if (existingPromos === 0) {
+        const defaultPromo = new Promo({
+          code: 'SAVE10',
+          discount: 10,
+          expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+          active: true
+        });
+        await defaultPromo.save();
+        console.log('✅ Default promo code created: SAVE10 (10% off)');
+      }
+    } catch (err) {
+      console.error('Promo seeding error (non-critical):', err.message);
+    }
     
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
