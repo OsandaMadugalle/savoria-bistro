@@ -15,7 +15,7 @@ interface OrderPageProps {
   user: User | null;
 }
 
-const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const publishableKey = (import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
@@ -28,7 +28,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
   const VALID_PROMOS: { [key: string]: number } = {
     'SAVORIA20': 20,
@@ -49,7 +49,6 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
   
   // Use tier discount if available and better than promo code, otherwise use promo code
   const discount = Math.max(tierDiscount, promoDiscount);
-  const discountSource = tierDiscount > promoDiscount ? `${user?.tier} Tier (${getTierDiscount()}%)` : appliedCode || 'None';
   const finalTotal = Math.max(0, total - discount);
 
   const fetchClientSecret = useCallback(async () => {
@@ -209,7 +208,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
           requesterEmail: user.email,
         };
         const response = await createOrder(orderData);
-        const { orderId, pointsEarned, userTier, message } = response;
+        const { orderId, pointsEarned, userTier } = response;
         clearCart();
         handleClosePayment();
         
@@ -259,14 +258,17 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
 
   if (cart.length === 0) {
     return (
-      <div className="pt-32 pb-20 min-h-screen bg-stone-50 px-4 text-center">
-        <div className="max-w-md mx-auto animate-in zoom-in-95 duration-300">
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-stone-200">
-            <ShoppingBag size={48} className="mx-auto text-stone-300 mb-4" />
-            <h2 className="text-2xl font-bold text-stone-900 mb-2">Your bag is empty</h2>
-            <p className="text-stone-500 mb-6">Looks like you haven't added any delicious items yet.</p>
-            <NavLink to="/menu" className="inline-block bg-orange-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-orange-700 transition-colors">
-              Browse Menu
+      <div className="pt-20 sm:pt-32 pb-12 sm:pb-20 min-h-screen bg-gradient-to-br from-stone-50 to-orange-50 px-2 sm:px-4 text-center">
+        <div className="max-w-xs sm:max-w-md mx-auto animate-in zoom-in-95 duration-300">
+          <div className="bg-gradient-to-br from-white to-stone-50 p-6 sm:p-10 rounded-2xl sm:rounded-3xl shadow-lg border-2 border-stone-200">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <ShoppingBag size={36} className="sm:size-48 text-orange-500" />
+            </div>
+            <h2 className="text-xl sm:text-3xl font-serif font-bold text-stone-900 mb-2 sm:mb-3">Your Bag is Empty</h2>
+            <p className="text-stone-600 mb-6 sm:mb-8 leading-relaxed text-sm sm:text-base">Looks like you haven't added any delicious items yet. Explore our menu and find your favorites!</p>
+            <NavLink to="/menu" className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg text-sm sm:text-base">
+              <ShoppingBag size={16} className="sm:size-20" />
+              Continue Shopping
             </NavLink>
           </div>
         </div>
@@ -275,37 +277,42 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
   }
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-stone-50">
-      <div className="max-w-4xl mx-auto px-4 grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-2 space-y-4">
-          <h1 className="text-2xl font-bold text-stone-900 mb-6">Your Order</h1>
-          {cart.map(item => (
-            <div key={item.id || item.name} className="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex gap-4 items-center">
-              <img src={item.image} alt={item.name} className="w-20 h-20 rounded-lg object-cover bg-stone-200" />
-              <div className="flex-1">
-                <div className="flex justify-between mb-1">
-                  <h3 className="font-semibold text-stone-900">{item.name}</h3>
-                  <span className="font-bold text-stone-900">${(item.price * item.quantity).toFixed(2)}</span>
+    <div className="pt-20 sm:pt-28 pb-12 sm:pb-20 min-h-screen bg-gradient-to-br from-stone-50 to-orange-50">
+      <div className="max-w-xs sm:max-w-5xl mx-auto px-2 sm:px-4 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8">
+        <div className="md:col-span-2 space-y-3 sm:space-y-4">
+          <h1 className="text-xl sm:text-3xl font-serif font-bold text-stone-900 mb-4 sm:mb-6">🛒 Your Order</h1>
+          <div className="space-y-2 sm:space-y-3">
+            {cart.map((item, idx) => (
+              <div key={item.id || idx} className="group bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border-2 border-stone-100 hover:shadow-lg hover:border-orange-300 transition-all duration-300 flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
+                <div className="relative overflow-hidden rounded-lg sm:rounded-xl w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
+                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                 </div>
-                <p className="text-xs text-stone-500 mb-3">${item.price.toFixed(2)} each</p>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 bg-stone-100 rounded-lg p-1">
-                    <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:bg-white rounded shadow-sm transition-all"><Minus size={14} /></button>
-                    <span className="text-sm font-semibold w-6 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:bg-white rounded shadow-sm transition-all"><Plus size={14} /></button>
+                <div className="flex-1 w-full">
+                  <div className="flex justify-between mb-1 sm:mb-2">
+                    <h3 className="font-serif font-bold text-stone-900 text-base sm:text-lg group-hover:text-orange-600 transition-colors">{item.name}</h3>
+                    <span className="font-serif font-bold text-orange-600 text-base sm:text-lg">${(item.price * item.quantity).toFixed(2)}</span>
                   </div>
-                  <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-600 text-xs font-medium flex items-center gap-1">
-                    <Trash2 size={14} /> Remove
-                  </button>
+                  <p className="text-xs sm:text-sm text-stone-600 mb-2 sm:mb-4">${item.price.toFixed(2)} × {item.quantity}</p>
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="flex items-center gap-1 sm:gap-2 bg-stone-100 rounded-md sm:rounded-lg p-1 sm:p-2 border border-stone-200">
+                      <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:bg-white rounded-md transition-all text-stone-600 hover:text-orange-600"><Minus size={16} /></button>
+                      <span className="text-xs sm:text-sm font-bold w-6 sm:w-8 text-center text-stone-900">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:bg-white rounded-md transition-all text-stone-600 hover:text-orange-600"><Plus size={16} /></button>
+                    </div>
+                    <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm font-semibold flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-all">
+                      <Trash2 size={16} /> Remove
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-
         <div className="md:col-span-1">
-          <div className="bg-white p-6 rounded-xl shadow-lg border border-stone-200 sticky top-24 space-y-4">
-            <h3 className="font-bold text-xl text-stone-900 pb-4 border-b border-stone-100">Order Summary</h3>
+          <div className="bg-gradient-to-br from-white to-orange-50 p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border-2 border-stone-200 sticky top-20 sm:top-28 space-y-4 sm:space-y-6">
+            <div className="relative">
+              <h3 className="font-serif font-bold text-2xl text-stone-900 pb-4 border-b-2 border-stone-100">📋 Order Summary</h3>
+            </div>
             <div className="space-y-3">
               {!appliedCode ? (
                 <div className="space-y-2">

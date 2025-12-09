@@ -106,29 +106,37 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="min-h-screen bg-stone-50 flex flex-col">
       {/* Hero Section */}
-      <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
+      <section className="relative h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800">
+        <div className="absolute inset-0 z-0 opacity-30">
           <img 
             src="/src/assets/hero.jpg" 
             alt="Restaurant Interior" 
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-black/70" />
         </div>
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-serif font-bold text-white mb-6 leading-tight animate-in fade-in slide-in-from-bottom-8 duration-700">
-            Taste the Tradition,<br />Served Fresh Daily
+        {/* Animated background elements */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-72 h-72 bg-orange-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-2000"></div>
+        </div>
+        <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
+          <div className="inline-block mb-4 sm:mb-6 px-4 sm:px-6 py-2 bg-orange-600/20 border border-orange-400/50 rounded-full backdrop-blur-sm">
+            <span className="text-orange-200 sm:text-orange-300 font-semibold text-xs sm:text-sm tracking-widest">Welcome to Savoria</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-white mb-3 sm:mb-4 leading-tight animate-in fade-in slide-in-from-bottom-8 duration-700">
+            Taste the Tradition,<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-400">Served Fresh Daily</span>
           </h1>
-          <p className="text-xl text-stone-200 mb-10 font-light tracking-wide animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
-            A culinary journey through local flavors and modern techniques.
+          <p className="text-orange-100 max-w-2xl mx-auto text-sm sm:text-base md:text-lg mb-6 sm:mb-10 font-light tracking-wide animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150 px-2">
+            Experience authentic cuisine crafted with passion, blending local traditions with contemporary culinary artistry.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-            <NavLink to="/menu" className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-full font-semibold transition-all transform hover:scale-105">
-              View Menu
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
+            <NavLink to="/menu" className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold transition-all transform hover:scale-105 shadow-lg hover:shadow-orange-600/50 text-sm">
+              Explore Menu
             </NavLink>
-            <NavLink to="/reservation" className="bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 text-white px-8 py-4 rounded-full font-semibold transition-all">
+            <NavLink to="/reservation" className="bg-white/10 hover:bg-white/20 backdrop-blur-md border-2 border-white/30 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold transition-all hover:border-orange-400 text-sm">
               Book a Table
             </NavLink>
           </div>
@@ -137,27 +145,27 @@ const Home: React.FC = () => {
 
       {/* Special Offers Section */}
       {offerEnabled && activePromos.length > 0 ? (
-        <section className="py-12 px-6 md:px-12 bg-stone-50">
+        <section className="py-12 sm:py-16 px-4 sm:px-6 md:px-12 bg-white/50 backdrop-blur-sm border-b border-stone-200">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-2 mb-2 justify-center">
               <Zap size={20} className="text-orange-600" />
-              <span className="text-sm font-semibold uppercase tracking-wider text-orange-600">Limited Time Offers</span>
+              <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-orange-600">Limited Time Offers</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-center mb-8 text-stone-900">Exclusive Deals</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-center mb-8 text-stone-900">Exclusive Deals</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {activePromos.map((promo) => (
-                <div key={promo.id} className="bg-gradient-to-br from-orange-500 to-red-600 text-white p-6 md:p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow">
+                <div key={promo.id} className="bg-gradient-to-br from-orange-500 to-red-600 text-white p-5 sm:p-6 md:p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow border border-orange-200/30">
                   <div className="flex flex-col justify-between h-full">
                     <div>
-                      <div className="text-5xl md:text-6xl font-bold mb-2">{promo.discount}%</div>
-                      <h3 className="text-xl md:text-2xl font-serif font-bold">Off Your Order</h3>
-                      <p className="text-orange-100 mt-3">Use promo code:</p>
-                      <p className="font-mono font-bold text-white text-xl bg-black/20 px-3 py-2 rounded mt-2 inline-block">{promo.code}</p>
-                      <p className="text-orange-50 text-sm mt-4">Valid for dine-in, takeout, or delivery</p>
+                      <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">{promo.discount}%</div>
+                      <h3 className="text-base sm:text-lg md:text-xl font-serif font-bold">Off Your Order</h3>
+                      <p className="text-orange-100 mt-2 sm:mt-3 text-sm">Use promo code:</p>
+                      <p className="font-mono font-bold text-white text-lg sm:text-xl bg-black/20 px-3 py-2 rounded mt-2 inline-block">{promo.code}</p>
+                      <p className="text-orange-50 text-xs sm:text-sm mt-3 sm:mt-4">Valid for dine-in, takeout, or delivery</p>
                     </div>
                     <button 
                       onClick={() => handleClaimOffer(promo.code)}
-                      className={`mt-6 px-6 py-3 rounded-full font-bold whitespace-nowrap transition-all transform hover:scale-105 flex items-center justify-center gap-2 ${
+                      className={`mt-4 sm:mt-6 px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold whitespace-nowrap transition-all transform hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base ${
                         copiedCode === promo.code 
                           ? 'bg-green-400 text-stone-900' 
                           : 'bg-white text-orange-600 hover:bg-stone-100'
@@ -181,26 +189,26 @@ const Home: React.FC = () => {
       ) : null}
 
       {/* Stats Section with Animation */}
-      <section className="bg-stone-100 py-16 px-4">
+      <section className="bg-stone-100 py-12 sm:py-16 px-4 border-b border-stone-200">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
             <div className="text-center">
-              <Users size={40} className="text-orange-600 mx-auto mb-4" />
-              <div className="text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-2">
+              <Users size={32} className="text-orange-600 mx-auto mb-3 sm:mb-4" />
+              <div className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-1 sm:mb-2">
                 {Math.round(stats.customers).toLocaleString()}+
               </div>
               <p className="text-stone-600">Satisfied Customers</p>
             </div>
             <div className="text-center">
               <Award size={40} className="text-orange-600 mx-auto mb-4" />
-              <div className="text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-2">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-2">
                 {Math.round(stats.awards)}
               </div>
               <p className="text-stone-600">Awards & Recognition</p>
             </div>
             <div className="text-center">
               <ChevronRight size={40} className="text-orange-600 mx-auto mb-4" />
-              <div className="text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-2">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-2">
                 {Math.round(stats.dishes)}
               </div>
               <p className="text-stone-600">Signature Dishes</p>
@@ -210,19 +218,19 @@ const Home: React.FC = () => {
       </section>
 
       {/* Introduction */}
-      <section className="py-20 bg-stone-50">
+      <section className="py-20 bg-white/50 backdrop-blur-sm border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1 relative">
             <div className="absolute -top-4 -left-4 w-24 h-24 bg-orange-100 rounded-full -z-10" />
             <img 
               src="/src/assets/Introduction.jpg" 
               alt="Chef Plating" 
-              className="rounded-lg shadow-xl w-full object-cover h-[500px]"
+              className="rounded-lg shadow-xl w-full object-cover h-[300px] sm:h-[400px] md:h-[500px]"
             />
           </div>
           <div className="order-1 md:order-2">
             <h2 className="text-orange-600 font-bold tracking-widest uppercase text-sm mb-2">Our Story</h2>
-            <h3 className="text-4xl font-serif font-bold text-stone-900 mb-6">Crafted with Passion</h3>
+            <h3 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-6">Crafted with Passion</h3>
             <p className="text-stone-600 mb-6 leading-relaxed">
               Founded in 2015, Savoria Bistro began with a simple mission: to create a dining experience that honors local ingredients while pushing the boundaries of traditional cuisine. Our executive chef brings over 20 years of experience from Michelin-starred kitchens around the world.
             </p>
@@ -246,11 +254,11 @@ const Home: React.FC = () => {
       </section>
 
       {/* Featured Dishes Section */}
-      <section className="py-20 bg-white px-4">
+      <section className="py-20 bg-white px-4 border-b border-stone-200">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-orange-600 font-bold tracking-widest uppercase text-sm mb-2">Menu Highlights</h2>
-            <h3 className="text-4xl font-serif font-bold text-stone-900 mb-4">Chef's Specialties</h3>
+            <h3 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-4">Chef's Specialties</h3>
             <p className="text-stone-600 max-w-2xl mx-auto">Handpicked dishes that showcase our culinary excellence and commitment to quality ingredients</p>
           </div>
           {loadingFeatured ? (
@@ -336,7 +344,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Restaurant Info Section */}
-      <section className="py-16 bg-gradient-to-r from-stone-900 to-stone-800 text-white px-4">
+      <section className="py-16 bg-gradient-to-r from-stone-900 to-stone-800 text-white px-4 border-b border-stone-200/20">
         <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
           <div className="flex gap-4">
             <Clock size={32} className="text-orange-500 flex-shrink-0" />
@@ -374,7 +382,7 @@ const Home: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-orange-300 font-bold tracking-widest uppercase text-sm mb-2">Customer Testimonials</h2>
-            <h3 className="text-4xl font-serif font-bold text-white">What Our Guests Say</h3>
+            <h3 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-white">What Our Guests Say</h3>
           </div>
           
           {reviews.length > 0 ? (

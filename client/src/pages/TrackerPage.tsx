@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, CheckCircle, ChefHat, Search, Bike } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { fetchOrderById, getOrderFeedback } from '../services/api';
 import FeedbackForm from '../components/FeedbackForm';
 import type { User, Order } from '../types';
@@ -80,69 +81,84 @@ const TrackerPage: React.FC<TrackerPageProps> = ({ user }) => {
   ];
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-gradient-to-br from-stone-900 via-orange-900 to-stone-900 px-4">
-      <div className="max-w-4xl mx-auto">
+         <div className="min-h-screen bg-stone-50">
+             <div className="bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800 text-white py-12 sm:py-16 px-4 pt-24 relative overflow-hidden">
+                <div className="absolute -right-20 -top-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
+                <div className="absolute -left-20 -bottom-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
+                <div className="max-w-7xl mx-auto relative z-10 text-center px-2">
+                            <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
+                               <Zap size={18} className="text-yellow-300" />
+                               <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-orange-200">Order Updates</span>
+                            </div>
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold mb-3 sm:mb-4">Track Your Order</h1>
+                            <p className="text-orange-100 max-w-2xl mx-auto text-sm sm:text-base md:text-lg">Enter your order ID to see live status and updates.</p>
+                </div>
+             </div>
+             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Search Form */}
-        <div className="mb-8">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/10">
-            <h1 className="text-3xl md:text-4xl font-serif font-bold text-white mb-2">Track Your Order</h1>
-            <p className="text-white/70 mb-6">Enter your order ID to see live status</p>
-            
-            <form onSubmit={handleTrack} className="flex gap-3 flex-col sm:flex-row">
-              <div className="flex-1 relative">
-                <input 
-                  type="text" 
-                  value={orderId}
-                  onChange={(e) => setOrderId(e.target.value)}
-                  placeholder="e.g. 8834" 
-                  className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-white/50 focus:ring-2 focus:ring-orange-400 outline-none transition-all"
-                />
-              </div>
-              <button 
-                type="submit" 
-                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold px-8 py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
-              >
-                Track Now <ArrowRight size={18} />
-              </button>
-            </form>
-            
-            {orderError && (
-              <div className="mt-4 p-3 bg-red-500/20 border border-red-500/50 text-red-200 rounded-lg text-sm">
-                {orderError}
-              </div>
-            )}
-          </div>
-        </div>
+            <div className="mb-8">
+               <div className="bg-white/50 backdrop-blur-sm rounded-xl p-8 border border-white/50">
+                  <form onSubmit={handleTrack} className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                     <div className="flex-1 relative">
+                        <input 
+                           type="text" 
+                           value={orderId}
+                           onChange={(e) => setOrderId(e.target.value)}
+                           placeholder="e.g. 8834" 
+                           className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border border-stone-200 bg-white text-stone-800 placeholder-stone-400 focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm sm:text-base"
+                        />
+                     </div>
+                     <button 
+                        type="submit" 
+                        className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold px-5 sm:px-8 py-2 sm:py-3 rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base"
+                     >
+                        Track Now <ArrowRight size={16} />
+                     </button>
+                  </form>
+                  {orderError && (
+                     <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-red-500/20 border border-red-500/50 text-red-700 rounded-lg text-xs sm:text-sm">
+                        {orderError}
+                     </div>
+                  )}
+               </div>
+            </div>
 
         {/* Tracking Results */}
-        {isTracking && order && !orderError && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Header Card */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center text-white border border-white/10">
-                 <h2 className="text-3xl font-serif font-bold mb-2">Real-Time Order Tracking</h2>
-                 <p className="text-white/70">Order #{orderId || '8834'}</p>
-                 <p className="text-lg font-bold text-orange-400 mt-2">{orderStatus || 'Loading...'}</p>
-              </div>
+            {isTracking && order && !orderError && (
+               <div className="space-y-6 animate-in fade-in duration-300">
+                  {/* Header Card */}
+                  <div className="bg-white/50 backdrop-blur-sm rounded-xl p-8 text-center text-stone-900 border border-white/50">
+                         <h2 className="text-3xl font-serif font-bold mb-2">Real-Time Order Tracking</h2>
+                         <p className="text-stone-600">Order #{orderId || '8834'}</p>
+                         <p className="text-lg font-bold text-orange-600 mt-2">{orderStatus || 'Loading...'}</p>
+                     </div>
 
-              {/* Main Tracking Card */}
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                     {/* Main Tracking Card */}
+                     <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-xl overflow-hidden border border-white/50">
                  {/* Status Header */}
-                 <div className="bg-gradient-to-r from-orange-50 to-stone-50 p-8 border-b border-stone-100">
-                    <div className="flex justify-center mb-8">
-                       <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl ${
-                          trackingStep === 3 
-                            ? 'bg-gradient-to-br from-green-400 to-green-600 text-white' 
-                            : 'bg-gradient-to-br from-orange-400 to-orange-600 text-white'
-                       }`}>
-                          {trackingStep === 0 && <CheckCircle size={64} className="animate-pulse" />}
-                          {trackingStep === 1 && <ChefHat size={64} className="animate-bounce" />}
-                          {trackingStep === 2 && <Search size={64} className="animate-pulse" />}
-                          {trackingStep === 3 && <Bike size={64} className="animate-spin" style={{ animationDuration: '2s' }} />}
-                       </div>
+                 <div className="bg-gradient-to-r from-orange-500 via-orange-400 to-red-500 p-12 text-center text-white relative overflow-hidden">
+                    {/* Animated background */}
+                    <div className="absolute inset-0 opacity-20">
+                       <div className="absolute top-0 left-0 w-40 h-40 bg-white rounded-full mix-blend-overlay blur-3xl animate-pulse"></div>
                     </div>
-                    <div className="text-center">
-                       <p className="text-sm text-stone-600 mb-1">Estimated Delivery</p>
-                       <p className="text-3xl font-bold text-orange-600">15-20 minutes</p>
+                    <div className="relative z-10">
+                       <div className="flex justify-center mb-6">
+                          <div className={`w-40 h-40 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl border-4 border-white ${
+                             trackingStep === 3 
+                               ? 'bg-gradient-to-br from-green-400 to-emerald-600' 
+                               : 'bg-white/20 backdrop-blur-sm'
+                          }`}>
+                             {trackingStep === 0 && <CheckCircle size={80} className="animate-pulse text-white" />}
+                             {trackingStep === 1 && <ChefHat size={80} className="animate-bounce text-white" />}
+                             {trackingStep === 2 && <Search size={80} className="animate-pulse text-white" />}
+                             {trackingStep === 3 && <Bike size={80} className="text-white" style={{ animation: 'spin 1s linear infinite' }} />}
+                          </div>
+                       </div>
+                       <h3 className="text-3xl font-bold mb-2">{steps[trackingStep]?.label}</h3>
+                       <p className="text-white/90 text-lg mb-4">{steps[trackingStep]?.desc}</p>
+                       <div className="inline-block bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border border-white/40">
+                          <p className="text-sm font-semibold">Estimated Delivery: <span className="text-2xl font-bold">15-20 min</span></p>
+                       </div>
                     </div>
                  </div>
 
@@ -225,29 +241,45 @@ const TrackerPage: React.FC<TrackerPageProps> = ({ user }) => {
                        </div>
                     ) : (
                        // Live Tracking View
-                       <div className="relative">
-                          <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-stone-100 md:hidden"></div>
-                          <div className="hidden md:block absolute top-5 left-0 w-full h-0.5 bg-stone-100"></div>
-                          <div className="hidden md:block absolute top-5 left-0 h-0.5 bg-orange-500 transition-all duration-1000 ease-in-out" style={{ width: `${(trackingStep / 3) * 100}%` }}></div>
+                       <div className="relative pt-8">
+                          {/* Timeline Line */}
+                          <div className="absolute left-8 top-12 bottom-0 w-1 bg-gradient-to-b from-orange-300 via-orange-400 to-stone-200 md:hidden"></div>
+                          <div className="hidden md:block absolute top-24 left-0 w-full h-1.5 bg-gradient-to-r from-stone-200 via-orange-300 to-stone-200 rounded-full"></div>
+                          <div className="hidden md:block absolute top-24 left-0 h-1.5 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-400 transition-all duration-1000 ease-in-out rounded-full shadow-lg" style={{ width: `${(trackingStep / 3) * 100}%` }}></div>
 
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-4 relative z-10">
                              {steps.map((step, index) => (
-                                <div key={index} className={`flex md:flex-col items-center gap-4 md:gap-2 transition-colors duration-500 ${index <= trackingStep ? 'opacity-100' : 'opacity-40'}`}>
-                                   <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
-                                      index <= trackingStep ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-stone-200 text-stone-400'
-                                   }`}>
-                                      {step.icon}
-                                   </div>
-                                   <div className="md:text-center">
-                                      <h4 className={`font-bold text-sm ${index <= trackingStep ? 'text-stone-900' : 'text-stone-500'}`}>{step.label}</h4>
-                                      <p className="text-xs text-stone-400 hidden md:block">{step.desc}</p>
+                                <div key={index} className={`transition-all duration-700 ${index <= trackingStep ? 'opacity-100 scale-100' : 'opacity-50 scale-95'}`}>
+                                   <div className="flex md:flex-col items-start md:items-center gap-4 md:gap-3">
+                                      {/* Connector Line for Mobile */}
+                                      {index > 0 && (
+                                         <div className="absolute left-3.5 -top-8 w-1 h-8 bg-gradient-to-b from-orange-400 to-stone-200 md:hidden"></div>
+                                      )}
+                                      {/* Circle Badge */}
+                                      <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center border-4 flex-shrink-0 transition-all duration-500 shadow-lg ${
+                                         index <= trackingStep 
+                                            ? 'bg-gradient-to-br from-orange-400 to-orange-600 border-orange-600 text-white scale-110' 
+                                            : 'bg-white border-stone-300 text-stone-400'
+                                      }`}>
+                                         {step.icon}
+                                      </div>
+                                      <div className="md:text-center flex-1">
+                                         <h4 className={`font-bold text-base md:text-lg transition-colors ${index <= trackingStep ? 'text-stone-900' : 'text-stone-500'}`}>
+                                            {step.label}
+                                         </h4>
+                                         <p className="text-xs md:text-sm text-stone-500 hidden md:block mt-1">{step.desc}</p>
+                                      </div>
                                    </div>
                                 </div>
                              ))}
                           </div>
 
-                          <div className="mt-12 text-center">
-                             <p className="text-stone-500 text-sm animate-pulse">Waiting for status update...</p>
+                          <div className="mt-16 text-center">
+                             <div className="inline-block px-6 py-3 bg-orange-50 rounded-full border border-orange-200">
+                                <p className="text-stone-600 text-sm font-semibold animate-pulse">
+                                   ⏱️ Waiting for next status update...
+                                </p>
+                             </div>
                           </div>
                        </div>
                     )}

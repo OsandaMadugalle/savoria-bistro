@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, MessageSquare, AlertCircle, Loader2, Calendar, Upload, X } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { fetchApprovedReviews, submitReview, Review } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { User } from '../types';
@@ -170,49 +171,64 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
   return (
     <div className="min-h-screen bg-stone-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800 text-white py-16 px-4 pt-24 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800 text-white py-12 sm:py-16 px-4 pt-24 relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
         <div className="absolute -left-20 -bottom-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
-        <div className="max-w-4xl mx-auto relative z-10 text-center">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Guest Reviews</h1>
-          <p className="text-orange-100 max-w-2xl mx-auto text-lg">See what our customers are saying about their Savoria experience.</p>
+        {/* Animated background elements */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-orange-400 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
+        </div>
+        <div className="max-w-7xl mx-auto relative z-10 text-center px-2">
+          <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
+            <Zap size={18} className="text-yellow-300" />
+            <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-orange-200">Guest Stories</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold mb-3 sm:mb-4">Voices of Our Guests</h1>
+          <p className="text-orange-100 max-w-2xl mx-auto text-sm sm:text-base md:text-lg">Discover what makes Savoria Bistro special through the experiences and stories of our valued customers.</p>
         </div>
       </div>
 
-      <div className="pt-12 pb-20">
-        <div className="max-w-4xl mx-auto px-4">
+      <div className="pt-0 pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Summary Card */}
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-stone-200 mb-12">
-            <div className="grid md:grid-cols-2 gap-8">
+          <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-xl p-5 sm:p-10 border border-white/50 mb-8 sm:mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
               {/* Rating Summary */}
-              <div className="flex flex-col items-center justify-center">
-                <span className="text-6xl font-bold text-stone-900 block mb-2">{avgRating}</span>
-                <div className="flex text-orange-500 mb-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} fill={i < Math.round(parseFloat(avgRating)) ? "currentColor" : "none"} size={24} className={i < Math.round(parseFloat(avgRating)) ? "" : "text-stone-300"} />
-                  ))}
+              <div className="flex flex-col items-center justify-center py-6 relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-100 to-transparent rounded-2xl opacity-30"></div>
+                <div className="relative z-10">
+                  <span className="text-5xl sm:text-8xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-red-600 block mb-2 sm:mb-3">{avgRating}</span>
+                  <div className="flex text-orange-500 mb-2 sm:mb-4 justify-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} fill={i < Math.round(parseFloat(avgRating)) ? "currentColor" : "none"} size={20} className={i < Math.round(parseFloat(avgRating)) ? "" : "text-stone-200"} />
+                    ))}
+                  </div>
+                  <span className="text-base sm:text-lg text-stone-600 font-semibold">{reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}</span>
                 </div>
-                <span className="text-sm text-stone-600 font-medium">{reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}</span>
               </div>
 
               {/* Rating Breakdown */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {ratingDistribution.map(({ rating, count }) => (
-                  <div key={rating} className="flex items-center gap-3">
+                  <div key={rating} className="flex items-center gap-4">
                     <button
                       onClick={() => setSelectedRating(selectedRating === rating ? null : rating)}
-                      className={`flex items-center gap-2 px-3 py-1 rounded-full transition-all ${
+                      className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all transform hover:scale-105 w-20 flex-shrink-0 ${
                         selectedRating === rating
-                          ? 'bg-orange-600 text-white'
+                          ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg'
                           : 'bg-stone-100 text-stone-700 hover:bg-orange-50'
                       }`}
                     >
-                      <span className="text-sm font-semibold">{rating}★</span>
-                      <span className="text-xs">{count}</span>
+                      {rating}
+                      <span className="text-lg">★</span>
                     </button>
-                    <div className="flex-1 h-2 bg-stone-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-orange-500" style={{ width: `${reviews.length > 0 ? (count / reviews.length) * 100 : 0}%` }} />
+                    <div className="flex-1">
+                      <div className="h-3 bg-stone-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-500" style={{ width: `${reviews.length > 0 ? (count / reviews.length) * 100 : 0}%` }} />
+                      </div>
                     </div>
+                    <span className="text-sm font-bold text-stone-600 w-12 text-right">{count}</span>
                   </div>
                 ))}
               </div>
@@ -220,15 +236,15 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
           </div>
 
           {/* Controls: Sort and Write Review */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
+          <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between bg-white/50 backdrop-blur-sm rounded-xl p-6 border border-white/50">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-4 py-2 rounded-full border border-stone-200 bg-white text-stone-700 font-semibold shadow-sm focus:ring-2 focus:ring-orange-500 outline-none cursor-pointer"
+              className="px-6 py-3 rounded-lg border-2 border-stone-200 bg-white text-stone-700 font-semibold focus:ring-2 focus:ring-orange-500 outline-none cursor-pointer hover:border-orange-400 transition-colors"
             >
-              <option value="newest">Sort: Newest First</option>
-              <option value="highest">Sort: Highest Rated</option>
-              <option value="lowest">Sort: Lowest Rated</option>
+              <option value="newest">📅 Newest First</option>
+              <option value="highest">⭐ Highest Rated</option>
+              <option value="lowest">★ Lowest Rated</option>
             </select>
 
             <button 
@@ -239,16 +255,16 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
                   setIsFormOpen(!isFormOpen);
                 }
               }}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-full font-semibold transition-all transform hover:scale-105 flex items-center gap-2 shadow-lg"
+              className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center gap-2 shadow-lg"
             >
-              <MessageSquare size={18} />
-              {isFormOpen ? 'Close Form' : 'Write a Review'}
+              <MessageSquare size={20} />
+              {isFormOpen ? 'Close Form' : '✍️ Write a Review'}
             </button>
           </div>
 
         {/* Review Form */}
         {isFormOpen && (
-          <div className="bg-gradient-to-br from-orange-50 to-stone-50 p-8 rounded-2xl mb-12 border border-orange-200 shadow-lg animate-in slide-in-from-top-4">
+          <div className="bg-gradient-to-br from-orange-50 to-stone-50 p-8 rounded-xl mb-12 border border-orange-200 shadow-lg animate-in slide-in-from-top-4">
             <h3 className="font-serif font-bold text-2xl mb-6 text-stone-900">Share Your Experience</h3>
             {error && (
               <div className="bg-red-100 border border-red-300 text-red-800 p-4 rounded-lg mb-4 flex items-start gap-3">
@@ -369,7 +385,7 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
 
         {/* User's Reviews Section */}
         {user && userReviews.length > 0 && !loading && (
-          <div className="mb-12 bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
+          <div className="mb-12 bg-blue-50 border border-blue-200 rounded-xl p-6">
             <h2 className="text-2xl font-serif font-bold text-stone-900 mb-4">Your Reviews</h2>
             <div className="space-y-4">
               {userReviews.map((review) => (
@@ -403,36 +419,36 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
 
         {/* Reviews List */}
         {!loading && filteredReviews.length > 0 ? (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-12">
             {filteredReviews.map((review) => (
-              <div key={review._id} className="bg-white p-6 rounded-2xl shadow-sm border border-stone-100 hover:shadow-lg hover:border-orange-200 transition-all">
-                <div className="flex justify-between items-start mb-4">
+              <div key={review._id} className="group bg-white rounded-2xl shadow-sm border-2 border-stone-100 overflow-hidden hover:shadow-2xl hover:border-orange-400 transition-all cursor-pointer group transform hover:scale-105 flex flex-col p-8">
+                <div className="flex justify-between items-start mb-5">
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-lg">
                       {review.userName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-bold text-stone-900 text-lg">{review.userName}</h4>
-                      <p className="text-sm font-semibold text-stone-700 mb-1">{review.title}</p>
-                      <div className="flex items-center gap-2 text-xs text-stone-500">
-                        <Calendar size={14} />
-                        {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Recently'}
+                      <h4 className="font-serif font-bold text-stone-900 text-lg group-hover:text-orange-600 transition-colors">{review.userName}</h4>
+                      <p className="text-base font-semibold text-stone-700 mb-2">{review.title}</p>
+                      <div className="flex items-center gap-2 text-sm text-stone-500">
+                        <Calendar size={16} />
+                        {review.createdAt ? new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently'}
                       </div>
                     </div>
                   </div>
-                  <div className="flex text-orange-500 flex-shrink-0">
+                  <div className="flex text-orange-500 flex-shrink-0 gap-1">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} fill={i < review.rating ? "currentColor" : "none"} size={18} className={i < review.rating ? "" : "text-stone-300"} />
+                      <Star key={i} fill={i < review.rating ? "currentColor" : "none"} size={22} className={i < review.rating ? "" : "text-stone-200"} />
                     ))}
                   </div>
                 </div>
-                <p className="text-stone-700 leading-relaxed text-base">"{review.text}"</p>
+                <p className="text-stone-700 leading-relaxed text-lg italic before:content-['\u201C'] after:content-['\u201D']">{review.text}</p>
                 {(review as any).image && (
-                  <div className="mt-4">
+                  <div className="mt-6">
                     <img 
                       src={(review as any).image} 
                       alt="Review" 
-                      className="max-w-xs h-48 object-cover rounded-lg border border-stone-200 cursor-pointer hover:opacity-90 transition-opacity"
+                      className="max-w-sm h-56 object-cover rounded-xl border-2 border-stone-200 cursor-pointer hover:opacity-90 shadow-md transition-all duration-300 group-hover:border-orange-400"
                       onClick={() => openLightbox((review as any).image)}
                       onError={(e) => {
                         console.error('Image failed to load:', (review as any).image);
@@ -448,10 +464,25 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
             ))}
           </div>
         ) : !loading && (
-          <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-stone-200">
-            <MessageSquare size={48} className="text-stone-300 mx-auto mb-4" />
-            <p className="text-stone-600 font-medium text-lg">{selectedRating ? 'No reviews with that rating' : 'No reviews yet'}</p>
-            <p className="text-stone-500">Be the first to share your experience!</p>
+          <div className="text-center py-24 bg-stone-50 rounded-xl border border-dashed border-stone-300">
+            <div className="inline-block p-6 bg-stone-100 rounded-full mb-6">
+              <MessageSquare size={56} className="text-stone-400" />
+            </div>
+            <p className="text-stone-700 font-bold text-xl mb-2">{selectedRating ? 'No reviews with that rating' : 'No reviews yet'}</p>
+            <p className="text-stone-600 mb-6">Be the first to share your dining experience with us!</p>
+            <button 
+              onClick={() => {
+                if (!user) {
+                  onOpenSignIn?.();
+                } else {
+                  setIsFormOpen(true);
+                }
+              }}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105"
+            >
+              <MessageSquare size={18} />
+              Write the First Review
+            </button>
           </div>
         )}
         </div>

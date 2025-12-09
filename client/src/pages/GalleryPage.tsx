@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ZoomIn, X, Upload, Trash2, ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
+import { ZoomIn, X, Upload, Trash2, ChevronLeft, ChevronRight, Search, Loader2, Zap } from 'lucide-react';
 import { fetchGalleryImages, uploadGalleryImage, deleteGalleryImage } from '../services/api';
 import { User } from '../types';
 
@@ -149,55 +149,64 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
   return (
     <div className="min-h-screen bg-stone-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800 text-white py-16 px-4 pt-24 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800 text-white py-12 sm:py-16 px-4 pt-24 relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
         <div className="absolute -left-20 -bottom-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
-        <div className="max-w-7xl mx-auto relative z-10 text-center">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Our Gallery</h1>
-          <p className="text-orange-100 max-w-2xl mx-auto text-lg">A glimpse into our atmosphere, our culinary creations, and the moments we share with our guests.</p>
+        {/* Animated background */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-400 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
+        </div>
+        <div className="max-w-7xl mx-auto relative z-10 text-center px-2">
+          <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
+            <Zap size={18} className="text-yellow-300" />
+            <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-orange-200">Memorable Moments</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold mb-3 sm:mb-4">Our Gallery</h1>
+          <p className="text-orange-100 max-w-2xl mx-auto text-sm sm:text-base md:text-lg">Explore the ambiance, artistry, and memories we create every day at Savoria Bistro.</p>
           {isAdmin && (
             <button 
               onClick={() => setShowUploadModal(true)}
-              className="mt-6 inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-full transition-all transform hover:scale-105 font-semibold shadow-lg"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-8 py-4 rounded-xl transition-all transform hover:scale-105 font-semibold shadow-lg"
             >
-              <Upload size={18} /> Upload Image
+              <Upload size={20} /> Add to Gallery
             </button>
           )}
         </div>
       </div>
 
-      <div className="pt-12 pb-20">
+      <div className="pt-0 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Search and Filter Section */}
-          <div className="mb-12 space-y-6">
+          <div className="pt-6 sm:pt-8 pb-8 sm:pb-12 bg-white/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-8 -mx-4 sm:mx-0 sticky top-20 z-30 shadow-sm border border-white/50 mb-8 md:mb-12">
             {/* Search Bar */}
-            <div className="relative max-w-md mx-auto">
+            <div className="relative w-full max-w-md mx-auto mb-4 sm:mb-6">
               <Search className="absolute left-4 top-3.5 text-stone-400" size={20} />
               <input 
                 type="text" 
                 placeholder="Search images..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-full border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none shadow-sm text-stone-800 placeholder-stone-400"
+                className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none shadow-sm text-stone-800 placeholder-stone-400 hover:border-orange-300 transition-colors"
               />
             </div>
 
             {/* Category Filter */}
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-4 sm:mb-6">
               {categories.map(cat => {
                 const count = galleryImages.filter(img => img.category === cat).length;
                 return (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
+                    className={`px-6 py-3 rounded-full text-sm font-semibold transition-all transform hover:scale-105 flex items-center gap-2 ${
                       selectedCategory === cat 
-                        ? 'bg-stone-900 text-white shadow-md' 
-                        : 'bg-white text-stone-600 border border-stone-200 hover:border-orange-300'
+                        ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg' 
+                        : 'bg-white text-stone-600 border-2 border-stone-200 hover:border-orange-400'
                     }`}
                   >
                     {cat}
-                    {cat !== 'All' && <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">{count}</span>}
+                    {cat !== 'All' && <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${selectedCategory === cat ? 'bg-white/20' : 'bg-orange-100 text-orange-700'}`}>{count}</span>}
                   </button>
                 );
               })}
@@ -214,53 +223,64 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
         )}
 
         {loading ? (
-          <div className="flex justify-center items-center py-20">
+          <div className="flex justify-center py-20">
             <Loader2 size={40} className="animate-spin text-orange-600" />
           </div>
-        ) : filteredImages.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-stone-300">
-            <ZoomIn size={40} className="text-stone-300 mx-auto mb-4" />
-            <p className="text-stone-600 font-medium">No images found</p>
-            <p className="text-stone-500 text-sm">Try adjusting your search or filters</p>
-          </div>
-        ) : (
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+        ) : filteredImages.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-12">
             {filteredImages.map((img) => (
               <div 
                 key={img._id || img.id} 
-                className="relative group cursor-pointer break-inside-avoid rounded-xl overflow-hidden shadow-md"
+                className="bg-white rounded-2xl shadow-sm border-2 border-stone-100 overflow-hidden hover:shadow-2xl hover:border-orange-400 transition-all cursor-pointer group transform hover:scale-105 flex flex-col"
               >
-                <img 
-                  src={img.src} 
-                  alt={img.caption} 
-                  className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
-                  onClick={() => setSelectedImage(img)}
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-between p-4">
-                  <div 
-                    className="flex-1 flex items-center justify-center"
+                <div className="relative overflow-hidden h-56 bg-gradient-to-br from-stone-300 to-stone-200">
+                  <img 
+                    src={img.src} 
+                    alt={img.caption} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125"
                     onClick={() => setSelectedImage(img)}
-                  >
-                    <div className="text-white text-center">
-                      <ZoomIn className="mx-auto mb-2" size={32} />
-                      <p className="font-serif font-bold text-lg">{img.caption}</p>
-                      <p className="text-xs uppercase tracking-wider text-stone-300">{img.category}</p>
-                    </div>
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute top-4 left-4 right-4 flex gap-2 flex-wrap">
+                    {img.category && (
+                      <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                        {img.category}
+                      </div>
+                    )}
                   </div>
-                  {isAdmin && (
+                </div>
+                <div className="p-6 flex-1 flex flex-col">
+                  <h3 className="font-serif font-bold text-xl text-stone-900 group-hover:text-orange-600 transition-colors line-clamp-2">{img.caption}</h3>
+                  <p className="text-xs text-orange-600 uppercase tracking-widest font-semibold mt-1">{img.category}</p>
+                  <div className="flex-1" />
+                  <div className="flex justify-end items-center pt-4 border-t-2 border-stone-100">
                     <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(img._id);
-                      }}
-                      className="ml-2 p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                      onClick={() => setSelectedImage(img)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 font-semibold text-sm rounded-lg group-hover:bg-orange-100 transition-colors"
                     >
-                      <Trash2 size={18} className="text-white" />
+                      View <ZoomIn size={16} />
                     </button>
-                  )}
+                    {isAdmin && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(img._id);
+                        }}
+                        className="ml-2 p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={16} className="text-white" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-stone-50 rounded-xl border border-dashed border-stone-300">
+            <ZoomIn size={40} className="text-stone-300 mx-auto mb-4" />
+            <p className="text-stone-600 font-medium">No images found</p>
+            <p className="text-stone-500 text-sm">Try adjusting your search or filters</p>
           </div>
         )}
         </div>
@@ -269,14 +289,15 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
       {/* Lightbox Modal */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-2 sm:p-4 animate-in fade-in duration-200"
           onClick={() => setSelectedImage(null)}
         >
           <button 
-             className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors z-10"
+             className="absolute top-3 sm:top-6 right-3 sm:right-6 p-2 sm:p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all transform hover:scale-110 z-10 backdrop-blur-sm"
              onClick={() => setSelectedImage(null)}
+             title="Close"
           >
-            <X size={32} />
+            <X size={24} className="sm:size-28" />
           </button>
 
           {/* Navigation Buttons */}
@@ -286,9 +307,10 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
                 e.stopPropagation();
                 handlePrevImage();
               }}
-              className="absolute left-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors z-10 p-2 hover:bg-white/10 rounded-lg"
+              className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all transform hover:scale-110 z-10 backdrop-blur-sm"
+              title="Previous"
             >
-              <ChevronLeft size={32} />
+              <ChevronLeft size={28} className="sm:size-32" />
             </button>
           )}
 
@@ -298,39 +320,42 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
                 e.stopPropagation();
                 handleNextImage();
               }}
-              className="absolute right-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors z-10 p-2 hover:bg-white/10 rounded-lg"
+              className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all transform hover:scale-110 z-10 backdrop-blur-sm"
+              title="Next"
             >
-              <ChevronRight size={32} />
+              <ChevronRight size={28} className="sm:size-32" />
             </button>
           )}
 
           <div 
-            className="max-w-5xl w-full max-h-[90vh] relative"
+            className="w-full max-w-md sm:max-w-2xl md:max-w-4xl lg:max-w-5xl max-h-[90vh] relative rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <img 
               src={selectedImage.src} 
               alt={selectedImage.caption} 
-              className="w-full h-full object-contain rounded-sm"
+              className="w-full h-[40vh] sm:h-[60vh] md:h-[70vh] object-contain bg-black"
             />
-            <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/95 via-black/60 to-transparent p-6 text-white">
-              <h3 className="text-2xl font-serif font-bold mb-2">{selectedImage.caption}</h3>
-              <p className="text-sm text-stone-300 mb-2">{selectedImage.category}</p>
-              {selectedImage.createdAt && (
-                <p className="text-xs text-stone-400">{new Date(selectedImage.createdAt).toLocaleDateString()}</p>
-              )}
+            <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent p-4 sm:p-8 text-white">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold mb-2 sm:mb-3">{selectedImage.caption}</h3>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
+                <span className="inline-block px-3 py-1 bg-orange-600 rounded-full text-xs sm:text-sm font-semibold">{selectedImage.category}</span>
+                {selectedImage.createdAt && (
+                  <span className="text-xs sm:text-sm text-stone-300">{new Date(selectedImage.createdAt).toLocaleDateString()}</span>
+                )}
+              </div>
               {/* Image Counter */}
-              <div className="mt-4 text-xs text-stone-300 flex items-center justify-between">
+              <div className="mt-2 sm:mt-4 text-xs text-stone-300 flex items-center justify-between">
                 <span>{currentImageIndex + 1} / {filteredImages.length}</span>
                 {filteredImages.length > 1 && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handlePrevImage();
                       }}
                       disabled={currentImageIndex === 0}
-                      className="px-3 py-1 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded transition-colors"
+                      className="px-2 sm:px-3 py-1 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded transition-colors"
                     >
                       Previous
                     </button>
@@ -340,7 +365,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
                         handleNextImage();
                       }}
                       disabled={currentImageIndex === filteredImages.length - 1}
-                      className="px-3 py-1 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded transition-colors"
+                      className="px-2 sm:px-3 py-1 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded transition-colors"
                     >
                       Next
                     </button>
@@ -364,53 +389,53 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
       {/* Upload Modal */}
       {showUploadModal && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4"
           onClick={() => setShowUploadModal(false)}
         >
           <div 
-            className="bg-white rounded-xl shadow-lg max-w-md w-full"
+            className="bg-white rounded-lg md:rounded-xl shadow-lg max-w-xs sm:max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-6 border-b border-stone-200">
-              <h2 className="text-2xl font-serif font-bold text-stone-900">Upload Image</h2>
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-stone-200">
+              <h2 className="text-lg sm:text-2xl font-serif font-bold text-stone-900">Upload Image</h2>
               <button 
                 onClick={() => setShowUploadModal(false)}
                 className="text-stone-500 hover:text-stone-700"
               >
-                <X size={24} />
+                <X size={20} className="sm:size-24" />
               </button>
             </div>
 
-            <form onSubmit={handleUpload} className="p-6 space-y-4">
+            <form onSubmit={handleUpload} className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-stone-700 mb-2">Caption</label>
+                <label className="block text-xs sm:text-sm font-semibold text-stone-700 mb-1 sm:mb-2">Caption</label>
                 <input 
                   type="text"
                   value={uploadForm.caption}
                   onChange={(e) => setUploadForm({ ...uploadForm, caption: e.target.value })}
                   placeholder="e.g., Main Dining Area"
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-2 sm:px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-stone-700 mb-2">Category</label>
+                <label className="block text-xs sm:text-sm font-semibold text-stone-700 mb-1 sm:mb-2">Category</label>
                 <input 
                   type="text"
                   value={uploadForm.category}
                   onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value })}
                   placeholder="e.g., Ambiance, Food, Staff"
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-2 sm:px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-stone-700 mb-2">Image</label>
+                <label className="block text-xs sm:text-sm font-semibold text-stone-700 mb-1 sm:mb-2">Image</label>
                 <input 
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-2 sm:px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                 />
                 {uploadForm.file && (
                   <p className="text-xs text-stone-600 mt-1">{uploadForm.file.name}</p>
@@ -418,21 +443,21 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
               </div>
 
               {uploadError && (
-                <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{uploadError}</p>
+                <p className="text-xs sm:text-sm text-red-600 bg-red-50 p-2 rounded">{uploadError}</p>
               )}
 
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-2 pt-2 sm:pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowUploadModal(false)}
-                  className="flex-1 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors font-semibold"
+                  className="flex-1 px-3 sm:px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors font-semibold text-sm"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={uploading}
-                  className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-stone-400 text-white rounded-lg transition-colors font-semibold"
+                  className="flex-1 px-3 sm:px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-stone-400 text-white rounded-lg transition-colors font-semibold text-sm"
                 >
                   {uploading ? 'Uploading...' : 'Upload'}
                 </button>

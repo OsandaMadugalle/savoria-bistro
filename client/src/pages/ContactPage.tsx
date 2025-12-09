@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, Mail, MapPin, Calendar, CheckCircle, User as UserIcon } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { submitPrivateEventInquiry } from '../services/api';
 import { User } from '../types';
 
@@ -144,55 +145,79 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
   };
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-gradient-to-b from-stone-50 to-orange-50">
+    <div className="min-h-screen bg-stone-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-stone-900 via-orange-900 to-stone-900 text-white pt-16 pb-16 px-4 mb-12">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Get in Touch</h1>
-          <p className="text-orange-100 text-lg">Contact us for reservations, private events, or any inquiries</p>
+      <div className="bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800 text-white py-12 sm:py-16 px-4 pt-24 relative overflow-hidden">
+        <div className="absolute -right-20 -top-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
+        <div className="absolute -left-20 -bottom-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
+        {/* Animated background */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-400 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
+        </div>
+        <div className="max-w-7xl mx-auto text-center relative z-10 px-2">
+          <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
+            <Zap size={18} className="text-yellow-300" />
+            <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-orange-200">Contact & Events</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold mb-3 sm:mb-4">Get in Touch</h1>
+          <p className="text-orange-100 max-w-2xl mx-auto text-sm sm:text-base md:text-lg">Plan your private event or simply reach out with any questions. We're here to help!</p>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid md:grid-cols-2 gap-8 items-start">
           {/* Contact Info */}
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-serif font-bold text-stone-900 mb-6">Contact Information</h2>
+            <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-xl p-10 border border-white/50">
+              <h2 className="text-xl sm:text-3xl font-serif font-bold text-stone-900 mb-4 sm:mb-8 flex items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 bg-orange-100 rounded-lg">
+                  <Phone className="text-orange-600" size={22} />
+                </div>
+                Get in Touch
+              </h2>
               
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <MapPin className="text-orange-600 mt-1 flex-shrink-0" size={24} />
+              <div className="space-y-4">
+                <div className="flex items-start gap-2 sm:gap-4 p-3 sm:p-5 bg-stone-50 rounded-xl sm:rounded-2xl hover:bg-orange-50 transition-all border border-stone-200 hover:border-orange-300">
+                  <div className="p-2 sm:p-3 bg-orange-100 rounded-lg flex-shrink-0">
+                    <MapPin className="text-orange-600" size={18} />
+                  </div>
                   <div>
-                    <h4 className="font-bold text-stone-900 mb-1">Location</h4>
-                    <p className="text-stone-600">123 Culinary Avenue</p>
+                    <h4 className="font-bold text-stone-900 mb-1">📍 Location</h4>
+                    <p className="text-stone-700 font-medium">123 Culinary Avenue</p>
                     <p className="text-stone-600">Food District, NY 10012</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4">
-                  <Phone className="text-orange-600 mt-1 flex-shrink-0" size={24} />
+                <div className="flex items-start gap-4 p-5 bg-stone-50 rounded-2xl hover:bg-orange-50 transition-all border border-stone-200 hover:border-orange-300">
+                  <div className="p-3 bg-orange-100 rounded-lg flex-shrink-0">
+                    <Phone className="text-orange-600" size={24} />
+                  </div>
                   <div>
-                    <h4 className="font-bold text-stone-900 mb-1">Phone</h4>
-                    <p className="text-stone-600">(555) 123-4567</p>
+                    <h4 className="font-bold text-stone-900 mb-1">📞 Phone</h4>
+                    <p className="text-stone-700 font-medium">(555) 123-4567</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4">
-                  <Mail className="text-orange-600 mt-1 flex-shrink-0" size={24} />
+                <div className="flex items-start gap-4 p-5 bg-stone-50 rounded-2xl hover:bg-orange-50 transition-all border border-stone-200 hover:border-orange-300">
+                  <div className="p-3 bg-orange-100 rounded-lg flex-shrink-0">
+                    <Mail className="text-orange-600" size={24} />
+                  </div>
                   <div>
-                    <h4 className="font-bold text-stone-900 mb-1">Email</h4>
-                    <p className="text-stone-600">hello@savoria.com</p>
-                    <p className="text-stone-600">events@savoria.com</p>
+                    <h4 className="font-bold text-stone-900 mb-1">📧 Email</h4>
+                    <p className="text-stone-700 font-medium">hello@savoria.com</p>
+                    <p className="text-stone-700 font-medium">events@savoria.com</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4">
-                  <Calendar className="text-orange-600 mt-1 flex-shrink-0" size={24} />
+                <div className="flex items-start gap-4 p-5 bg-stone-50 rounded-2xl hover:bg-orange-50 transition-all border border-stone-200 hover:border-orange-300">
+                  <div className="p-3 bg-orange-100 rounded-lg flex-shrink-0">
+                    <Calendar className="text-orange-600" size={24} />
+                  </div>
                   <div>
-                    <h4 className="font-bold text-stone-900 mb-1">Opening Hours</h4>
-                    <p className="text-stone-600 text-sm">Mon-Thu: 11am - 10pm</p>
-                    <p className="text-stone-600 text-sm">Fri-Sat: 11am - 11pm</p>
+                    <h4 className="font-bold text-stone-900 mb-1">🕐 Hours</h4>
+                    <p className="text-stone-700 font-medium text-sm">Mon-Thu: 11am - 10pm</p>
+                    <p className="text-stone-700 font-medium text-sm">Fri-Sat: 11am - 11pm</p>
                     <p className="text-stone-600 text-sm">Sun: 10am - 9:30pm</p>
                   </div>
                 </div>
@@ -200,7 +225,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
             </div>
 
             {/* Location Map with Locations Info */}
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col">
+            <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-xl overflow-hidden flex flex-col border border-white/50">
               <iframe
                 title="Savoria Bistro Locations"
                 className="w-full h-64"
@@ -234,8 +259,14 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
           </div>
 
           {/* Event Inquiry Form */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col h-fit">
-            <h2 className="text-xl font-serif font-bold text-stone-900 mb-4">Private Events Inquiry</h2>
+          <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-xl p-10 flex flex-col h-fit border border-white/50">
+            <h2 className="text-3xl font-serif font-bold text-stone-900 mb-2 flex items-center gap-3">
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <Calendar className="text-orange-600" size={28} />
+              </div>
+              Private Events
+            </h2>
+            <p className="text-stone-600 mb-6 text-sm">Plan your special occasion with us</p>
             
             {submitted ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
