@@ -310,7 +310,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [promoForm, setPromoForm] = useState({ code: '', discount: 20, expiryDate: '', active: true });
   const [promoMessage, setPromoMessage] = useState('');
   const [promoError, setPromoError] = useState('');
-  const [loadingPromos, setLoadingPromos] = useState(false);
 
   // ===== STATE: TOASTS =====
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -556,8 +555,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     }
 
     try {
-      setLoadingPromos(true);
-      
       if (editingPromoId) {
         // Edit existing promo
         await updatePromo(editingPromoId, {
@@ -592,8 +589,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       const message = err instanceof Error ? err.message : 'Failed to save promo';
       showToast(message, 'error');
       setPromoError(message);
-    } finally {
-      setLoadingPromos(false);
     }
   };
 
@@ -613,7 +608,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const handleDeletePromo = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this promo code?')) {
       try {
-        setLoadingPromos(true);
         const deleted = promos.find(p => p._id === id);
         await deletePromo(id);
         
@@ -625,8 +619,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete promo';
         showToast(message, 'error');
-      } finally {
-        setLoadingPromos(false);
       }
     }
   };
@@ -979,22 +971,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   }, [users, orders, menuItems, activityLogs]);
 
   // ===== EFFECTS =====
-  // Load promo settings from localStorage on mount
-  useEffect(() => {
-    const storedPromos = localStorage.getItem('activePromos');
-    if (storedPromos) {
-      try {
-        setPromos(JSON.parse(storedPromos));
-      } catch (err) {
-        // Keep default promos if parsing fails
-      }
-    }
-    
-    const storedOfferEnabled = localStorage.getItem('offerEnabled');
-    if (storedOfferEnabled !== null) {
-      setOfferEnabled(JSON.parse(storedOfferEnabled));
-    }
-  }, []);
 
   useEffect(() => {
     if (user && (user.role === 'admin' || user.role === 'staff' || user.role === 'masterAdmin')) {
@@ -1075,14 +1051,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   useEffect(() => {
     const loadPromos = async () => {
       try {
-        setLoadingPromos(true);
         const data = await fetchAllPromos();
         setPromos(data);
       } catch (err) {
         console.error('Failed to fetch promos:', err);
         showToast('Failed to load promo codes', 'error');
-      } finally {
-        setLoadingPromos(false);
       }
     };
     loadPromos();
@@ -3381,24 +3354,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
                   {/* Offer Section Enable/Disable */}
                   <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-stone-900">Special Offer Section</h3>
-                      <p className="text-sm text-stone-600">Enable or disable the offer banner on the home page</p>
-                    </div>
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={offerEnabled}
-                        onChange={(e) => {
-                          setOfferEnabled(e.target.checked);
-                          localStorage.setItem('offerEnabled', JSON.stringify(e.target.checked));
-                        }}
-                        className="w-6 h-6 rounded border-blue-300 cursor-pointer"
-                      />
-                      <span className={`font-bold ${offerEnabled ? 'text-green-600' : 'text-red-600'}`}>
-                        {offerEnabled ? '✓ Enabled' : '✗ Disabled'}
-                      </span>
-                    </label>
                   </div>
 
                   {showPromoForm && (
@@ -3497,10 +3452,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       </thead>
                       <tbody className="divide-y divide-stone-100 text-sm">
                         {promos.map((promo) => (
-                          <tr key={promo.id} className="hover:bg-stone-50">
+                          <tr key={promo._id} className="hover:bg-stone-50">
                             <td className="p-4 font-bold text-stone-900">{promo.code}</td>
                             <td className="p-4 text-stone-600">{promo.discount}% off</td>
-                            <td className="p-4 text-stone-600">{promo.expiryDate || 'No expiry'}</td>
+                            <td className="p-4 text-stone-600">{new Date(promo.expiryDate).toLocaleDateString()}</td>
                             <td className="p-4">
                               <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${promo.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 {promo.active ? '✓ Active' : '✗ Inactive'}
@@ -3514,7 +3469,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                 <Edit2 size={16} /> Edit
                               </button>
                               <button 
-                                onClick={() => handleDeletePromo(promo.id)}
+                                onClick={() => handleDeletePromo(promo._id || '')}
                                 className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center gap-1"
                               >
                                 <Trash2 size={16} /> Delete
