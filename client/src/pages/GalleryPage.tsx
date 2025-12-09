@@ -178,38 +178,40 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
       <div className="pt-0 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Search and Filter Section */}
-          <div className="pt-6 sm:pt-8 pb-8 sm:pb-12 bg-white/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-8 -mx-4 sm:mx-0 sticky top-20 z-30 shadow-sm border border-white/50 mb-8 md:mb-12">
+          <div className="py-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 sm:p-3 -mx-4 sm:mx-0 sticky top-20 z-30 shadow-sm border border-white/50 mb-4 md:mb-6">
             {/* Search Bar */}
-            <div className="relative w-full max-w-md mx-auto mb-4 sm:mb-6">
-              <Search className="absolute left-4 top-3.5 text-stone-400" size={20} />
+            <div className="relative w-full max-w-sm mx-auto mb-1.5 sm:mb-2">
+              <Search className="absolute left-3 top-2 text-stone-400" size={14} />
               <input 
                 type="text" 
                 placeholder="Search images..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none shadow-sm text-stone-800 placeholder-stone-400 hover:border-orange-300 transition-colors"
+                className="w-full pl-8 pr-3 py-1.5 rounded-full border border-stone-200 focus:ring-1 focus:ring-orange-500 outline-none text-stone-800 placeholder-stone-400 text-xs"
               />
             </div>
 
             {/* Category Filter */}
-            <div className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-4 sm:mb-6">
-              {categories.map(cat => {
-                const count = galleryImages.filter(img => img.category === cat).length;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-6 py-3 rounded-full text-sm font-semibold transition-all transform hover:scale-105 flex items-center gap-2 ${
-                      selectedCategory === cat 
-                        ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg' 
-                        : 'bg-white text-stone-600 border-2 border-stone-200 hover:border-orange-400'
-                    }`}
-                  >
-                    {cat}
-                    {cat !== 'All' && <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${selectedCategory === cat ? 'bg-white/20' : 'bg-orange-100 text-orange-700'}`}>{count}</span>}
-                  </button>
-                );
-              })}
+            <div className="flex justify-center">
+              <div className="flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-orange-300 scrollbar-track-transparent max-w-full">
+                {categories.map(cat => {
+                  const count = galleryImages.filter(img => img.category === cat).length;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
+                        selectedCategory === cat 
+                          ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg' 
+                          : 'bg-white text-stone-600 border-2 border-stone-200 hover:border-orange-400'
+                      }`}
+                    >
+                      {cat}
+                      {cat !== 'All' && <span className={`text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-bold ${selectedCategory === cat ? 'bg-white/20' : 'bg-orange-100 text-orange-700'}`}>{count}</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

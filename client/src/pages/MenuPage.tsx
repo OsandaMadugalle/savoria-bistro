@@ -123,34 +123,36 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Controls Section */}
-        <div className="pt-6 sm:pt-8 pb-8 sm:pb-12 bg-white/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-8 -mx-4 sm:mx-0 sticky top-20 z-30 shadow-sm border border-white/50">
+        <div className="py-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 sm:p-3 -mx-4 sm:mx-0 sticky top-20 z-30 shadow-sm border border-white/50">
           {/* Search Bar */}
-          <div className="relative w-full max-w-md mx-auto mb-4 sm:mb-6">
-            <Search className="absolute left-4 top-3 sm:top-3.5 text-stone-400" size={18} />
+          <div className="relative w-full max-w-sm mx-auto mb-1.5 sm:mb-2">
+            <Search className="absolute left-3 top-2 text-stone-400" size={14} />
             <input 
               type="text" 
               placeholder="Search dishes..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-2 sm:py-3 rounded-full border-2 border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none shadow-sm text-stone-800 placeholder-stone-400 transition-all hover:border-orange-300 text-sm"
+              className="w-full pl-8 pr-3 py-1.5 rounded-full border border-stone-200 focus:ring-1 focus:ring-orange-500 outline-none text-stone-800 placeholder-stone-400 text-xs"
             />
           </div>
 
           {/* Category Tabs */}
-          <div className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-4 sm:mb-6">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all transform hover:scale-105 ${
-                  activeCategory === cat 
-                    ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg' 
-                    : 'bg-white text-stone-600 border-2 border-stone-200 hover:border-orange-400'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="flex justify-center mb-1.5 sm:mb-2">
+            <div className="flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-orange-300 scrollbar-track-transparent max-w-full">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
+                    activeCategory === cat 
+                      ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg' 
+                      : 'bg-white text-stone-600 border-2 border-stone-200 hover:border-orange-400'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Filters Row */}
@@ -229,7 +231,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
               <div 
                 key={item.id || item.name} 
                 onClick={() => setSelectedItem(item)}
-                className="bg-white rounded-2xl shadow-sm border-2 border-stone-100 overflow-hidden hover:shadow-2xl hover:border-orange-400 transition-all cursor-pointer group transform hover:scale-105"
+                className="bg-white rounded-2xl shadow-sm border-2 border-stone-100 overflow-hidden hover:shadow-2xl hover:border-orange-400 transition-all cursor-pointer group transform hover:scale-105 flex flex-col"
               >
                 {/* Image */}
                 <div className="relative overflow-hidden h-56 bg-gradient-to-br from-stone-300 to-stone-200">
@@ -255,17 +257,15 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
-                  <div className="mb-3">
-                    <h3 className="font-serif font-bold text-xl text-stone-900 group-hover:text-orange-600 transition-colors line-clamp-2">{item.name}</h3>
-                    <p className="text-xs text-orange-600 uppercase tracking-widest font-semibold mt-1">{item.category}</p>
-                  </div>
+                <div className="p-6 flex-1 flex flex-col">
+                  <h3 className="font-serif font-bold text-xl text-stone-900 group-hover:text-orange-600 transition-colors line-clamp-2">{item.name}</h3>
+                  <p className="text-xs text-orange-600 uppercase tracking-widest font-semibold mt-1">{item.category}</p>
                   
-                  <p className="text-sm text-stone-600 mb-4 line-clamp-2 leading-relaxed">{item.description}</p>
+                  <p className="text-sm text-stone-600 mt-3 line-clamp-2 leading-relaxed">{item.description}</p>
                   
                   {/* Dietary Info */}
                   {item.dietary && item.dietary.length > 0 && (
-                    <div className="flex gap-2 flex-wrap mb-4">
+                    <div className="flex gap-2 flex-wrap mt-3">
                       {item.dietary.slice(0, 2).map(diet => (
                         <span key={diet} className="text-[10px] uppercase tracking-wider bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-200 font-semibold">
                           {diet === 'GF' ? '🌾 GF' : diet === 'Vegan' ? '🌱 Vegan' : '🥬 Vegetarian'}
@@ -274,11 +274,12 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
                     </div>
                   )}
 
+                  {/* Spacer to push footer down */}
+                  <div className="flex-1" />
+
                   {/* Footer */}
-                  <div className="flex justify-between items-center pt-4 border-t-2 border-stone-100">
-                    <div>
-                      <span className="text-3xl font-serif font-bold text-orange-600">${item.price.toFixed(2)}</span>
-                    </div>
+                  <div className="flex justify-between items-center pt-4 mt-4 border-t-2 border-stone-100">
+                    <span className="text-2xl font-serif font-bold text-orange-600">${item.price.toFixed(2)}</span>
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 font-semibold text-sm rounded-lg group-hover:bg-orange-100 transition-colors">
                       View <ChevronRight size={16} />
                     </div>
