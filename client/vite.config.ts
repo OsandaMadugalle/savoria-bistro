@@ -7,4 +7,3 @@ export default defineConfig({
   // Vite automatically exposes env variables starting with VITE_ via import.meta.env
   // No need to manually define them here
 });
-});
