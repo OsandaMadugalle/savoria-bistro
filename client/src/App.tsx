@@ -126,45 +126,62 @@ const App: React.FC = () => {
     }
   }, []);
 
+
+  // Only hide Navbar/Footer on dashboard routes
+  const location = window.location.pathname;
+  const isDashboardRoute = location.startsWith('/admin') || location.startsWith('/staff');
+
+  // HomeRedirector: redirect staff/admin/masterAdmin from Home to dashboard
+  const HomeRedirector: React.FC<{ user: User | null }> = ({ user }) => {
+    if (user && (user.role === 'staff' || user.role === 'admin' || user.role === 'masterAdmin')) {
+      if (user.role === 'staff') {
+        return <Navigate to="/staff" replace />;
+      } else {
+        return <Navigate to="/admin" replace />;
+      }
+    }
+    return <Home />;
+  };
+
   return (
     <Router>
       <ScrollToTop />
       <div className="flex flex-col min-h-screen">
-        {user?.role !== 'staff' && (
+        {!isDashboardRoute && (
           <Navbar cart={cart} user={user} onLogin={handleLogin} onLogout={handleLogout} isLoginModalOpen={isLoginModalOpen} setIsLoginModalOpen={setIsLoginModalOpen} authMode={authMode} setAuthMode={setAuthMode} />
         )}
-        
+
         <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<HomeRedirector user={user} />} />
             <Route path="/menu" element={<MenuPage addToCart={addToCart} />} />
             <Route path="/gallery" element={<GalleryPage user={user} />} />
             <Route path="/contact" element={<ContactPage user={user} />} />
             <Route path="/reviews" element={<ReviewsPage user={user} onOpenSignIn={() => { setAuthMode('signin'); setIsLoginModalOpen(true); }} />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-            
+
             {/* Customer-only routes - staff/admin/masterAdmin redirected to /admin */}
             <Route path="/reservation" element={<ProtectedCustomerRoute element={<ReservationPage user={user} />} user={user} />} />
             <Route path="/my-reservations" element={<ProtectedAuthRoute element={<MyReservationsPage user={user} />} user={user} />} />
             <Route path="/order" element={<ProtectedCustomerRoute element={<OrderPage cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} clearCart={clearCart} user={user} />} user={user} />} />
             <Route path="/tracker" element={<ProtectedCustomerRoute element={<TrackerPage user={user} />} user={user} />} />
-            
+
             {/* Profile route - accessible to all authenticated users */}
             <Route path="/profile" element={<ProtectedAuthRoute element={<ProfilePage initialUser={user} />} user={user} />} />
-            
+
             {/* Protected Dashboard Routes - admin and masterAdmin only */}
             <Route path="/admin" element={<ProtectedAdminRoute element={<AdminDashboard user={user} />} user={user} />} />
-            
+
             {/* Protected Staff Portal - staff, admin, masterAdmin */}
             <Route path="/staff" element={<ProtectedStaffRoute element={<StaffDashboard user={user} onLogin={handleLogin} onLogout={handleLogout} />} user={user} />} />
-            
+
             {/* 404 Route */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
 
-        {( !user || (user.role !== 'staff' && user.role !== 'admin' && user.role !== 'masterAdmin') ) && <Footer />}
+        {!isDashboardRoute && <Footer />}
         <AIChef />
       </div>
     </Router>
