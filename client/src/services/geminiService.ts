@@ -3,34 +3,32 @@ import { MENU_ITEMS } from "../constants";
 
 let chatSession: Chat | null = null;
 
-const getSystemInstruction = () => {
-  const menuText = MENU_ITEMS.map(item => 
-    `- ${item.name} ($${item.price}): ${item.description} [${item.category}] Tags: ${item.tags.join(', ')}`
-  ).join('\n');
 
-  return `You are "Chef Gustav", the AI Concierge for Savoria Bistro. 
-  Your goal is to assist customers with menu questions, dietary requirements, and recommendations.
-  
-  Here is our current menu:
-  ${menuText}
-  
-  Rules:
-  1. Be polite, warm, and professional.
-  2. If asked about items not on the menu, politely inform them we don't serve that but suggest a similar item from our menu.
-  3. Keep answers concise (under 100 words) unless asked for a detailed description.
-  4. If asked about allergies, always recommend checking with the server for safety, even if the tag says GF/Vegan.
-  5. Suggest wine pairings if appropriate (invent reasonable pairings based on the dish flavors).
-  `;
+const getSystemInstruction = (menu = MENU_ITEMS) => {
+  // Group menu items by category
+  const categories = ['Starter', 'Main', 'Dessert', 'Drink'];
+  const grouped = categories.map(cat => {
+    const items = menu.filter(item => item.category === cat).slice(0, 2);
+    if (!items.length) return '';
+    const header = `${cat.toUpperCase()}\n${'-'.repeat(28)}`;
+    const itemLines = items.map(item => {
+      const tags = item.tags && item.tags.length ? ` [${item.tags.join(', ')}]` : '';
+      return `${item.name}${tags}  $${item.price}\n  ${item.description}`;
+    }).join('\n\n');
+    return `${header}\n${itemLines}`;
+  }).filter(Boolean).join('\n\n');
+
+  return `You are \"Chef Gustav\", the AI Concierge for Savoria Bistro.\n\nGreet the guest warmly and help with any menu, dietary, or general restaurant questions.\n\nIMPORTANT: If the guest asks about contact information, hours, location, reservations, private events, or anything about the site or restaurant, answer helpfully and concisely.\n\nFor contact: Savoria Bistro, 123 Main Street, Cityville. Phone: (555) 123-4567. Email: info@savoriabistro.com.\nHours: Mon-Sat 11am-10pm, Sun 11am-8pm.\nReservations: Available online or by phone.\nPrivate events: We host private events—please inquire for details.\n\nWhen showing the menu: Present as plain text only. Do NOT use markdown, asterisks, or bold. Use clear section headers and spacing.\n\nSavoria Bistro Menu (sample):\n${grouped}\n\nFor the full menu, please visit our Menu page: [Menu](#/menu)\n\nIf asked about items not on the menu, politely inform them we don't serve that but suggest a similar item from our menu.\nIf asked about allergies, always recommend checking with the server for safety, even if the tag says GF/Vegan.\nKeep answers concise (under 100 words) unless asked for a detailed description.\nSuggest wine pairings if appropriate (invent reasonable pairings based on the dish flavors).`;
 };
 
-export const initializeChat = (): Chat => {
+export const initializeChat = (menu?: any[]): Chat => {
   const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || '';
   const ai = new GoogleGenAI({ apiKey });
   
   chatSession = ai.chats.create({
     model: 'gemini-2.5-flash',
     config: {
-      systemInstruction: getSystemInstruction(),
+      systemInstruction: getSystemInstruction(menu),
       temperature: 0.7,
     },
   });
@@ -38,9 +36,9 @@ export const initializeChat = (): Chat => {
   return chatSession;
 };
 
-export const sendMessageToChef = async function* (message: string) {
-  if (!chatSession) {
-    initializeChat();
+export const sendMessageToChef = async function* (message: string, context?: { menu?: any[] }) {
+  if (!chatSession || (context && context.menu)) {
+    initializeChat(context?.menu);
   }
 
   if (!chatSession) {
@@ -49,12 +47,16 @@ export const sendMessageToChef = async function* (message: string) {
 
   try {
     const result = await chatSession.sendMessageStream({ message });
-    
     for await (const chunk of result) {
-       yield chunk.text;
+      yield chunk.text;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
-    yield "I apologize, but I'm having trouble connecting to the kitchen right now. Please try again in a moment.";
+    // Check for quota exceeded error
+    if (typeof error?.message === 'string' && error.message.includes('quota')) {
+      yield "Sorry, our AI Chef has reached its daily conversation limit. Please try again tomorrow or contact the restaurant directly for assistance.";
+    } else {
+      yield "I apologize, but I'm having trouble connecting to the kitchen right now. Please try again in a moment.";
+    }
   }
 };

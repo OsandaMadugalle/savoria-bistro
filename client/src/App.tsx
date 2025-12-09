@@ -65,7 +65,30 @@ const ProtectedAuthRoute: React.FC<{ element: React.ReactElement; user: User | n
 };
 
 const App: React.FC = () => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const storedCart = localStorage.getItem('cart');
+    if (storedCart) {
+      try {
+        const parsed = JSON.parse(storedCart);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item: any) =>
+            item && typeof item.id === 'string' && typeof item.name === 'string' && typeof item.price === 'number' && typeof item.quantity === 'number'
+          );
+        }
+      } catch (err) {
+        console.error('Failed to parse stored cart:', err);
+        localStorage.removeItem('cart');
+      }
+    }
+    return [];
+  });
+    // Load cart from localStorage on app load
+    // (removed duplicate cart initialization)
+
+    // Save cart to localStorage whenever it changes
+    useEffect(() => {
+      localStorage.setItem('cart', JSON.stringify(cart));
+    }, [cart]);
   const [user, setUser] = useState<User | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -180,7 +203,7 @@ const App: React.FC = () => {
         </main>
 
         {!isDashboardRoute && <Footer />}
-        {!isDashboardRoute && <AIChef />}
+        {!isDashboardRoute && <AIChef user={user} cart={cart} setCart={setCart} />}
       </div>
     </Router>
   );
