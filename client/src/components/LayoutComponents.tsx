@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, ChefHat, Eye, EyeOff, Calendar } from 'lucide-react';
+import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, ChefHat, Eye, EyeOff, Calendar, ShoppingCart, Star, MessageSquare } from 'lucide-react';
 import { CartItem, User } from '../types';
 import { loginUser, subscribeNewsletter } from '../services/api';
 
@@ -400,6 +400,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = React.useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Prevent background scroll when modal is open
@@ -413,6 +414,23 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
       document.body.classList.remove('overflow-hidden');
     };
   }, [isLoginModalOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isUserMenuOpen]);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -437,27 +455,27 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
 
   return (
     <>
-      <nav className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-md border-b border-stone-200 z-40 transition-all duration-300">
+      <nav className="fixed top-0 left-0 w-full bg-gradient-to-r from-white via-stone-50 to-white/95 backdrop-blur-md shadow-lg border-b-2 border-orange-200 z-40 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
-            <div className="flex-shrink-0 flex items-center">
-              <NavLink to="/" className="text-2xl font-serif font-bold text-stone-900 tracking-tight">
+            <div className="flex-shrink-0 flex items-center group">
+              <NavLink to="/" className="text-3xl font-serif font-bold text-stone-900 tracking-tight hover:text-orange-600 transition-colors duration-300">
                 Savoria<span className="text-orange-600">.</span>
               </NavLink>
             </div>
 
             {/* Desktop Nav */}
-            <div className="hidden md:flex items-center space-x-1 xl:space-x-2">
+            <div className="hidden md:flex items-center space-x-0.5 xl:space-x-1">
               {navLinks.map((link) => (
                 <NavLink
                   key={link.path}
                   to={link.path}
                   className={({ isActive }) => {
                     if (link.highlight) {
-                      return `flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isActive ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`;
+                      return `flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold transition-all transform hover:scale-105 ${isActive ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-600/40' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`;
                     }
-                    return `px-1 py-2 text-sm font-medium transition-colors hover:text-orange-600 ${isActive ? 'text-orange-600' : 'text-stone-600'}`;
+                    return `px-3 py-2.5 text-sm font-semibold transition-all duration-300 hover:text-orange-600 border-b-2 border-transparent hover:border-orange-300 ${isActive ? 'text-orange-600 border-orange-600' : 'text-stone-600'}`;
                   }}
                 >
                   {link.icon && <link.icon size={18} />}
@@ -469,53 +487,98 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
               
               {/* User Actions */}
               {user ? (
-                <div className="relative">
+                <div className="relative ml-4" ref={userMenuRef}>
                   <button 
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 text-sm font-medium text-stone-700 hover:text-orange-600 transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-stone-700 hover:bg-orange-50 transition-all duration-300 border border-stone-200 hover:border-orange-300"
                   >
-                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 font-bold">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold shadow-md">
                       {user.name.charAt(0)}
                     </div>
-                    <span className="hidden lg:block">{user.name.split(' ')[0]}</span>
+                    <span className="hidden lg:block text-stone-700">{user.name.split(' ')[0]}</span>
+                    <span className="text-orange-600">▼</span>
                   </button>
                   
                   {isUserMenuOpen && (
-                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-stone-100 py-2 animate-in fade-in slide-in-from-top-2">
-                        <NavLink 
-                          to="/profile" 
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
-                        >
-                           <UserIcon size={16} /> My Profile
-                        </NavLink>
-                        
-                        <NavLink 
-                          to="/my-reservations" 
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
-                        >
-                           <Calendar size={16} /> My Reservations
-                        </NavLink>
-                        
-                        {/* Role Based Links */}
-                            {(user.role === 'staff') && (
-                              <NavLink to="/staff" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"><ChefHat size={16} /> Staff Portal</NavLink>
-                            )}
+                     <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-orange-200 py-3 animate-in fade-in slide-in-from-top-2 overflow-hidden">
+                        {/* User Info Header */}
+                        <div className="px-4 py-3 border-b border-orange-100 bg-gradient-to-r from-orange-50 to-orange-100">
+                           <p className="font-bold text-stone-900">{user.name}</p>
+                           <p className="text-xs text-stone-600">{user.email}</p>
+                           <p className="text-xs mt-1 px-2 py-1 bg-orange-200 text-orange-900 rounded-full inline-block font-semibold">{user.tier} Member</p>
+                        </div>
 
-                        <button 
-                          onClick={() => { onLogout(); setIsUserMenuOpen(false); navigate('/'); }}
-                          className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                        >
-                           <LogOut size={16} /> Sign Out
-                        </button>
+                        {/* Menu Items */}
+                        <div className="py-2">
+                           <NavLink 
+                             to="/profile" 
+                             onClick={() => setIsUserMenuOpen(false)}
+                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 transition-colors border-l-3 border-transparent hover:border-orange-500"
+                           >
+                              <UserIcon size={18} className="text-orange-600" /> My Profile
+                           </NavLink>
+                           
+                           <NavLink 
+                             to="/my-reservations" 
+                             onClick={() => setIsUserMenuOpen(false)}
+                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 transition-colors border-l-3 border-transparent hover:border-orange-500"
+                           >
+                              <Calendar size={18} className="text-orange-600" /> My Reservations
+                           </NavLink>
+
+                           <NavLink 
+                             to="/orders" 
+                             onClick={() => setIsUserMenuOpen(false)}
+                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 transition-colors border-l-3 border-transparent hover:border-orange-500"
+                           >
+                              <ShoppingCart size={18} className="text-orange-600" /> Order History
+                           </NavLink>
+
+                           <NavLink 
+                             to="/reviews" 
+                             onClick={() => setIsUserMenuOpen(false)}
+                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 transition-colors border-l-3 border-transparent hover:border-orange-500"
+                           >
+                              <Star size={18} className="text-orange-600" /> Leave Feedback
+                           </NavLink>
+
+                           <NavLink 
+                             to="/contact" 
+                             onClick={() => setIsUserMenuOpen(false)}
+                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 transition-colors border-l-3 border-transparent hover:border-orange-500"
+                           >
+                              <MessageSquare size={18} className="text-orange-600" /> Help & Support
+                           </NavLink>
+                           
+                           {/* Role Based Links */}
+                           {(user.role === 'staff') && (
+                              <>
+                                 <div className="border-t border-orange-100 my-2"></div>
+                                 <NavLink 
+                                    to="/staff" 
+                                    onClick={() => setIsUserMenuOpen(false)} 
+                                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-blue-700 hover:bg-blue-50 transition-colors border-l-3 border-transparent hover:border-blue-500"
+                                 >
+                                    <ChefHat size={18} /> Staff Portal
+                                 </NavLink>
+                              </>
+                           )}
+
+                           <div className="border-t border-orange-100 my-2"></div>
+                           <button 
+                             onClick={() => { onLogout(); setIsUserMenuOpen(false); navigate('/'); }}
+                             className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-l-3 border-transparent hover:border-red-500"
+                           >
+                              <LogOut size={18} /> Sign Out
+                           </button>
+                        </div>
                      </div>
                   )}
                 </div>
               ) : (
                 <button 
                   onClick={() => openAuthModal('signin')}
-                  className="flex items-center gap-2 text-sm font-medium text-stone-600 hover:text-orange-600 transition-colors"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:shadow-lg hover:scale-105 transition-all duration-300 ml-4"
                 >
                   <LogIn size={18} /> Sign In
                 </button>

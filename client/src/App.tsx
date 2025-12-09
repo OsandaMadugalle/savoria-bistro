@@ -96,8 +96,35 @@ const App: React.FC = () => {
 
   const clearCart = () => setCart([]);
 
-  const handleLogin = (user: User) => setUser(user);
-  const handleLogout = () => setUser(null);
+  const handleLogin = (user: User) => {
+    setUser(user);
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('userEmail', user.email);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('token');
+  };
+
+  // Initialize user from localStorage on app load
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    const userEmail = localStorage.getItem('userEmail');
+    
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        setUser(user);
+      } catch (err) {
+        console.error('Failed to parse stored user:', err);
+        localStorage.removeItem('user');
+        localStorage.removeItem('userEmail');
+      }
+    }
+  }, []);
 
   return (
     <Router>
