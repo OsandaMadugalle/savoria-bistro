@@ -31,7 +31,6 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
   const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
   const VALID_PROMOS: { [key: string]: number } = {
-    'SAVORIA20': 20,
     'SAVE10': 10,
   };
 
@@ -338,14 +337,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
                   {codeError && <p className="text-xs text-red-500 font-medium">{codeError}</p>}
                   {!user ? (
                     <p className="text-xs text-orange-600 font-medium bg-orange-50 p-2 rounded">ℹ️ Sign in to apply promo codes</p>
-                  ) : (
-                    <button
-                      onClick={() => setPromoCode('SAVORIA20')}
-                      className="text-xs text-orange-600 hover:text-orange-700 font-semibold"
-                    >
-                      💡 Try: SAVORIA20 (20% off)
-                    </button>
-                  )}
+                  ) : null}
                 </div>
               ) : (
                 <div className="bg-green-50 p-3 rounded-lg flex items-center justify-between border border-green-200">

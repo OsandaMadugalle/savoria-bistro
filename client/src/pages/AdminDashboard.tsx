@@ -305,8 +305,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
   // ===== STATE: PROMOS =====
   const [promos, setPromos] = useState<any[]>([
-    { id: 1, code: 'SAVORIA20', discount: 20, expiryDate: '2025-12-31', active: true },
-    { id: 2, code: 'SAVE10', discount: 10, expiryDate: '2025-12-31', active: true },
+    { id: 1, code: 'SAVE10', discount: 10, expiryDate: '2025-12-31', active: true },
   ]);
   const [offerEnabled, setOfferEnabled] = useState(true);
   const [showPromoForm, setShowPromoForm] = useState(false);
