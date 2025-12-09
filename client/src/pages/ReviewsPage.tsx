@@ -27,14 +27,10 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
   const [success, setSuccess] = useState('');
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'highest' | 'lowest'>('newest');
-  const [userReviews, setUserReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     loadReviews();
-    if (user?.email) {
-      loadUserReviews();
-    }
-  }, [user]);
+  }, []);
 
   const loadReviews = async () => {
     try {
@@ -47,19 +43,6 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
       console.error('Failed to load reviews:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadUserReviews = async () => {
-    if (!user?.email) return;
-    try {
-      const response = await fetch(`http://localhost:5000/api/reviews/user/${encodeURIComponent(user.email)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUserReviews(data);
-      }
-    } catch (err) {
-      console.error('Failed to load user reviews:', err);
     }
   };
 
@@ -134,10 +117,9 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
       setFormData({ title: '', rating: 5, text: '', image: null });
       setIsFormOpen(false);
       
-      // Reload reviews and user reviews
+      // Reload reviews
       setTimeout(() => {
         loadReviews();
-        loadUserReviews();
         setSuccess('');
       }, 2000);
     } catch (err: any) {
@@ -192,43 +174,43 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
       <div className="pt-0 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Summary Card */}
-          <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-xl p-5 sm:p-10 border border-white/50 mb-8 sm:mb-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm p-4 sm:p-6 border border-white/50 mb-6 sm:mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Rating Summary */}
-              <div className="flex flex-col items-center justify-center py-6 relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-100 to-transparent rounded-2xl opacity-30"></div>
-                <div className="relative z-10">
-                  <span className="text-5xl sm:text-8xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-red-600 block mb-2 sm:mb-3">{avgRating}</span>
-                  <div className="flex text-orange-500 mb-2 sm:mb-4 justify-center gap-1">
+              <div className="flex flex-col items-center justify-center py-4 relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-100 to-transparent rounded-xl opacity-30"></div>
+                <div className="relative z-10 text-center">
+                  <span className="text-4xl sm:text-6xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-red-600 block mb-2">{avgRating}</span>
+                  <div className="flex text-orange-500 mb-2 justify-center gap-0.5">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} fill={i < Math.round(parseFloat(avgRating)) ? "currentColor" : "none"} size={20} className={i < Math.round(parseFloat(avgRating)) ? "" : "text-stone-200"} />
+                      <Star key={i} fill={i < Math.round(parseFloat(avgRating)) ? "currentColor" : "none"} size={18} className={i < Math.round(parseFloat(avgRating)) ? "" : "text-stone-200"} />
                     ))}
                   </div>
-                  <span className="text-base sm:text-lg text-stone-600 font-semibold">{reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}</span>
+                  <span className="text-sm text-stone-600 font-semibold">{reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}</span>
                 </div>
               </div>
 
               {/* Rating Breakdown */}
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {ratingDistribution.map(({ rating, count }) => (
-                  <div key={rating} className="flex items-center gap-4">
+                  <div key={rating} className="flex items-center gap-2 sm:gap-3">
                     <button
                       onClick={() => setSelectedRating(selectedRating === rating ? null : rating)}
-                      className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all transform hover:scale-105 w-20 flex-shrink-0 ${
+                      className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg font-semibold text-xs transition-all w-14 sm:w-16 flex-shrink-0 ${
                         selectedRating === rating
-                          ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg'
+                          ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-md'
                           : 'bg-stone-100 text-stone-700 hover:bg-orange-50'
                       }`}
                     >
                       {rating}
-                      <span className="text-lg">★</span>
+                      <span className="text-sm">★</span>
                     </button>
                     <div className="flex-1">
-                      <div className="h-3 bg-stone-200 rounded-full overflow-hidden">
+                      <div className="h-2 bg-stone-200 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-500" style={{ width: `${reviews.length > 0 ? (count / reviews.length) * 100 : 0}%` }} />
                       </div>
                     </div>
-                    <span className="text-sm font-bold text-stone-600 w-12 text-right">{count}</span>
+                    <span className="text-xs font-bold text-stone-600 w-8 text-right">{count}</span>
                   </div>
                 ))}
               </div>
@@ -236,11 +218,11 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
           </div>
 
           {/* Controls: Sort and Write Review */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between bg-white/50 backdrop-blur-sm rounded-xl p-6 border border-white/50">
+          <div className="flex flex-col sm:flex-row gap-3 mb-6 items-center justify-between bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-white/50">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-6 py-3 rounded-lg border-2 border-stone-200 bg-white text-stone-700 font-semibold focus:ring-2 focus:ring-orange-500 outline-none cursor-pointer hover:border-orange-400 transition-colors"
+              className="px-3 py-2 rounded-lg border border-stone-200 bg-white text-stone-700 font-medium text-sm focus:ring-1 focus:ring-orange-500 outline-none cursor-pointer hover:border-orange-400 transition-colors"
             >
               <option value="newest">📅 Newest First</option>
               <option value="highest">⭐ Highest Rated</option>
@@ -255,44 +237,44 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
                   setIsFormOpen(!isFormOpen);
                 }
               }}
-              className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center gap-2 shadow-lg"
+              className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 shadow-md"
             >
-              <MessageSquare size={20} />
-              {isFormOpen ? 'Close Form' : '✍️ Write a Review'}
+              <MessageSquare size={16} />
+              {isFormOpen ? 'Close' : 'Write Review'}
             </button>
           </div>
 
         {/* Review Form */}
         {isFormOpen && (
-          <div className="bg-gradient-to-br from-orange-50 to-stone-50 p-8 rounded-xl mb-12 border border-orange-200 shadow-lg animate-in slide-in-from-top-4">
-            <h3 className="font-serif font-bold text-2xl mb-6 text-stone-900">Share Your Experience</h3>
+          <div className="bg-gradient-to-br from-orange-50 to-stone-50 p-5 sm:p-6 rounded-xl mb-8 border border-orange-200 shadow-md animate-in slide-in-from-top-4">
+            <h3 className="font-serif font-bold text-xl mb-4 text-stone-900">Share Your Experience</h3>
             {error && (
-              <div className="bg-red-100 border border-red-300 text-red-800 p-4 rounded-lg mb-4 flex items-start gap-3">
-                <AlertCircle size={18} className="mt-0.5 flex-shrink-0" />
+              <div className="bg-red-100 border border-red-300 text-red-800 p-3 rounded-lg mb-3 flex items-start gap-2 text-sm">
+                <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
                 <span>{error}</span>
               </div>
             )}
             {success && (
-              <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded-lg mb-4 flex items-start gap-3">
-                <Star size={18} className="mt-0.5 flex-shrink-0" fill="currentColor" />
+              <div className="bg-green-100 border border-green-300 text-green-800 p-3 rounded-lg mb-3 flex items-start gap-2 text-sm">
+                <Star size={16} className="mt-0.5 flex-shrink-0" fill="currentColor" />
                 <span>{success}</span>
               </div>
             )}
-            <form className="space-y-4" onSubmit={handleSubmitReview}>
+            <form className="space-y-3" onSubmit={handleSubmitReview}>
               <div>
-                <label className="block text-sm font-bold text-stone-700 mb-1">Review Title</label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Review Title</label>
                 <input 
                   required 
                   type="text" 
                   placeholder="e.g., Amazing food and service!" 
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  className="w-full px-4 py-3 rounded-lg border-none focus:ring-2 focus:ring-orange-500" 
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 focus:ring-1 focus:ring-orange-500 text-sm" 
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-stone-700 mb-2">Rating</label>
-                <div className="flex gap-2">
+                <label className="block text-xs font-bold text-stone-700 mb-1">Rating</label>
+                <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map(rating => (
                     <button
                       key={rating}
@@ -301,7 +283,7 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
                       className="transition-transform hover:scale-110"
                     >
                       <Star
-                        size={32}
+                        size={24}
                         fill={rating <= formData.rating ? "currentColor" : "none"}
                         className={rating <= formData.rating ? "text-orange-500" : "text-stone-300"}
                       />
@@ -310,14 +292,14 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-stone-700 mb-1">Your Review</label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Your Review</label>
                 <textarea 
                   required 
-                  rows={4} 
+                  rows={3} 
                   placeholder="Tell us about your visit..." 
                   value={formData.text}
                   onChange={(e) => setFormData({...formData, text: e.target.value})}
-                  className="w-full px-4 py-3 rounded-lg border-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 rounded-lg border border-stone-200 focus:ring-1 focus:ring-orange-500 text-sm"
                 />
               </div>
 
@@ -383,93 +365,74 @@ const ReviewsPage: React.FC<ReviewsPageProps> = ({ user, onOpenSignIn }) => {
           </div>
         )}
 
-        {/* User's Reviews Section */}
-        {user && userReviews.length > 0 && !loading && (
-          <div className="mb-12 bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <h2 className="text-2xl font-serif font-bold text-stone-900 mb-4">Your Reviews</h2>
-            <div className="space-y-4">
-              {userReviews.map((review) => (
-                <div key={review._id} className="bg-white p-4 rounded-xl border border-blue-100">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-bold text-stone-900">{review.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex text-orange-500">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} fill={i < review.rating ? "currentColor" : "none"} size={14} className={i < review.rating ? "" : "text-stone-300"} />
-                          ))}
-                        </div>
-                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                          review.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {review.status === 'approved' ? 'Approved' : 'Pending Review'}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-xs text-stone-500">
-                      {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Recently'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-stone-700">"{review.text}"</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Reviews List */}
         {!loading && filteredReviews.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-12">
             {filteredReviews.map((review) => (
-              <div key={review._id} className="group bg-white rounded-2xl shadow-sm border-2 border-stone-100 overflow-hidden hover:shadow-2xl hover:border-orange-400 transition-all cursor-pointer group transform hover:scale-105 flex flex-col p-8">
-                <div className="flex justify-between items-start mb-5">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-lg">
-                      {review.userName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-serif font-bold text-stone-900 text-lg group-hover:text-orange-600 transition-colors">{review.userName}</h4>
-                      <p className="text-base font-semibold text-stone-700 mb-2">{review.title}</p>
-                      <div className="flex items-center gap-2 text-sm text-stone-500">
-                        <Calendar size={16} />
-                        {review.createdAt ? new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex text-orange-500 flex-shrink-0 gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} fill={i < review.rating ? "currentColor" : "none"} size={22} className={i < review.rating ? "" : "text-stone-200"} />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-stone-700 leading-relaxed text-lg italic before:content-['\u201C'] after:content-['\u201D']">{review.text}</p>
+              <div key={review._id} className="bg-white rounded-2xl shadow-sm border-2 border-stone-100 overflow-hidden hover:shadow-2xl hover:border-orange-400 transition-all cursor-pointer group transform hover:scale-105 flex flex-col">
+                {/* Review Image (if exists) */}
                 {(review as any).image && (
-                  <div className="mt-6">
+                  <div className="relative overflow-hidden h-40 bg-gradient-to-br from-stone-300 to-stone-200">
                     <img 
                       src={(review as any).image} 
                       alt="Review" 
-                      className="max-w-sm h-56 object-cover rounded-xl border-2 border-stone-200 cursor-pointer hover:opacity-90 shadow-md transition-all duration-300 group-hover:border-orange-400"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onClick={() => openLightbox((review as any).image)}
                       onError={(e) => {
-                        console.error('Image failed to load:', (review as any).image);
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
-                      onLoad={() => {
-                        console.log('Image loaded successfully for review:', review._id);
-                      }}
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
                 )}
+                
+                {/* Content */}
+                <div className="p-5 flex-1 flex flex-col">
+                  {/* Header with avatar and rating */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
+                      {review.userName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-stone-900 text-sm group-hover:text-orange-600 transition-colors truncate">{review.userName}</h4>
+                      <div className="flex items-center gap-1 text-xs text-stone-500">
+                        <Calendar size={12} />
+                        {review.createdAt ? new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}
+                      </div>
+                    </div>
+                    <div className="flex text-orange-500 flex-shrink-0">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} fill={i < review.rating ? "currentColor" : "none"} size={14} className={i < review.rating ? "" : "text-stone-200"} />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Title */}
+                  <h3 className="font-serif font-bold text-base text-stone-900 mb-2 line-clamp-1">{review.title}</h3>
+                  
+                  {/* Review text */}
+                  <p className="text-sm text-stone-600 leading-relaxed line-clamp-3 italic">"{review.text}"</p>
+                  
+                  {/* Spacer */}
+                  <div className="flex-1" />
+                  
+                  {/* Footer */}
+                  <div className="flex justify-end items-center pt-3 mt-3 border-t border-stone-100">
+                    <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-orange-600 font-semibold text-xs rounded-lg group-hover:bg-orange-100 transition-colors">
+                      {review.rating}/5 Rating
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         ) : !loading && (
-          <div className="text-center py-24 bg-stone-50 rounded-xl border border-dashed border-stone-300">
-            <div className="inline-block p-6 bg-stone-100 rounded-full mb-6">
-              <MessageSquare size={56} className="text-stone-400" />
+          <div className="text-center py-16 bg-stone-50 rounded-xl border border-dashed border-stone-300">
+            <div className="inline-block p-4 bg-stone-100 rounded-full mb-4">
+              <MessageSquare size={40} className="text-stone-400" />
             </div>
-            <p className="text-stone-700 font-bold text-xl mb-2">{selectedRating ? 'No reviews with that rating' : 'No reviews yet'}</p>
-            <p className="text-stone-600 mb-6">Be the first to share your dining experience with us!</p>
+            <p className="text-stone-700 font-bold text-lg mb-2">{selectedRating ? 'No reviews with that rating' : 'No reviews yet'}</p>
+            <p className="text-stone-600 text-sm mb-4">Be the first to share your dining experience with us!</p>
             <button 
               onClick={() => {
                 if (!user) {
