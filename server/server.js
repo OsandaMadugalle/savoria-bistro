@@ -30,27 +30,34 @@ const corsOptions = {
       'http://localhost:5173',
       'http://localhost:3000',
       'https://savoria-bistro.vercel.app',
-      process.env.CLIENT_URL || 'https://savoria-bistro.vercel.app'
-    ];
+      process.env.CLIENT_URL
+    ].filter(Boolean); // Remove undefined/null values
     
-    // In development, allow all origins for easier testing
-    if (process.env.NODE_ENV !== 'production') {
+    // Always allow if no origin (same-origin requests)
+    if (!origin) {
       callback(null, true);
       return;
     }
     
-    // In production, check if origin is allowed
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Check if origin is in whitelist
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
-    } else {
-      console.warn(`CORS blocked request from: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      return;
     }
+    
+    // In development or if origin matches Vercel pattern, allow it
+    if (process.env.NODE_ENV !== 'production' || origin.includes('vercel.app')) {
+      callback(null, true);
+      return;
+    }
+    
+    console.warn(`CORS blocked request from: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
 };
 
 // Rate Limiting Configuration
@@ -66,6 +73,10 @@ const authLimiter = rateLimit({
 
 // Middleware
 app.use(cors(corsOptions));
+
+// Explicit preflight handling
+app.options('*', cors(corsOptions));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
