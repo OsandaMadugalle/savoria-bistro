@@ -10,7 +10,6 @@ const Home: React.FC = () => {
   const [featuredDishes, setFeaturedDishes] = useState<MenuItem[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
-  const [loadingPromos, setLoadingPromos] = useState(true);
 
   useEffect(() => {
     // Animate stats on load
@@ -60,8 +59,6 @@ const Home: React.FC = () => {
       } catch (err) {
         console.error('Failed to fetch promos:', err);
         setPromos([]);
-      } finally {
-        setLoadingPromos(false);
       }
     };
     loadPromos();
@@ -230,22 +227,31 @@ const Home: React.FC = () => {
       </section>
 
       {/* Featured Dishes Section */}
-      <section className="py-20 bg-white px-4 border-b border-stone-200">
+      <section className="py-24 bg-gradient-to-br from-white via-stone-50 to-white px-4 border-b border-stone-200">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-orange-600 font-bold tracking-widest uppercase text-sm mb-2">Menu Highlights</h2>
-            <h3 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-stone-900 mb-4">Chef's Specialties</h3>
-            <p className="text-stone-600 max-w-2xl mx-auto">Handpicked dishes that showcase our culinary excellence and commitment to quality ingredients</p>
+          {/* Section Header */}
+          <div className="text-center mb-20">
+            <div className="inline-block mb-4 px-4 py-2 bg-orange-100 border border-orange-300 rounded-full">
+              <span className="text-orange-700 font-bold text-sm tracking-wider uppercase">Culinary Excellence</span>
+            </div>
+            <h2 className="text-orange-600 font-bold tracking-widest uppercase text-sm mb-4">Chef's Selection</h2>
+            <h3 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold text-stone-900 mb-6">Signature Specialties</h3>
+            <p className="text-stone-600 max-w-3xl mx-auto text-lg leading-relaxed">
+              Each dish represents our executive chef's interpretation of classic culinary traditions, prepared with the finest seasonal ingredients sourced from trusted local producers.
+            </p>
           </div>
+
+          {/* Loading State */}
           {loadingFeatured ? (
-            <div className="w-full flex justify-center">
-              <div className="inline-block">
-                <div className="w-12 h-12 border-4 border-stone-300 border-t-orange-600 rounded-full animate-spin mb-4"></div>
-                <p className="text-stone-500 font-medium text-center">Loading specialties...</p>
+            <div className="w-full flex justify-center py-20">
+              <div className="inline-block text-center">
+                <div className="w-14 h-14 border-4 border-stone-300 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-stone-500 font-medium">Loading chef's specialties...</p>
               </div>
             </div>
           ) : featuredDishes.length > 0 ? (
             <div className="relative">
+              {/* Dishes Grid */}
               <div
                 ref={scrollContainerRef}
                 className={`${
@@ -257,63 +263,109 @@ const Home: React.FC = () => {
                 {featuredDishes.map((dish: MenuItem, idx: number) => (
                   <div
                     key={dish.id || idx}
-                    className={`${hasScrollableFeatured ? 'min-w-[300px]' : ''} group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col flex-shrink-0`}
+                    className={`${hasScrollableFeatured ? 'min-w-[340px]' : ''} group flex flex-col flex-shrink-0 bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-stone-100 hover:border-orange-300`}
                   >
-                    <div className="relative h-64 overflow-hidden bg-stone-200">
+                    {/* Image Container */}
+                    <div className="relative h-72 overflow-hidden bg-gradient-to-br from-stone-200 to-stone-300">
                       <img
                         src={dish.image}
                         alt={dish.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      {/* Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      
+                      {/* Price Badge */}
+                      <div className="absolute top-4 right-4 bg-orange-600 text-white px-4 py-2 rounded-full font-bold text-lg shadow-lg">
+                        ${dish.price.toFixed(2)}
+                      </div>
+
+                      {/* Featured Badge */}
+                      <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md text-orange-700 px-3 py-1 rounded-full font-bold text-xs tracking-wider uppercase shadow-md">
+                        ✨ Chef's Pick
+                      </div>
                     </div>
-                    <div className="p-6 flex-1 flex flex-col">
-                      <h4 className="text-xl font-serif font-bold text-stone-900 mb-2 truncate">
+
+                    {/* Content */}
+                    <div className="p-7 flex-1 flex flex-col">
+                      {/* Dish Name */}
+                      <h4 className="text-2xl font-serif font-bold text-stone-900 mb-3 group-hover:text-orange-600 transition-colors">
                         {dish.name}
                       </h4>
-                      <p className="text-stone-600 text-sm mb-4 line-clamp-3 flex-1">
+
+                      {/* Description */}
+                      <p className="text-stone-600 text-sm leading-relaxed mb-5 flex-1 line-clamp-3">
                         {dish.description}
                       </p>
-                      <div className="flex items-center justify-between border-t border-stone-200 pt-4">
-                        <span className="text-2xl font-serif font-bold text-orange-600">${dish.price.toFixed(2)}</span>
-                        <NavLink
-                          to="/menu"
-                          state={{ focusDishId: dish.id }}
-                          className="inline-flex items-center gap-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors duration-200"
-                        >
-                          Order Now <ChevronRight size={16} />
-                        </NavLink>
+
+                      {/* Info Tags */}
+                      <div className="flex flex-wrap gap-2 mb-6">
+                        {dish.dietary && dish.dietary.length > 0 && (
+                          <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
+                            🌱 {dish.dietary[0]}
+                          </span>
+                        )}
+                        {dish.prepTime && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">
+                            ⏱ {dish.prepTime}m
+                          </span>
+                        )}
+                        {dish.calories && (
+                          <span className="text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-semibold">
+                            🔥 {dish.calories} cal
+                          </span>
+                        )}
                       </div>
+
+                      {/* CTA Button */}
+                      <NavLink
+                        to="/menu"
+                        state={{ focusDishId: dish.id }}
+                        className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                      >
+                        View Details <ChevronRight size={16} />
+                      </NavLink>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Scroll Buttons */}
               {hasScrollableFeatured && (
                 <>
                   <button
                     onClick={() => scrollFeatured('left')}
-                    className="absolute left-5 top-1/2 -translate-y-1/2 rounded-full bg-white/90 shadow-lg p-3 text-stone-700 hover:text-orange-600 transition-colors duration-200"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 rounded-full bg-white shadow-xl p-3 text-stone-700 hover:text-white hover:bg-orange-600 transition-all duration-300 transform hover:scale-110 z-10"
                     aria-label="Scroll left"
                   >
-                    <ChevronRight size={20} className="rotate-180" />
+                    <ChevronRight size={24} className="rotate-180" />
                   </button>
                   <button
                     onClick={() => scrollFeatured('right')}
-                    className="absolute right-5 top-1/2 -translate-y-1/2 rounded-full bg-white/90 shadow-lg p-3 text-stone-700 hover:text-orange-600 transition-colors duration-200"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 rounded-full bg-white shadow-xl p-3 text-stone-700 hover:text-white hover:bg-orange-600 transition-all duration-300 transform hover:scale-110 z-10"
                     aria-label="Scroll right"
                   >
-                    <ChevronRight size={20} />
+                    <ChevronRight size={24} />
                   </button>
                 </>
               )}
             </div>
           ) : (
-            <div className="w-full rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 p-12 text-center">
-              <Award size={48} className="mx-auto mb-3 text-stone-400" />
-              <p className="text-lg font-medium text-stone-600 mb-2">Coming Soon</p>
-              <p className="text-stone-500">
-                Our Chef's specialty dishes will be featured here soon. Check back to discover culinary masterpieces!
+            /* Empty State */
+            <div className="w-full rounded-3xl border-2 border-dashed border-stone-300 bg-gradient-to-br from-stone-50 to-stone-100 p-16 text-center">
+              <div className="inline-block mb-4 p-3 bg-stone-200 rounded-full">
+                <Award size={48} className="text-stone-400" />
+              </div>
+              <h4 className="text-2xl font-serif font-bold text-stone-900 mb-2">Featured Dishes Coming Soon</h4>
+              <p className="text-stone-600 max-w-lg mx-auto mb-6">
+                Our chef is carefully curating the finest dishes to showcase here. Check back soon to explore our culinary masterpieces.
               </p>
+              <NavLink
+                to="/menu"
+                className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-xl font-semibold transition-all"
+              >
+                Explore Full Menu <ChevronRight size={18} />
+              </NavLink>
             </div>
           )}
         </div>
