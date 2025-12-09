@@ -4,7 +4,11 @@ import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calen
 import { User, Order, ReservationData, PrivateEventInquiry } from '../types';
 import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations, fetchUserReviews, fetchPrivateEventInquiries, getUserFeedbackHistory } from '../services/api';
 
-const ProfilePage: React.FC = () => {
+interface ProfilePageProps {
+  initialUser?: User | null;
+}
+
+const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
 
    // All hooks must be called unconditionally and at the top level
    const [user, setUser] = useState<User | null>(null);
@@ -43,6 +47,15 @@ const ProfilePage: React.FC = () => {
    const [feedbackLoading, setFeedbackLoading] = useState(true);
    const navigate = useNavigate();
 
+   // Handle tab parameter from URL
+   useEffect(() => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam && ['orders', 'reservations', 'reviews', 'events', 'loyalty', 'feedback', 'preferences'].includes(tabParam)) {
+         setProfileTab(tabParam as any);
+      }
+   }, []);
+
    useEffect(() => {
       if (editing) {
          document.body.classList.add('overflow-hidden');
@@ -55,6 +68,58 @@ const ProfilePage: React.FC = () => {
    }, [editing]);
 
    useEffect(() => {
+      // If user is passed as prop and already loaded, use it directly
+      if (initialUser) {
+         setUser(initialUser);
+         setEditData({
+            name: initialUser.name,
+            email: initialUser.email,
+            phone: initialUser.phone,
+            address: initialUser.address,
+            birthday: initialUser.birthday,
+            favoriteCuisine: initialUser.favoriteCuisine,
+            dietaryRestrictions: initialUser.dietaryRestrictions,
+            preferredDiningTime: initialUser.preferredDiningTime,
+            specialRequests: initialUser.specialRequests,
+            password: '',
+            confirmPassword: ''
+         });
+         setLoading(false);
+         // Continue loading other data...
+         const userId = initialUser.id ? initialUser.id : (initialUser._id ? initialUser._id : '');
+         if (userId) {
+           fetchUserOrders(userId)
+             .then(setOrders)
+             .catch(() => setOrders([]))
+             .finally(() => setOrdersLoading(false));
+           getUserFeedbackHistory(userId)
+             .then(setFeedback)
+             .catch(() => setFeedback([]))
+             .finally(() => setFeedbackLoading(false));
+         } else {
+           setOrders([]);
+           setOrdersLoading(false);
+           setFeedback([]);
+           setFeedbackLoading(false);
+         }
+         fetchUserReservations(initialUser.email)
+           .then(setReservations)
+           .catch(() => setReservations([]))
+           .finally(() => setReservationsLoading(false));
+         fetchUserReviews(initialUser.email)
+           .then(setReviews)
+           .catch(() => setReviews([]))
+           .finally(() => setReviewsLoading(false));
+         fetchPrivateEventInquiries()
+           .then(allInquiries => {
+             const userInquiries = allInquiries.filter(inq => inq.email === initialUser.email);
+             setEventInquiries(userInquiries);
+           })
+           .catch(() => setEventInquiries([]))
+           .finally(() => setEventsLoading(false));
+         return;
+      }
+
       const email = localStorage.getItem('userEmail');
       if (!email) {
          setLoading(false);
@@ -524,13 +589,55 @@ const ProfilePage: React.FC = () => {
                                                     <span className="font-bold text-stone-900">{res.date} at {res.time}</span>
                                                     <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${res.status === 'Completed' ? 'bg-green-100 text-green-700' : res.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{res.status || 'Pending'}</span>
                                                 </div>
-                                                <p className="text-xs text-stone-500 mb-1">{res.name} • {res.guests} guests</p>
+                                                <p className="text-xs text-stone-500 mb-2">{res.name} • {res.guests} guests</p>
+                                                {res.confirmationCode && (
+                                                   <div className="mb-2 p-2 bg-orange-50 rounded-lg border border-orange-200">
+                                                      <p className="text-xs font-bold text-orange-700 mb-1">Confirmation Code</p>
+                                                      <div className="flex items-center gap-2">
+                                                         <span className="font-mono font-bold text-sm text-stone-900">{res.confirmationCode}</span>
+                                                         <button
+                                                            onClick={() => {
+                                                               if (res.confirmationCode) {
+                                                                  navigator.clipboard.writeText(res.confirmationCode);
+                                                                  alert('Confirmation code copied!');
+                                                               }
+                                                            }}
+                                                            className="p-1 text-orange-600 hover:bg-orange-100 rounded transition-colors"
+                                                            title="Copy confirmation code"
+                                                         >
+                                                            📋
+                                                         </button>
+                                                      </div>
+                                                   </div>
+                                                )}
                                                 <p className="text-sm text-stone-600">{res.notes || 'No special requests.'}</p>
                                            </div>
                                        </div>
                                        <div className="text-right flex flex-col items-end gap-2">
                                            <span className="font-bold text-stone-900">{res.phone}</span>
                                            <span className="text-xs text-stone-500">{res.email}</span>
+                                           {res.status !== 'Cancelled' && res.status !== 'Completed' && (
+                                              <button
+                                                 onClick={async () => {
+                                                    if (window.confirm('Are you sure you want to cancel this reservation?')) {
+                                                       try {
+                                                          const response = await fetch(`http://localhost:5000/api/reservations/${res.confirmationCode}`, {
+                                                             method: 'DELETE'
+                                                          });
+                                                          if (response.ok) {
+                                                             setReservations(prev => prev.filter(r => r._id !== res._id));
+                                                             alert('Reservation cancelled successfully');
+                                                          }
+                                                       } catch (err) {
+                                                          alert('Failed to cancel reservation');
+                                                       }
+                                                    }
+                                                 }}
+                                                 className="mt-2 px-3 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                              >
+                                                 Cancel
+                                              </button>
+                                           )}
                                        </div>
                                     </div>
                                  ))

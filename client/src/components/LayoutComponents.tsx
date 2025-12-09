@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, ChefHat, Eye, EyeOff, Calendar, ShoppingCart, Star, MessageSquare } from 'lucide-react';
+import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, ChefHat, Eye, EyeOff, Calendar } from 'lucide-react';
 import { CartItem, User } from '../types';
 import { loginUser, subscribeNewsletter } from '../services/api';
 
@@ -517,39 +517,6 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                            >
                               <UserIcon size={18} className="text-orange-600" /> My Profile
                            </NavLink>
-                           
-                           <NavLink 
-                             to="/my-reservations" 
-                             onClick={() => setIsUserMenuOpen(false)}
-                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 transition-colors border-l-3 border-transparent hover:border-orange-500"
-                           >
-                              <Calendar size={18} className="text-orange-600" /> My Reservations
-                           </NavLink>
-
-                           <NavLink 
-                             to="/orders" 
-                             onClick={() => setIsUserMenuOpen(false)}
-                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 transition-colors border-l-3 border-transparent hover:border-orange-500"
-                           >
-                              <ShoppingCart size={18} className="text-orange-600" /> Order History
-                           </NavLink>
-
-                           <NavLink 
-                             to="/reviews" 
-                             onClick={() => setIsUserMenuOpen(false)}
-                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 transition-colors border-l-3 border-transparent hover:border-orange-500"
-                           >
-                              <Star size={18} className="text-orange-600" /> Leave Feedback
-                           </NavLink>
-
-                           <NavLink 
-                             to="/contact" 
-                             onClick={() => setIsUserMenuOpen(false)}
-                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-orange-50 transition-colors border-l-3 border-transparent hover:border-orange-500"
-                           >
-                              <MessageSquare size={18} className="text-orange-600" /> Help & Support
-                           </NavLink>
-                           
                            {/* Role Based Links */}
                            {(user.role === 'staff') && (
                               <>

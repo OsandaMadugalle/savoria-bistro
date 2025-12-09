@@ -18,7 +18,8 @@ interface ReservationResponse {
 }
 
 const DEPOSIT_AMOUNT = 2500; // $25.00 in cents
-const stripePromise = loadStripe('pk_test_placeholder'); // Use test key, replace with env var in production
+const publishableKey = (import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
   const [formData, setFormData] = useState<ReservationData>({

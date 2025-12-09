@@ -151,7 +151,7 @@ const App: React.FC = () => {
             <Route path="/tracker" element={<ProtectedCustomerRoute element={<TrackerPage user={user} />} user={user} />} />
             
             {/* Profile route - accessible to all authenticated users */}
-            <Route path="/profile" element={<ProtectedAuthRoute element={<ProfilePage />} user={user} />} />
+            <Route path="/profile" element={<ProtectedAuthRoute element={<ProfilePage initialUser={user} />} user={user} />} />
             
             {/* Protected Dashboard Routes - admin and masterAdmin only */}
             <Route path="/admin" element={<ProtectedAdminRoute element={<AdminDashboard user={user} />} user={user} />} />

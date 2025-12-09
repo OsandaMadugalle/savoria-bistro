@@ -236,7 +236,7 @@ router.post('/reservation/confirm', async (req, res) => {
         payment.transactionId = paymentIntent.id;
         payment.paidAt = new Date();
         
-        if (paymentIntent.charges.data[0]) {
+        if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data[0]) {
           const charge = paymentIntent.charges.data[0];
           payment.last4Digits = charge.payment_method_details?.card?.last4 || '';
           payment.cardBrand = charge.payment_method_details?.card?.brand?.toUpperCase() || '';
