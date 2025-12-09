@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Star, ChevronRight, Clock, Users, Award } from 'lucide-react';
-import { fetchApprovedReviews, fetchMenu } from '../services/api';
+import { Star, ChevronRight, Clock, Users, Award, Zap } from 'lucide-react';
+import { fetchApprovedReviews, fetchMenu, fetchActivePromos, Promo } from '../services/api';
 import { Review, MenuItem } from '../types';
 
 const Home: React.FC = () => {
   const [stats, setStats] = useState({ customers: 0, dishes: 0, awards: 0 });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [featuredDishes, setFeaturedDishes] = useState<MenuItem[]>([]);
+  const [promos, setPromos] = useState<Promo[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
+  const [loadingPromos, setLoadingPromos] = useState(true);
 
   useEffect(() => {
     // Animate stats on load
@@ -49,6 +51,20 @@ const Home: React.FC = () => {
       }
     };
     loadFeaturedDishes();
+
+    // Fetch active promos
+    const loadPromos = async () => {
+      try {
+        const data = await fetchActivePromos();
+        setPromos(data);
+      } catch (err) {
+        console.error('Failed to fetch promos:', err);
+        setPromos([]);
+      } finally {
+        setLoadingPromos(false);
+      }
+    };
+    loadPromos();
   }, []);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -131,6 +147,51 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Special Offers Section */}
+      {promos.length > 0 && (
+        <section className="py-12 sm:py-16 px-4 bg-gradient-to-r from-orange-50 to-red-50 border-b border-stone-200">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-orange-600 font-bold tracking-widest uppercase text-sm mb-2 flex items-center justify-center gap-2">
+                <Zap size={18} /> Special Offers
+              </h2>
+              <h3 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Limited Time Deals</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {promos.map((promo) => (
+                <div key={promo._id} className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-orange-100 hover:border-orange-400">
+                  <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-6 text-white relative overflow-hidden">
+                    <div className="absolute -right-8 -top-8 w-32 h-32 bg-orange-500/20 rounded-full" />
+                    <div className="relative z-10">
+                      <div className="text-5xl font-bold mb-2">{promo.discount}%</div>
+                      <div className="text-orange-100 text-sm font-semibold">DISCOUNT</div>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <div className="mb-4">
+                      <p className="text-sm text-stone-500 mb-1">Promo Code</p>
+                      <p className="text-2xl font-bold text-stone-900 font-mono tracking-widest">{promo.code}</p>
+                    </div>
+                    <p className="text-sm text-stone-600 mb-4">
+                      Valid until {new Date(promo.expiryDate).toLocaleDateString()}
+                    </p>
+                    <NavLink
+                      to={`/order?promo=${promo.code}`}
+                      onClick={() => {
+                        localStorage.setItem('appliedPromoCode', promo.code);
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg font-semibold transition-all transform hover:scale-105"
+                    >
+                      <Zap size={16} /> Claim Offer
+                    </NavLink>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Introduction */}
       <section className="py-20 bg-white/50 backdrop-blur-sm border-b border-stone-200">

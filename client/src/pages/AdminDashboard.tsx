@@ -3,8 +3,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
   AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
-import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin, fetchPrivateEventInquiries, fetchReservations } from '../services/api';
-import type { MenuItemPayload } from '../services/api';
+import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin, fetchPrivateEventInquiries, fetchReservations, fetchAllPromos, createPromo, updatePromo, deletePromo } from '../services/api';
+import type { MenuItemPayload, Promo } from '../services/api';
 import { MenuItem, User, Order, PrivateEventInquiry } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, Calendar } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
@@ -304,15 +304,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [galleryUploading, setGalleryUploading] = useState(false);
 
   // ===== STATE: PROMOS =====
-  const [promos, setPromos] = useState<any[]>([
-    { id: 1, code: 'SAVE10', discount: 10, expiryDate: '2025-12-31', active: true },
-  ]);
-  const [offerEnabled, setOfferEnabled] = useState(true);
+  const [promos, setPromos] = useState<Promo[]>([]);
   const [showPromoForm, setShowPromoForm] = useState(false);
-  const [editingPromoId, setEditingPromoId] = useState<number | null>(null);
+  const [editingPromoId, setEditingPromoId] = useState<string | null>(null);
   const [promoForm, setPromoForm] = useState({ code: '', discount: 20, expiryDate: '', active: true });
   const [promoMessage, setPromoMessage] = useState('');
   const [promoError, setPromoError] = useState('');
+  const [loadingPromos, setLoadingPromos] = useState(false);
 
   // ===== STATE: TOASTS =====
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -548,7 +546,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   };
 
   // ===== HANDLERS: PROMO MANAGEMENT =====
-  const handlePromoSubmit = (e: React.FormEvent) => {
+  const handlePromoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoError('');
     setPromoMessage('');
@@ -557,56 +555,79 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       return;
     }
 
-    let updatedPromos: any[];
-    
-    if (editingPromoId) {
-      // Edit existing promo
-      updatedPromos = promos.map(p => 
-        p.id === editingPromoId 
-          ? { ...p, ...promoForm }
-          : p
-      );
-      showToast(`Promo code "${promoForm.code}" updated successfully!`, 'success');
-      setEditingPromoId(null);
-    } else {
-      // Add new promo
-      const newPromo = {
-        id: Math.max(...promos.map(p => p.id || 0), 0) + 1,
-        ...promoForm
-      };
-      updatedPromos = [...promos, newPromo];
-      showToast(`Promo code "${promoForm.code}" created successfully!`, 'success');
-    }
+    try {
+      setLoadingPromos(true);
+      
+      if (editingPromoId) {
+        // Edit existing promo
+        await updatePromo(editingPromoId, {
+          code: promoForm.code,
+          discount: promoForm.discount,
+          expiryDate: promoForm.expiryDate,
+          active: promoForm.active
+        });
+        showToast(`Promo code "${promoForm.code}" updated successfully!`, 'success');
+        setEditingPromoId(null);
+      } else {
+        // Add new promo
+        await createPromo({
+          code: promoForm.code,
+          discount: promoForm.discount,
+          expiryDate: promoForm.expiryDate,
+          active: promoForm.active
+        });
+        showToast(`Promo code "${promoForm.code}" created successfully!`, 'success');
+      }
 
-    setPromos(updatedPromos);
-    // Save to localStorage for syncing with home page
-    localStorage.setItem('activePromos', JSON.stringify(updatedPromos));
-    localStorage.setItem('offerEnabled', JSON.stringify(offerEnabled));
-    
-    setPromoForm({ code: '', discount: 20, expiryDate: '', active: true });
-    setTimeout(() => {
-      setShowPromoForm(false);
-      setPromoMessage('');
-    }, 1500);
+      // Reload promos from API
+      const updated = await fetchAllPromos();
+      setPromos(updated);
+      
+      setPromoForm({ code: '', discount: 20, expiryDate: '', active: true });
+      setTimeout(() => {
+        setShowPromoForm(false);
+        setPromoMessage('');
+      }, 1500);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save promo';
+      showToast(message, 'error');
+      setPromoError(message);
+    } finally {
+      setLoadingPromos(false);
+    }
   };
 
-  const handleEditPromo = (promo: any) => {
-    setEditingPromoId(promo.id);
-    setPromoForm(promo);
+  const handleEditPromo = (promo: Promo) => {
+    setEditingPromoId(promo._id || null);
+    setPromoForm({
+      code: promo.code,
+      discount: promo.discount,
+      expiryDate: promo.expiryDate.split('T')[0],
+      active: promo.active
+    });
     setShowPromoForm(true);
     setPromoMessage('');
     setPromoError('');
   };
 
-  const handleDeletePromo = (id: number) => {
+  const handleDeletePromo = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this promo code?')) {
-      const deleted = promos.find(p => p.id === id);
-      const updatedPromos = promos.filter(p => p.id !== id);
-      setPromos(updatedPromos);
-      // Update localStorage
-      localStorage.setItem('activePromos', JSON.stringify(updatedPromos));
-      localStorage.setItem('offerEnabled', JSON.stringify(offerEnabled));
-      showToast(`Promo code "${deleted?.code}" deleted successfully!`, 'success');
+      try {
+        setLoadingPromos(true);
+        const deleted = promos.find(p => p._id === id);
+        await deletePromo(id);
+        
+        // Reload promos from API
+        const updated = await fetchAllPromos();
+        setPromos(updated);
+        
+        showToast(`Promo code "${deleted?.code}" deleted successfully!`, 'success');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to delete promo';
+        showToast(message, 'error');
+      } finally {
+        setLoadingPromos(false);
+      }
     }
   };
 
@@ -1049,6 +1070,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       document.body.style.overflow = 'unset';
     };
   }, [showAddAdminForm, showAddStaffForm, showMenuForm, showGalleryUpload, showCampaignForm, showPromoForm]);
+
+  // Load promos on mount
+  useEffect(() => {
+    const loadPromos = async () => {
+      try {
+        setLoadingPromos(true);
+        const data = await fetchAllPromos();
+        setPromos(data);
+      } catch (err) {
+        console.error('Failed to fetch promos:', err);
+        showToast('Failed to load promo codes', 'error');
+      } finally {
+        setLoadingPromos(false);
+      }
+    };
+    loadPromos();
+  }, []);
 
   return (
     <div>

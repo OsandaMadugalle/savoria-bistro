@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { ShoppingBag, Minus, Plus, Trash2, Trophy, Check } from 'lucide-react';
 import { CartItem, User } from '../types';
-import { createOrder } from '../services/api';
+import { createOrder, fetchActivePromos, Promo } from '../services/api';
 import { notificationService } from '../services/notificationService';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -26,13 +26,20 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
   const [paymentError, setPaymentError] = useState('');
   const [intentLoading, setIntentLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [validPromos, setValidPromos] = useState<Promo[]>([]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
-  const VALID_PROMOS: { [key: string]: number } = {
-    'SAVE10': 10,
+  // Build valid promos map
+  const getPromoDiscountMap = () => {
+    const map: { [key: string]: number } = {};
+    validPromos.forEach(promo => {
+      map[promo.code] = promo.discount;
+    });
+    return map;
   };
+  const VALID_PROMOS = getPromoDiscountMap();
 
   // Tier-based discounts
   const getTierDiscount = () => {
@@ -90,16 +97,33 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
     }
   }, [API_BASE, finalTotal, user]);
 
+  // Fetch active promos on mount
   useEffect(() => {
+    const loadPromos = async () => {
+      try {
+        const data = await fetchActivePromos();
+        setValidPromos(data);
+      } catch (err) {
+        console.error('Failed to fetch promos:', err);
+        setValidPromos([]);
+      }
+    };
+    loadPromos();
+  }, []);
+
+  useEffect(() => {
+    if (validPromos.length === 0) return;
+
+    const promoMap = getPromoDiscountMap();
     const urlPromo = searchParams.get('promo');
-    if (urlPromo && VALID_PROMOS[urlPromo]) {
+    if (urlPromo && promoMap[urlPromo]) {
       setAppliedCode(urlPromo);
     }
     const savedPromo = localStorage.getItem('appliedPromoCode');
-    if (savedPromo && VALID_PROMOS[savedPromo] && !urlPromo) {
+    if (savedPromo && promoMap[savedPromo] && !urlPromo) {
       setAppliedCode(savedPromo);
     }
-  }, [searchParams]);
+  }, [searchParams, validPromos]);
 
   useEffect(() => {
     if (!showPaymentModal) return;

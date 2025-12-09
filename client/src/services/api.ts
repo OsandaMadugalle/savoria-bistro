@@ -613,3 +613,67 @@ export const getItemFeedback = async (itemId: string) => {
   if (!res.ok) throw new Error('Failed to fetch item feedback');
   return res.json();
 };
+
+// --- PROMO API ---
+export interface Promo {
+  _id?: string;
+  code: string;
+  discount: number;
+  expiryDate: string;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const fetchActivePromos = async (): Promise<Promo[]> => {
+  const res = await fetch(`${API_URL}/promos`);
+  if (!res.ok) throw new Error('Failed to fetch promos');
+  return await res.json();
+};
+
+export const fetchAllPromos = async (): Promise<Promo[]> => {
+  const res = await fetch(`${API_URL}/promos/admin/all`);
+  if (!res.ok) throw new Error('Failed to fetch promos');
+  return await res.json();
+};
+
+export const createPromo = async (promo: Omit<Promo, '_id'>): Promise<Promo> => {
+  const res = await fetch(`${API_URL}/promos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(promo)
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to create promo');
+  }
+  return await res.json();
+};
+
+export const updatePromo = async (id: string, promo: Partial<Promo>): Promise<Promo> => {
+  const res = await fetch(`${API_URL}/promos/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(promo)
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to update promo');
+  }
+  return await res.json();
+};
+
+export const deletePromo = async (id: string): Promise<void> => {
+  const res = await fetch(`${API_URL}/promos/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error('Failed to delete promo');
+};
+
+export const togglePromoStatus = async (id: string): Promise<Promo> => {
+  const res = await fetch(`${API_URL}/promos/${id}/toggle`, {
+    method: 'PATCH'
+  });
+  if (!res.ok) throw new Error('Failed to toggle promo status');
+  return await res.json();
+};
