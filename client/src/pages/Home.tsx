@@ -1,48 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { Star, ChevronRight, Clock, Users, Award, Zap, Check } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { Star, ChevronRight, Clock, Users, Award } from 'lucide-react';
 import { fetchApprovedReviews, fetchMenu } from '../services/api';
 import { Review, MenuItem } from '../types';
 
 const Home: React.FC = () => {
-  const navigate = useNavigate();
   const [stats, setStats] = useState({ customers: 0, dishes: 0, awards: 0 });
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [featuredDishes, setFeaturedDishes] = useState<MenuItem[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
-  
-  // Promo code state - get from localStorage or use default
-  const [offerEnabled, setOfferEnabled] = useState(true);
-  const [activePromos, setActivePromos] = useState<any[]>([]);
-  
-  const DEFAULT_PROMOS = [
-    { id: 1, code: 'SAVORIA20', discount: 20, active: true },
-    { id: 2, code: 'SAVE10', discount: 10, active: true },
-  ];
 
   useEffect(() => {
-    // Load promo settings from localStorage
-    const storedEnabled = localStorage.getItem('offerEnabled');
-    if (storedEnabled !== null) {
-      setOfferEnabled(JSON.parse(storedEnabled));
-    }
-    
-    const storedPromos = localStorage.getItem('activePromos');
-    if (storedPromos) {
-      try {
-        const promos = JSON.parse(storedPromos);
-        // Filter only active promos
-        const active = promos.filter((p: any) => p.active);
-        setActivePromos(active.length > 0 ? active : DEFAULT_PROMOS.filter(p => p.active));
-      } catch (err) {
-        // Fallback to default
-        setActivePromos(DEFAULT_PROMOS.filter(p => p.active));
-      }
-    } else {
-      setActivePromos(DEFAULT_PROMOS.filter(p => p.active));
-    }
-    
     // Animate stats on load
     const animateStats = () => {
       let customers = 0, dishes = 0, awards = 0;
@@ -95,16 +63,6 @@ const Home: React.FC = () => {
     });
   };
 
-  const handleClaimOffer = (code: string) => {
-    // Copy promo code to clipboard
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
-    
-    // Navigate to menu after a short delay
-    setTimeout(() => navigate('/menu'), 500);
-  };
-
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
       {/* Hero Section */}
@@ -143,50 +101,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Special Offers Section */}
-      {offerEnabled && activePromos.length > 0 ? (
-        <section className="py-12 sm:py-16 px-4 sm:px-6 md:px-12 bg-white/50 backdrop-blur-sm border-b border-stone-200">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-2 mb-2 justify-center">
-              <Zap size={20} className="text-orange-600" />
-              <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-orange-600">Limited Time Offers</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-center mb-8 text-stone-900">Exclusive Deals</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {activePromos.map((promo) => (
-                <div key={promo.id} className="bg-gradient-to-br from-orange-500 to-red-600 text-white p-5 sm:p-6 md:p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow border border-orange-200/30">
-                  <div className="flex flex-col justify-between h-full">
-                    <div>
-                      <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">{promo.discount}%</div>
-                      <h3 className="text-base sm:text-lg md:text-xl font-serif font-bold">Off Your Order</h3>
-                      <p className="text-orange-100 mt-2 sm:mt-3 text-sm">Use promo code:</p>
-                      <p className="font-mono font-bold text-white text-lg sm:text-xl bg-black/20 px-3 py-2 rounded mt-2 inline-block">{promo.code}</p>
-                      <p className="text-orange-50 text-xs sm:text-sm mt-3 sm:mt-4">Valid for dine-in, takeout, or delivery</p>
-                    </div>
-                    <button 
-                      onClick={() => handleClaimOffer(promo.code)}
-                      className={`mt-4 sm:mt-6 px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold whitespace-nowrap transition-all transform hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base ${
-                        copiedCode === promo.code 
-                          ? 'bg-green-400 text-stone-900' 
-                          : 'bg-white text-orange-600 hover:bg-stone-100'
-                      }`}
-                    >
-                      {copiedCode === promo.code ? (
-                        <>
-                          <Check size={18} />
-                          Copied!
-                        </>
-                      ) : (
-                        'Claim Offer'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
+
 
       {/* Stats Section with Animation */}
       <section className="bg-stone-100 py-12 sm:py-16 px-4 border-b border-stone-200">
