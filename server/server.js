@@ -23,21 +23,27 @@ const settingsRoutes = require('./routes/settings');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration - Restrict to specific domain(s)
+// CORS Configuration - Allow Vercel frontend and localhost
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:3000',
-      process.env.CLIENT_URL || 'http://localhost:5173'
+      'https://savoria-bistro.vercel.app',
+      process.env.CLIENT_URL || 'https://savoria-bistro.vercel.app'
     ];
     
+    // In development, allow all origins for easier testing
+    if (process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+      return;
+    }
+    
+    // In production, check if origin is allowed
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
-    } else if (process.env.NODE_ENV !== 'production') {
-      // Allow all origins in development
-      callback(null, true);
     } else {
+      console.warn(`CORS blocked request from: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
