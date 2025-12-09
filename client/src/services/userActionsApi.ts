@@ -1,6 +1,6 @@
 // API for editing and deleting users
 import { User } from '../types';
-const API_URL = 'http://localhost:5000/api';
+const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const updateUser = async (email: string, updates: Partial<User>): Promise<User> => {
   const requesterEmail = (updates as any).requesterEmail;

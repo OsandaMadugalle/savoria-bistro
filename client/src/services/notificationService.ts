@@ -116,7 +116,7 @@ class NotificationService {
   /**
    * Send reservation notification
    */
-  notifyReservationConfirmed(reservationId: string, date: string, time: string, guests: number) {
+  notifyReservationConfirmed(_reservationId: string, date: string, time: string, guests: number) {
     return this.notify({
       type: 'reservation',
       title: '✅ Reservation Confirmed',
@@ -262,7 +262,7 @@ class NotificationService {
   /**
    * Get icon URL for notification
    */
-  private getNotificationIcon(emoji: string): string {
+  private getNotificationIcon(_emoji: string): string {
     // In production, you'd convert emoji to proper icon URLs
     return '/favicon.ico';
   }

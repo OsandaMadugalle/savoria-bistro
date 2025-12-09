@@ -1,6 +1,6 @@
 // Fetch all users (admins, staff, etc.)
 import { User } from '../types';
-const API_URL = 'http://localhost:5000/api';
+const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const fetchAllUsers = async (): Promise<User[]> => {
   const res = await fetch(`${API_URL}/auth/users`);

@@ -135,7 +135,6 @@ const App: React.FC = () => {
   // Initialize user from localStorage on app load
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    const userEmail = localStorage.getItem('userEmail');
     
     if (storedUser) {
       try {

@@ -9,6 +9,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
+   const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
    // All hooks must be called unconditionally and at the top level
    const [user, setUser] = useState<User | null>(null);
@@ -621,7 +622,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                                                  onClick={async () => {
                                                     if (window.confirm('Are you sure you want to cancel this reservation?')) {
                                                        try {
-                                                          const response = await fetch(`http://localhost:5000/api/reservations/${res.confirmationCode}`, {
+                                                          const response = await fetch(`${API_URL}/reservations/${res.confirmationCode}`, {
                                                              method: 'DELETE'
                                                           });
                                                           if (response.ok) {

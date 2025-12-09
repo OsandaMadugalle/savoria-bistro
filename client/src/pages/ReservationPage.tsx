@@ -39,10 +39,12 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
     }
   }, [user]);
 
+  const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
+
   const checkAvailability = async (date: string, time: string) => {
     if (!date || !time) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/reservations/check-availability/${date}/${time}`);
+      const response = await fetch(`${API_URL}/reservations/check-availability/${date}/${time}`);
       const data = await response.json();
       setAvailability(data);
     } catch (err) {

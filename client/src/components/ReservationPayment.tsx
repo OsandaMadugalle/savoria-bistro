@@ -35,8 +35,9 @@ const ReservationPayment: React.FC<ReservationPaymentProps> = ({
     setError('');
 
     try {
+      const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
       // Create payment intent on backend
-      const intentResponse = await fetch('http://localhost:5000/api/payments/reservation/create-intent', {
+      const intentResponse = await fetch(`${API_URL}/payments/reservation/create-intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reservationId, amount: Math.round(amount * 100), email })
@@ -62,7 +63,7 @@ const ReservationPayment: React.FC<ReservationPaymentProps> = ({
         onError(result.error.message || 'Payment failed');
       } else if (result.paymentIntent?.status === 'succeeded') {
         // Confirm payment on backend
-        const confirmResponse = await fetch('http://localhost:5000/api/payments/reservation/confirm', {
+        const confirmResponse = await fetch(`${API_URL}/payments/reservation/confirm`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ paymentIntentId: intentData.paymentIntentId, reservationId })

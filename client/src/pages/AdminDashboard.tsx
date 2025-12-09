@@ -193,6 +193,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
+  const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
   // ===== STATE: EDIT/DELETE =====
   const [editUser, setEditUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState<{ 
@@ -768,7 +769,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const loadPayments = useCallback(async () => {
     setPaymentsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/payments/admin/reservations');
+      const response = await fetch(`${API_URL}/payments/admin/reservations`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP ${response.status}`);
@@ -787,7 +788,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const loadSettings = useCallback(async () => {
     setSettingsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/settings');
+      const response = await fetch(`${API_URL}/settings`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP ${response.status}`);
@@ -806,7 +807,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/settings', {
+      const response = await fetch(`${API_URL}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

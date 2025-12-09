@@ -1,7 +1,7 @@
 import { MenuItem, User, Order, ReservationData, PrivateEventInquiry } from '../types';
 
 // Use environment variable for API URL with a default fallback
-const API_URL = 'http://localhost:5000/api';
+const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Fetch all reservations for a user (by email)
 export const fetchUserReservations = async (email: string): Promise<ReservationData[]> => {

@@ -15,6 +15,7 @@ interface MyReservationsPageProps {
 }
 
 const MyReservationsPage: React.FC<MyReservationsPageProps> = ({ user }) => {
+  const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
   const [reservations, setReservations] = useState<ReservationWithCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,7 +36,7 @@ const MyReservationsPage: React.FC<MyReservationsPageProps> = ({ user }) => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`http://localhost:5000/api/reservations/user/${user?.id}`);
+      const response = await fetch(`${API_URL}/reservations/user/${user?.id}`);
       if (!response.ok) throw new Error('Failed to load reservations');
       const data = await response.json();
       setReservations(data);
@@ -51,7 +52,7 @@ const MyReservationsPage: React.FC<MyReservationsPageProps> = ({ user }) => {
 
     setCancellingId(confirmationCode);
     try {
-      const response = await fetch(`http://localhost:5000/api/reservations/${confirmationCode}`, {
+      const response = await fetch(`${API_URL}/reservations/${confirmationCode}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to cancel reservation');

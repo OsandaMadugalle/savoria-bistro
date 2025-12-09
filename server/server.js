@@ -77,7 +77,14 @@ app.use('/api/stock', stockRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/settings', settingsRoutes);
 
+// Health check endpoint for deployment
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
+app.get('/', (req, res) => {
+  res.json({ message: 'Savoria Bistro API', version: '1.0.0', status: 'running' });
+});
 // Database Connection
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/savoria')
   .then(async () => {
