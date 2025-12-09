@@ -3,10 +3,10 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
   AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
-import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin, fetchPrivateEventInquiries } from '../services/api';
+import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin, fetchPrivateEventInquiries, fetchReservations } from '../services/api';
 import type { MenuItemPayload } from '../services/api';
 import { MenuItem, User, Order, PrivateEventInquiry } from '../types';
-import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, X, Calendar } from 'lucide-react';
+import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, Calendar } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
 import StockManagement from '../components/StockManagement';
 import FeedbackAnalytics from '../components/FeedbackAnalytics';
@@ -205,20 +205,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [editMsg, setEditMsg] = useState('');
 
   // ===== STATE: TABS & LISTS =====
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'eventsHistory' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter' | 'promos' | 'stock' | 'feedback'>('analytics');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'reservationsHistory' | 'eventsHistory' | 'settings' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter' | 'promos' | 'stock' | 'feedback'>('analytics');
+  const [reservationSubTab, setReservationSubTab] = useState<'reservations' | 'payments'>('reservations');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentSearch, setPaymentSearch] = useState('');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'all' | 'completed' | 'pending' | 'failed' | 'refunded'>('all');
   const [eventInquiries, setEventInquiries] = useState<PrivateEventInquiry[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState('');
+  const [settings, setSettings] = useState<any>(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [allReviews, setAllReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState('');
   const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // ===== STATE: NEWSLETTER =====
   const [newsletterStats, setNewsletterStats] = useState<{ total: number; active: number; inactive: number; activePercentage: number } | null>(null);
@@ -248,6 +254,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [orderDateFilter, setOrderDateFilter] = useState('');
+  const [reservationSearch, setReservationSearch] = useState('');
+  const [reservationStatusFilter, setReservationStatusFilter] = useState<'all' | 'Completed' | 'Confirmed' | 'Pending' | 'Cancelled'>('all');
   const [logSearch, setLogSearch] = useState('');
   const [logDateFilter, setLogDateFilter] = useState('');
   const [menuSearch, setMenuSearch] = useState('');
@@ -712,7 +720,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       const [menuData, ordersData, reservationsData] = await Promise.all([
         fetchMenu(),
         fetchAllOrders(),
-        fetch('/api/reservations').then(r => r.json()).catch(() => [])
+        fetchReservations()
       ]);
       setMenuItems(menuData);
       setOrders(ordersData);
@@ -756,6 +764,64 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       setEventsLoading(false);
     }
   }, []);
+
+  const loadPayments = useCallback(async () => {
+    setPaymentsLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/payments/admin/reservations');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      setPayments(data);
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to load payments';
+      console.error('Failed to load payments:', errorMsg);
+      showToast(errorMsg, 'error');
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }, []);
+
+  const loadSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/settings');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      setSettings(data);
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to load settings';
+      console.error('Failed to load settings:', errorMsg);
+      showToast(errorMsg, 'error');
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('http://localhost:5000/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...settings,
+          adminEmail: user?.email
+        })
+      });
+      if (!response.ok) throw new Error('Failed to update settings');
+      const data = await response.json();
+      setSettings(data.settings);
+      showToast('Settings updated successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update settings', 'error');
+    }
+  };
 
   // ===== HANDLERS: FORM SUBMISSIONS =====
   const loadAdmins = useCallback(async () => {
@@ -890,17 +956,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     URL.revokeObjectURL(url);
     showToast('System report downloaded!', 'success');
   }, [users, orders, menuItems, activityLogs]);
-
-  // ===== LIGHTBOX HANDLERS =====
-  const openLightbox = (image: string) => {
-    setLightboxImage(image);
-    document.body.classList.add('overflow-hidden');
-  };
-
-  const closeLightbox = () => {
-    setLightboxImage(null);
-    document.body.classList.remove('overflow-hidden');
-  };
 
   // ===== EFFECTS =====
   // Load promo settings from localStorage on mount
@@ -1091,6 +1146,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             All Orders
                           </button>
                           <button
+                            className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'reservationsHistory' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                            onClick={() => setActiveTab('reservationsHistory')}
+                          >
+                            Reservations History
+                          </button>
+                          <button
                             className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'eventsHistory' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
                             onClick={() => setActiveTab('eventsHistory')}
                           >
@@ -1243,6 +1304,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                           >
                             My Profile
                           </button>
+                          {user?.role === 'masterAdmin' && (
+                            <button 
+                              className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'settings' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+                              onClick={() => { setActiveTab('settings'); loadSettings(); }}
+                            >
+                              Restaurant Settings
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1646,66 +1715,66 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   </div>
                 )}
 
-                          {/* Customers Tab: List Customers */}
-                          {activeTab === 'customers' && (
-                            <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                              <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
-                                <span>Customers</span>
-                                <button
-                                  className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
-                                  onClick={handleExportCustomersCSV}
-                                >
-                                  Export CSV
-                                </button>
-                              </h2>
-                              <div className="flex gap-2 mb-4 flex-wrap">
-                                <input
-                                  type="text"
-                                  className="p-2 border rounded min-w-[160px]"
-                                  placeholder="Search name, email, phone..."
-                                  value={customerSearch}
-                                  onChange={e => setCustomerSearch(e.target.value)}
-                                />
-                              </div>
-                              <table className="w-full text-left border-collapse">
-                                <thead>
-                                  <tr className="bg-stone-100">
-                                    <th className="p-2">Name</th>
-                                    <th className="p-2">Email</th>
-                                    <th className="p-2">Phone</th>
-                                    <th className="p-2">Loyalty Points</th>
-                                    <th className="p-2">Tier</th>
-                                    <th className="p-2">Member Since</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {users.filter(u => u.role === 'customer').filter(u =>
-                                    [u.name, u.email, u.phone].join(' ').toLowerCase().includes(customerSearch.toLowerCase())
-                                  ).map((u, idx) => (
-                                    <tr key={u.email || idx} className="border-b">
-                                      <td className="p-2">{u.name}</td>
-                                      <td className="p-2">{u.email}</td>
-                                      <td className="p-2">{u.phone || '-'}</td>
-                                      <td className="p-2">{u.loyaltyPoints ?? 0}</td>
-                                      <td className="p-2">{u.tier ?? '-'}</td>
-                                      <td className="p-2">{u.memberSince ?? '-'}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                          {activeTab === 'eventsHistory' && (
-                            <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-                              <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
-                                <div>
-                                  <h2 className="text-xl font-bold">Private Event History</h2>
-                                  <p className="text-sm text-stone-500">Monitor every inquiry that has been submitted through the concierge.</p>
-                                </div>
-                                <button
-                                  className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg font-semibold text-sm hover:bg-stone-200 transition"
-                                  onClick={loadEventInquiries}
-                                  disabled={eventsLoading}
+              {/* Customers Tab: List Customers */}
+              {activeTab === 'customers' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
+                    <span>Customers</span>
+                    <button
+                      className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
+                      onClick={handleExportCustomersCSV}
+                    >
+                      Export CSV
+                    </button>
+                  </h2>
+                  <div className="flex gap-2 mb-4 flex-wrap">
+                    <input
+                      type="text"
+                      className="p-2 border rounded min-w-[160px]"
+                      placeholder="Search name, email, phone..."
+                      value={customerSearch}
+                      onChange={e => setCustomerSearch(e.target.value)}
+                    />
+                  </div>
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-stone-100">
+                        <th className="p-2">Name</th>
+                        <th className="p-2">Email</th>
+                        <th className="p-2">Phone</th>
+                        <th className="p-2">Loyalty Points</th>
+                        <th className="p-2">Tier</th>
+                        <th className="p-2">Member Since</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.filter(u => u.role === 'customer').filter(u =>
+                        [u.name, u.email, u.phone].join(' ').toLowerCase().includes(customerSearch.toLowerCase())
+                      ).map((u, idx) => (
+                        <tr key={u.email || idx} className="border-b">
+                          <td className="p-2">{u.name}</td>
+                          <td className="p-2">{u.email}</td>
+                          <td className="p-2">{u.phone || '-'}</td>
+                          <td className="p-2">{u.loyaltyPoints ?? 0}</td>
+                          <td className="p-2">{u.tier ?? '-'}</td>
+                          <td className="p-2">{u.memberSince ?? '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {activeTab === 'eventsHistory' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-xl font-bold">Private Event History</h2>
+                      <p className="text-sm text-stone-500">Monitor every inquiry that has been submitted through the concierge.</p>
+                    </div>
+                    <button
+                      className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg font-semibold text-sm hover:bg-stone-200 transition"
+                      onClick={loadEventInquiries}
+                      disabled={eventsLoading}
                                 >
                                   Refresh Inquiries
                                 </button>
@@ -1775,7 +1844,209 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                               )}
                             </div>
                           )}
-            <div>
+              {activeTab === 'reservationsHistory' && (
+                <div className="space-y-4">
+                  {/* Sub-tabs for Reservations and Payments */}
+                  <div className="flex gap-2 border-b border-stone-200">
+                    <button
+                      onClick={() => setReservationSubTab('reservations')}
+                      className={`px-4 py-3 font-semibold border-b-2 transition-colors ${
+                        reservationSubTab === 'reservations'
+                          ? 'border-orange-600 text-orange-600'
+                          : 'border-transparent text-stone-600 hover:text-orange-600'
+                      }`}
+                    >
+                      Reservations
+                    </button>
+                    <button
+                      onClick={() => { setReservationSubTab('payments'); loadPayments(); }}
+                      className={`px-4 py-3 font-semibold border-b-2 transition-colors ${
+                        reservationSubTab === 'payments'
+                          ? 'border-orange-600 text-orange-600'
+                          : 'border-transparent text-stone-600 hover:text-orange-600'
+                      }`}
+                    >
+                      Payments
+                    </button>
+                  </div>
+
+                  {/* Reservations Tab */}
+                  {reservationSubTab === 'reservations' && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b border-stone-200 bg-stone-50">
+                      <div className="flex gap-2 flex-wrap">
+                        <input
+                          type="text"
+                          className="p-2 border rounded min-w-[140px]"
+                          placeholder="Search name, email..."
+                          value={reservationSearch}
+                          onChange={e => setReservationSearch(e.target.value)}
+                        />
+                        <select
+                          className="p-2 border rounded"
+                          value={reservationStatusFilter}
+                          onChange={e => setReservationStatusFilter(e.target.value as any)}
+                        >
+                          <option value="all">All Statuses</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Confirmed">Confirmed</option>
+                          <option value="Pending">Pending</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-stone-200">
+                        <thead className="bg-stone-50">
+                          <tr>
+                            <th className="p-4 text-left font-bold text-stone-700">Date & Time</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Guest Name</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Party Size</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Email</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Phone</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Confirmation Code</th>
+                            <th className="p-4 text-left font-bold text-stone-700">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 text-sm">
+                          {reservations
+                            .filter(res => {
+                              // Status filter
+                              if (reservationStatusFilter !== 'all' && res.status !== reservationStatusFilter) return false;
+                              // Search filter
+                              const search = reservationSearch.toLowerCase();
+                              return (
+                                res.name.toLowerCase().includes(search) ||
+                                res.email.toLowerCase().includes(search) ||
+                                (res.phone && res.phone.toLowerCase().includes(search)) ||
+                                (res.confirmationCode && res.confirmationCode.toLowerCase().includes(search))
+                              );
+                            })
+                            .map((res, idx) => (
+                              <tr key={res._id || idx} className="hover:bg-stone-50">
+                                <td className="p-4 font-medium text-stone-900">{res.date} {res.time}</td>
+                                <td className="p-4 font-semibold text-stone-900">{res.name}</td>
+                                <td className="p-4 text-center text-stone-700">{res.guests} {res.guests === 1 ? 'guest' : 'guests'}</td>
+                                <td className="p-4 text-stone-600 break-all text-xs">{res.email}</td>
+                                <td className="p-4 text-stone-600">{res.phone}</td>
+                                <td className="p-4 font-mono text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded">{res.confirmationCode || '-'}</td>
+                                <td className="p-4">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                                    res.status === 'Completed' ? 'bg-green-100 text-green-700' :
+                                    res.status === 'Confirmed' ? 'bg-blue-100 text-blue-700' :
+                                    res.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-red-100 text-red-700'
+                                  }`}>
+                                    {res.status || 'Pending'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          {reservations.filter(res => reservationStatusFilter === 'all' || res.status === reservationStatusFilter).length === 0 && (
+                            <tr>
+                              <td colSpan={7} className="p-8 text-center text-stone-500">No reservations found.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  )}
+
+                  {/* Payments Tab */}
+                  {reservationSubTab === 'payments' && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b border-stone-200 bg-stone-50">
+                      <div className="flex gap-2 flex-wrap">
+                        <input
+                          type="text"
+                          className="p-2 border rounded min-w-[140px]"
+                          placeholder="Search customer, code..."
+                          value={paymentSearch}
+                          onChange={e => setPaymentSearch(e.target.value)}
+                        />
+                        <select
+                          className="p-2 border rounded"
+                          value={paymentStatusFilter}
+                          onChange={e => setPaymentStatusFilter(e.target.value as any)}
+                        >
+                          <option value="all">All Status</option>
+                          <option value="completed">Completed</option>
+                          <option value="pending">Pending</option>
+                          <option value="failed">Failed</option>
+                          <option value="refunded">Refunded</option>
+                        </select>
+                      </div>
+                      <button
+                        className="px-3 py-1 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700"
+                        onClick={loadPayments}
+                        disabled={paymentsLoading}
+                      >
+                        Refresh
+                      </button>
+                    </div>
+
+                    {paymentsLoading ? (
+                      <div className="p-8 text-center text-stone-500">Loading payments...</div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-stone-200">
+                          <thead className="bg-stone-50">
+                            <tr>
+                              <th className="p-4 text-left font-bold text-stone-700">Customer</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Confirmation</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Amount</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Method</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Status</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Date</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Card</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100 text-sm">
+                            {payments
+                              .filter(p => {
+                                const search = paymentSearch.toLowerCase();
+                                return (
+                                  (paymentStatusFilter === 'all' || p.status === paymentStatusFilter) &&
+                                  (p.reservationId?.name?.toLowerCase().includes(search) ||
+                                   p.confirmationCode?.toLowerCase().includes(search) ||
+                                   p.reservationId?.email?.toLowerCase().includes(search))
+                                );
+                              })
+                              .map((payment, idx) => (
+                                <tr key={payment._id || idx} className="hover:bg-stone-50">
+                                  <td className="p-4 font-semibold text-stone-900">{payment.reservationId?.name || '-'}</td>
+                                  <td className="p-4 font-mono text-xs font-bold text-orange-600">{payment.confirmationCode || '-'}</td>
+                                  <td className="p-4 font-bold text-green-600">${(payment.amount / 100).toFixed(2)}</td>
+                                  <td className="p-4 text-stone-600 capitalize">{payment.paymentMethod || 'card'}</td>
+                                  <td className="p-4">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                                      payment.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                      payment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                      payment.status === 'refunded' ? 'bg-blue-100 text-blue-700' :
+                                      'bg-red-100 text-red-700'
+                                    }`}>
+                                      {payment.status}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-stone-600 text-xs">{payment.paidAt ? new Date(payment.paidAt).toLocaleDateString() : '-'}</td>
+                                  <td className="p-4 text-stone-600 text-xs">{payment.last4Digits ? `${payment.cardBrand} ****${payment.last4Digits}` : '-'}</td>
+                                </tr>
+                              ))}
+                            {payments.filter(p => paymentStatusFilter === 'all' || p.status === paymentStatusFilter).length === 0 && (
+                              <tr>
+                                <td colSpan={7} className="p-8 text-center text-stone-500">No payments found.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                  )}
+                </div>
+              )}
               {/* Admin Tab: Add Admin + List Admins */}
               {activeTab === 'addAdmin' && user?.role === 'masterAdmin' && (
                 <div className="space-y-6">
@@ -2271,45 +2542,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               )}
               {activeTab === 'orders' && (
                 <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4">
-                    <div className="flex gap-2 flex-wrap">
-                      <input
-                        type="text"
-                        className="p-2 border rounded min-w-[140px]"
-                        placeholder="Search order ID, item..."
-                        value={orderSearch}
-                        onChange={e => setOrderSearch(e.target.value)}
-                      />
-                      <input
-                        type="date"
-                        className="p-2 border rounded"
-                        value={orderDateFilter}
-                        onChange={e => setOrderDateFilter(e.target.value)}
-                      />
-                      <select
-                        className="p-2 border rounded"
-                        value={orderStatusFilter}
-                        onChange={e => setOrderStatusFilter(e.target.value)}
-                      >
-                        <option value="all">All Statuses</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Delivered">Delivered</option>
-                        <option value="Cancelled">Cancelled</option>
-                      </select>
-                    </div>
-                    <button
-                      className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
-                      onClick={handleExportOrdersCSV}
-                    >
-                      Export CSV
-                    </button>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-stone-200">
-                      <thead className="bg-stone-50">
-                        <tr>
-                          <th className="p-4 text-left font-bold text-stone-700">Order ID</th>
+                  {/* Food Orders View */}
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b border-stone-200 bg-stone-50">
+                      <div className="flex gap-2 flex-wrap">
+                        <input
+                          type="text"
+                          className="p-2 border rounded min-w-[140px]"
+                          placeholder="Search order ID, item..."
+                          value={orderSearch}
+                          onChange={e => setOrderSearch(e.target.value)}
+                          />
+                          <input
+                            type="date"
+                            className="p-2 border rounded"
+                            value={orderDateFilter}
+                            onChange={e => setOrderDateFilter(e.target.value)}
+                          />
+                          <select
+                            className="p-2 border rounded"
+                            value={orderStatusFilter}
+                            onChange={e => setOrderStatusFilter(e.target.value)}
+                          >
+                            <option value="all">All Statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
+                        </div>
+                        <button
+                          className="px-3 py-1 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700"
+                          onClick={handleExportOrdersCSV}
+                        >
+                          Export CSV
+                        </button>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-stone-200">
+                          <thead className="bg-stone-50">
+                            <tr>
+                              <th className="p-4 text-left font-bold text-stone-700">Order ID</th>
                           <th className="p-4 text-left font-bold text-stone-700">Date</th>
                           <th className="p-4 text-left font-bold text-stone-700">Items</th>
                           <th className="p-4 text-left font-bold text-stone-700">Total</th>
@@ -2364,8 +2637,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         )}
                       </tbody>
                     </table>
+                      </div>
+                    </div>
                   </div>
-                </div>
               )}
               {activeTab === 'logs' && user?.role === 'masterAdmin' && (
                 <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mt-4">
@@ -2523,8 +2797,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                               <img 
                                 src={review.image} 
                                 alt="Review" 
-                                className="max-w-sm h-40 object-cover rounded-lg border border-stone-200 cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={() => openLightbox(review.image)}
+                                className="max-w-sm h-40 object-cover rounded-lg border border-stone-200"
                                 onError={(e) => {
                                   console.error('Admin: Image failed to load:', review.image);
                                   (e.target as HTMLImageElement).style.display = 'none';
@@ -2633,6 +2906,118 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <strong>Master Admin Access:</strong> You have full control over the bistro management system including staff management, menu configuration, order tracking, customer management, and system analytics.
                     </p>
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'settings' && user?.role === 'masterAdmin' && (
+                <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <h2 className="text-xl font-bold mb-6">Restaurant Settings</h2>
+                  
+                  {settingsLoading ? (
+                    <div className="text-center py-8 text-stone-500">Loading settings...</div>
+                  ) : settings ? (
+                    <form onSubmit={handleUpdateSettings} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-bold text-stone-600 mb-2">Max Table Capacity</label>
+                          <input
+                            type="number"
+                            value={settings.maxTableCapacity}
+                            onChange={(e) => setSettings({ ...settings, maxTableCapacity: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          />
+                          <p className="text-xs text-stone-500 mt-1">Total number of guests the restaurant can accommodate</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-stone-600 mb-2">Deposit Amount ($)</label>
+                          <input
+                            type="number"
+                            value={settings.depositAmount / 100}
+                            onChange={(e) => setSettings({ ...settings, depositAmount: Math.round(parseFloat(e.target.value) * 100) })}
+                            step="0.01"
+                            className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          />
+                          <p className="text-xs text-stone-500 mt-1">Required deposit per reservation</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-stone-600 mb-2">Reservation Duration (minutes)</label>
+                          <input
+                            type="number"
+                            value={settings.reservationDuration}
+                            onChange={(e) => setSettings({ ...settings, reservationDuration: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          />
+                          <p className="text-xs text-stone-500 mt-1">Default dining duration per reservation</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-stone-600 mb-2">Cancellation Lead Time (hours)</label>
+                          <input
+                            type="number"
+                            value={settings.cancellationHours}
+                            onChange={(e) => setSettings({ ...settings, cancellationHours: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          />
+                          <p className="text-xs text-stone-500 mt-1">Hours before reservation to allow cancellation</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-stone-600 mb-2">Opening Time</label>
+                          <input
+                            type="time"
+                            value={settings.operatingHoursOpen}
+                            onChange={(e) => setSettings({ ...settings, operatingHoursOpen: e.target.value })}
+                            className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-stone-600 mb-2">Closing Time</label>
+                          <input
+                            type="time"
+                            value={settings.operatingHoursClose}
+                            onChange={(e) => setSettings({ ...settings, operatingHoursClose: e.target.value })}
+                            className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-stone-50 p-4 rounded-lg border border-stone-200">
+                        <h3 className="font-semibold text-stone-900 mb-3">Current Settings Summary</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-stone-600 text-xs">Max Capacity</p>
+                            <p className="font-bold text-stone-900">{settings.maxTableCapacity} guests</p>
+                          </div>
+                          <div>
+                            <p className="text-stone-600 text-xs">Deposit</p>
+                            <p className="font-bold text-stone-900">${(settings.depositAmount / 100).toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-stone-600 text-xs">Duration</p>
+                            <p className="font-bold text-stone-900">{settings.reservationDuration} min</p>
+                          </div>
+                          <div>
+                            <p className="text-stone-600 text-xs">Cancellation Notice</p>
+                            <p className="font-bold text-stone-900">{settings.cancellationHours}h before</p>
+                          </div>
+                          <div>
+                            <p className="text-stone-600 text-xs">Hours</p>
+                            <p className="font-bold text-stone-900">{settings.operatingHoursOpen} - {settings.operatingHoursClose}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-lg transition-colors"
+                      >
+                        Save Settings
+                      </button>
+                    </form>
+                  ) : null}
                 </div>
               )}
 
@@ -3115,34 +3500,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             </div>
           </div>
         </div>
-      </div>
-      </div>
+        </div>
       ) : null}
 
-      {/* Image Lightbox */}
-      {lightboxImage && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={closeLightbox}
-        >
-          <div 
-            className="relative max-w-4xl max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={closeLightbox}
-              className="absolute -top-10 right-0 text-white hover:text-orange-400 transition-colors"
-            >
-              <X size={32} />
-            </button>
-            <img 
-              src={lightboxImage} 
-              alt="Review fullscreen" 
-              className="max-w-4xl max-h-[85vh] object-contain rounded-lg"
-            />
-          </div>
-        </div>
-      )}
+      {/* Image Lightbox - commented out as lightboxImage is not used */}
+      {/* Lightbox removed - unused state variables */}
     </div>
   );
 }

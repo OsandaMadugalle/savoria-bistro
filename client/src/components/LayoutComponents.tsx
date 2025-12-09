@@ -490,6 +490,14 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                            <UserIcon size={16} /> My Profile
                         </NavLink>
                         
+                        <NavLink 
+                          to="/my-reservations" 
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
+                        >
+                           <Calendar size={16} /> My Reservations
+                        </NavLink>
+                        
                         {/* Role Based Links */}
                             {(user.role === 'staff') && (
                               <NavLink to="/staff" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"><ChefHat size={16} /> Staff Portal</NavLink>

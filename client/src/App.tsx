@@ -6,6 +6,7 @@ import { Navbar, Footer } from './components/LayoutComponents';
 import Home from './pages/Home';
 import MenuPage from './pages/MenuPage';
 import ReservationPage from './pages/ReservationPage';
+import MyReservationsPage from './pages/MyReservationsPage';
 import OrderPage from './pages/OrderPage';
 import ContactPage from './pages/ContactPage';
 import GalleryPage from './pages/GalleryPage';
@@ -118,6 +119,7 @@ const App: React.FC = () => {
             
             {/* Customer-only routes - staff/admin/masterAdmin redirected to /admin */}
             <Route path="/reservation" element={<ProtectedCustomerRoute element={<ReservationPage user={user} />} user={user} />} />
+            <Route path="/my-reservations" element={<ProtectedAuthRoute element={<MyReservationsPage user={user} />} user={user} />} />
             <Route path="/order" element={<ProtectedCustomerRoute element={<OrderPage cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} clearCart={clearCart} user={user} />} user={user} />} />
             <Route path="/tracker" element={<ProtectedCustomerRoute element={<TrackerPage user={user} />} user={user} />} />
             

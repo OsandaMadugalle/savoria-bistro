@@ -10,15 +10,17 @@ export const fetchUserReservations = async (email: string): Promise<ReservationD
   return await res.json();
 };
 // --- RESERVATION CREATION ---
-export const createReservation = async (reservation: Partial<ReservationData>): Promise<ReservationData> => {
+export const createReservation = async (reservation: Partial<ReservationData>): Promise<any> => {
   const res = await fetch(`${API_URL}/reservations`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reservation)
   });
-  if (!res.ok) throw new Error('Reservation failed');
-  const data = await res.json();
-  return data.reservation;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Reservation failed');
+  }
+  return res.json();
 };
 // Fetch single order by orderId
 export const fetchOrderById = async (orderId: string): Promise<Order | null> => {
@@ -237,6 +239,15 @@ export const updateReservationStatus = async (reservationId: string, action: 'co
     body: JSON.stringify({ action })
   });
   if (!res.ok) throw new Error('Failed to update reservation status');
+};
+
+export const updateReservationTable = async (reservationId: string, tableNumber: string): Promise<void> => {
+  const res = await fetch(`${API_URL}/reservations/${reservationId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tableNumber })
+  });
+  if (!res.ok) throw new Error('Failed to assign table');
 };
 
 // --- REVIEW API ---

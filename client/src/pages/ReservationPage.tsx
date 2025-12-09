@@ -1,17 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Phone, Clock, MapPin, Calendar, Users, User as UserIcon } from 'lucide-react';
+import { CheckCircle, Phone, Clock, MapPin, Calendar, Users, User as UserIcon, AlertCircle, Copy, Check } from 'lucide-react';
 import { User, ReservationData } from '../types';
 import { createReservation } from '../services/api';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+import LoginModal from '../components/LoginModal';
+import ReservationPayment from '../components/ReservationPayment';
 
 interface ReservationPageProps {
   user: User | null;
 }
 
+interface ReservationResponse {
+  message: string;
+  reservation: ReservationData & { confirmationCode: string; _id: string };
+  confirmationCode: string;
+}
+
+const DEPOSIT_AMOUNT = 2500; // $25.00 in cents
+const stripePromise = loadStripe('pk_test_placeholder'); // Use test key, replace with env var in production
+
 const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
   const [formData, setFormData] = useState<ReservationData>({
     name: '', email: '', phone: '', date: '', time: '', guests: 2, notes: ''
   });
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'payment_pending' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [reservationResponse, setReservationResponse] = useState<ReservationResponse | null>(null);
+  const [availability, setAvailability] = useState<{ available: boolean; availableSlots: number; maxCapacity?: number } | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -19,22 +37,111 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
     }
   }, [user]);
 
+  const checkAvailability = async (date: string, time: string) => {
+    if (!date || !time) return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/reservations/check-availability/${date}/${time}`);
+      const data = await response.json();
+      setAvailability(data);
+    } catch (err) {
+      console.error('Failed to check availability:', err);
+    }
+  };
+
+  const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    if (name === 'date' || name === 'time') {
+      const newDate = name === 'date' ? value : formData.date;
+      const newTime = name === 'time' ? value : formData.time;
+      checkAvailability(newDate, newTime);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('submitting');
+    setErrorMessage('');
+    
     try {
-      await createReservation(formData);
-      setStatus('success');
-      setFormData({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '', date: '', time: '', guests: 2, notes: '' });
-    } catch (err) {
-      setStatus('idle');
-      alert('Reservation failed. Please try again.');
+      const response = await createReservation({
+        ...formData,
+        userId: user?.id || ''
+      });
+      
+      setReservationResponse(response as ReservationResponse);
+      setStatus('payment_pending');
+    } catch (err: any) {
+      setStatus('error');
+      setErrorMessage(err.message || 'Reservation failed. Please try again.');
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setStatus('success');
+    setFormData({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '', date: '', time: '', guests: 2, notes: '' });
+  };
+
+  const handlePaymentError = (error: string) => {
+    setStatus('error');
+    setErrorMessage(error);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const copyConfirmationCode = () => {
+    if (reservationResponse?.confirmationCode) {
+      navigator.clipboard.writeText(reservationResponse.confirmationCode);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  };
+
+  const getTodayDateString = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
+  // If user is not logged in, show login prompt
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-orange-50">
+        <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+        
+        <div className="bg-gradient-to-r from-stone-900 via-orange-900 to-stone-900 text-white pt-32 pb-16 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Book Your Table</h1>
+            <p className="text-orange-100 text-lg max-w-2xl mx-auto">
+              Reserve your seat at Savoria Bistro and enjoy an unforgettable culinary experience in an elegant ambiance.
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 py-16">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 text-center">
+            <AlertCircle size={48} className="text-red-500 mx-auto mb-6" />
+            <h2 className="text-3xl font-serif font-bold text-stone-900 mb-4">Login Required</h2>
+            <p className="text-stone-600 text-lg mb-8">
+              You must be logged in to make a reservation at Savoria Bistro.
+            </p>
+            <div className="space-y-4">
+              <p className="text-stone-600 mb-6">
+                Please log in to your account or create a new one to proceed with your reservation.
+              </p>
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="inline-block px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg transition-colors"
+              >
+                Sign In or Create Account
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-orange-50">
@@ -58,7 +165,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                 Reservation Details
               </h2>
               <p className="text-stone-600 mb-8 leading-relaxed">
-                Reservations are recommended, especially on weekends and special occasions. We hold tables for 15 minutes past your reservation time.
+                Reservations are recommended, especially on weekends and special occasions. We hold tables for 15 minutes past your reservation time. Your confirmation code is required for modifications and cancellations.
               </p>
               
               <div className="space-y-4">
@@ -89,24 +196,114 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
 
               <div className="mt-8 pt-6 border-t border-stone-200">
                 <p className="text-sm text-stone-500 font-semibold mb-2">📢 Note:</p>
-                <p className="text-sm text-stone-600">For groups larger than 10, please call us directly to arrange the perfect dining experience.</p>
+                <p className="text-sm text-stone-600 mb-3">For groups larger than 10, please call us directly to arrange the perfect dining experience.</p>
+                <p className="text-sm text-stone-600">
+                  <strong>Cancellation Policy:</strong> Cancel at least 2 hours before your reservation using your confirmation code to avoid any inconvenience.
+                </p>
               </div>
             </div>
           </div>
 
           {/* Form Side */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            {status === 'success' ? (
+            {status === 'payment_pending' && reservationResponse ? (
+              <div className="space-y-6">
+                <h3 className="text-2xl font-serif font-bold text-stone-900 mb-4">Complete Payment</h3>
+                <p className="text-stone-600">Complete your reservation by paying the deposit amount of ${(DEPOSIT_AMOUNT / 100).toFixed(2)}.</p>
+                
+                <div className="bg-stone-50 rounded-xl p-4 space-y-3">
+                  <p className="font-semibold text-stone-900">Reservation Details:</p>
+                  <div className="text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-stone-600">Date:</span>
+                      <span className="font-semibold text-stone-900">{reservationResponse.reservation.date}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-600">Time:</span>
+                      <span className="font-semibold text-stone-900">{reservationResponse.reservation.time}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-600">Party Size:</span>
+                      <span className="font-semibold text-stone-900">{reservationResponse.reservation.guests} guests</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-stone-200">
+                      <span className="text-stone-600 font-semibold">Deposit Amount:</span>
+                      <span className="font-bold text-orange-600">${(DEPOSIT_AMOUNT / 100).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Elements stripe={stripePromise}>
+                  <ReservationPayment
+                    reservationId={reservationResponse.reservation._id}
+                    amount={DEPOSIT_AMOUNT / 100}
+                    email={reservationResponse.reservation.email}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                  />
+                </Elements>
+
+                <button
+                  onClick={() => setStatus('idle')}
+                  className="w-full bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold py-3 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : status === 'success' && reservationResponse ? (
               <div className="h-full min-h-96 flex flex-col items-center justify-center text-center p-8">
                 <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-50 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-lg">
                   <CheckCircle size={40} />
                 </div>
                 <h3 className="text-3xl font-serif font-bold text-stone-900 mb-3">Reservation Confirmed!</h3>
-                <p className="text-stone-600 mb-2">We look forward to welcoming you at Savoria Bistro.</p>
-                <p className="text-stone-500 text-sm mb-8">A confirmation email has been sent to your inbox with all the details.</p>
+                <p className="text-stone-600 mb-6">We look forward to welcoming you at Savoria Bistro.</p>
+                
+                {/* Confirmation Code Display */}
+                <div className="bg-orange-50 border-2 border-orange-300 rounded-xl p-6 w-full mb-6">
+                  <p className="text-sm text-stone-600 mb-2 font-semibold">Your Confirmation Code</p>
+                  <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-orange-200">
+                    <span className="text-2xl font-bold text-orange-600 font-mono">
+                      {reservationResponse.confirmationCode}
+                    </span>
+                    <button
+                      onClick={copyConfirmationCode}
+                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors text-sm font-semibold"
+                    >
+                      {copiedCode ? (
+                        <>
+                          <Check size={16} /> Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={16} /> Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-stone-600 mt-3">Save this code for modifications and cancellations</p>
+                </div>
+
+                {/* Reservation Details */}
+                <div className="bg-stone-50 rounded-xl p-4 w-full text-left mb-6 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-stone-700">Date:</span>
+                    <span className="text-stone-600">{reservationResponse.reservation.date}</span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t border-stone-200 pt-2">
+                    <span className="font-semibold text-stone-700">Time:</span>
+                    <span className="text-stone-600">{reservationResponse.reservation.time}</span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t border-stone-200 pt-2">
+                    <span className="font-semibold text-stone-700">Party Size:</span>
+                    <span className="text-stone-600">{reservationResponse.reservation.guests} {reservationResponse.reservation.guests === 1 ? 'guest' : 'guests'}</span>
+                  </div>
+                </div>
+
+                <p className="text-sm text-stone-600 mb-6">A confirmation email has been sent to <strong>{reservationResponse.reservation.email}</strong></p>
+                
                 <button 
                   onClick={() => setStatus('idle')}
-                  className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
+                  className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors w-full"
                 >
                   Make Another Booking
                 </button>
@@ -120,58 +317,138 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                       <span>Logged in as <span className="font-bold">{user.name}</span>. Details pre-filled.</span>
                    </div>
                 )}
+                
+                {status === 'error' && (
+                  <div className="bg-red-50 border border-red-300 text-red-700 p-4 rounded-xl text-sm flex items-start gap-3">
+                    <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
+                    <div>{errorMessage}</div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Date</label>
+                    <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Date *</label>
                     <div className="relative">
                        <Calendar className="absolute left-3 top-3.5 text-orange-500" size={18} />
-                       <input required type="date" name="date" value={formData.date} onChange={handleChange} className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" />
+                       <input 
+                         required 
+                         type="date" 
+                         name="date" 
+                         min={getTodayDateString()}
+                         value={formData.date} 
+                         onChange={handleDateTimeChange} 
+                         className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
+                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Time</label>
+                    <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Time *</label>
                     <div className="relative">
                        <Clock className="absolute left-3 top-3.5 text-orange-500" size={18} />
-                       <input required type="time" name="time" value={formData.time} onChange={handleChange} className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" />
+                       <input 
+                         required 
+                         type="time" 
+                         name="time" 
+                         value={formData.time} 
+                         onChange={handleDateTimeChange} 
+                         className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
+                       />
                     </div>
                   </div>
                 </div>
 
+                {/* Availability Status */}
+                {availability && (
+                  <div className={`p-3 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                    availability.available 
+                      ? 'bg-green-50 text-green-700 border border-green-200' 
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                    {availability.available ? (
+                      <>
+                        <Check size={16} />
+                        <span>✓ Available! {availability.availableSlots} table(s) remaining{availability.maxCapacity ? ` (Max capacity: ${availability.maxCapacity})` : ''}</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle size={16} />
+                        <span>⚠ Fully booked for this time. Please select another time.</span>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <div>
-                   <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Number of Guests</label>
+                   <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Number of Guests * (Min: 1, Max: 10)</label>
                    <div className="relative">
                        <Users className="absolute left-3 top-3.5 text-orange-500" size={18} />
-                       <select name="guests" value={formData.guests} onChange={handleChange} className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm bg-white hover:border-stone-300 transition-colors">
+                       <select 
+                         name="guests" 
+                         value={formData.guests} 
+                         onChange={handleChange} 
+                         className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm bg-white hover:border-stone-300 transition-colors"
+                       >
                          {[1,2,3,4,5,6,7,8,9,10].map(num => <option key={num} value={num}>{num} {num === 1 ? 'Guest' : 'Guests'}</option>)}
                        </select>
                    </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Full Name</label>
-                  <input required type="text" name="name" value={formData.name} onChange={handleChange} placeholder="John Doe" className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" />
+                  <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Full Name *</label>
+                  <input 
+                    required 
+                    type="text" 
+                    name="name" 
+                    value={formData.name} 
+                    onChange={handleChange} 
+                    placeholder="John Doe" 
+                    className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Email Address</label>
-                    <input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="john@example.com" className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" />
+                    <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Email Address *</label>
+                    <input 
+                      required 
+                      type="email" 
+                      name="email" 
+                      value={formData.email} 
+                      onChange={handleChange} 
+                      placeholder="john@example.com" 
+                      className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
+                    />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Phone Number</label>
-                    <input required type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="(555) 000-0000" className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" />
+                    <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Phone Number *</label>
+                    <input 
+                      required 
+                      type="tel" 
+                      name="phone" 
+                      value={formData.phone} 
+                      onChange={handleChange} 
+                      placeholder="(555) 000-0000" 
+                      className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
+                    />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Special Requests</label>
-                  <textarea name="notes" value={formData.notes} onChange={handleChange} rows={3} placeholder="Allergies, high chair needed, celebrating an occasion..." className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm resize-none hover:border-stone-300 transition-colors"></textarea>
+                  <textarea 
+                    name="notes" 
+                    value={formData.notes} 
+                    onChange={handleChange} 
+                    rows={3} 
+                    placeholder="Allergies, high chair needed, celebrating an occasion..." 
+                    className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm resize-none hover:border-stone-300 transition-colors"
+                  />
                 </div>
 
                 <button 
                   type="submit" 
-                  disabled={status === 'submitting'}
-                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 shadow-lg hover:shadow-orange-200/50 mt-6"
+                  disabled={status === 'submitting' || !availability?.available}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-orange-200/50 mt-6"
                 >
                   {status === 'submitting' ? 'Confirming...' : 'Confirm Reservation'}
                 </button>

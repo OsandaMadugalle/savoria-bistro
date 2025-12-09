@@ -27,7 +27,16 @@ export interface ReservationData {
   time: string;
   guests: number;
   notes: string;
-  status?: 'Pending' | 'Completed' | 'Cancelled';
+  status?: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  confirmationCode?: string;
+  userId?: string;
+  tableNumber?: string;
+  duration?: number;
+  paymentRequired?: boolean;
+  depositAmount?: number;
+  paymentStatus?: 'unpaid' | 'pending' | 'completed' | 'failed' | 'refunded';
+  createdAt?: string;
+  expiresAt?: string;
 }
 
 export interface PrivateEventInquiry {

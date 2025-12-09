@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAllOrders, updateOrderStatus, fetchReservations, loginUser, fetchPrivateEventInquiries, updatePrivateEventInquiryStatus, sendPrivateEventEmail } from '../services/api';
 import { Order, ReservationData, User, PrivateEventInquiry } from '../types';
-import { ChefHat, CheckCircle, Clock, Utensils, Calendar, RefreshCcw, Lock, AlertTriangle } from 'lucide-react';
+import { ChefHat, CheckCircle, Clock, Utensils, Calendar, RefreshCcw, Lock, AlertTriangle, X, Filter } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
 
 interface StaffDashboardProps {
@@ -34,6 +34,12 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // Reservation Filters
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled'>('all');
+  const [dateFilter, setDateFilter] = useState<string>('');
+  const [tableAssignmentModal, setTableAssignmentModal] = useState<{ open: boolean; reservationId: string | null; currentTable: string }>({ open: false, reservationId: null, currentTable: '' });
+  const [tableInputValue, setTableInputValue] = useState('');
 
   const showToast = (message: string, type: ToastType = 'success', duration = 3000) => {
     const id = Date.now().toString();
@@ -191,6 +197,34 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
       setReservationActionLoading(null);
     }
   };
+
+  // Assign table to reservation
+  const handleAssignTable = async (reservationId: string) => {
+    if (!tableInputValue.trim()) {
+      showToast('Please enter a table number', 'error');
+      return;
+    }
+    
+    setReservationActionLoading(reservationId);
+    try {
+      await import('../services/api').then(api => api.updateReservationTable(reservationId, tableInputValue));
+      await loadData();
+      setTableAssignmentModal({ open: false, reservationId: null, currentTable: '' });
+      setTableInputValue('');
+      showToast('Table assigned successfully', 'success');
+    } catch (err) {
+      showToast('Failed to assign table', 'error');
+    } finally {
+      setReservationActionLoading(null);
+    }
+  };
+
+  // Filter reservations
+  const filteredReservations = reservations.filter(res => {
+    const statusMatch = statusFilter === 'all' || res.status === statusFilter;
+    const dateMatch = !dateFilter || res.date === dateFilter;
+    return statusMatch && dateMatch;
+  });
 
   // --- ACCESS CONTROL ---
 
@@ -404,9 +438,54 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
         )}
         {activeTab === 'reservations' && (
             <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+              {/* Filter Section */}
+              <div className="p-6 border-b border-stone-200 bg-stone-50">
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter size={18} className="text-orange-600" />
+                  <h3 className="font-bold text-stone-900">Filters</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-stone-600 uppercase mb-2 block">Status</label>
+                    <select 
+                      value={statusFilter} 
+                      onChange={(e) => setStatusFilter(e.target.value as any)}
+                      className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-stone-600 uppercase mb-2 block">Date</label>
+                    <input 
+                      type="date" 
+                      value={dateFilter} 
+                      onChange={(e) => setDateFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+                    />
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <button
+                      onClick={() => { setStatusFilter('all'); setDateFilter(''); }}
+                      className="flex-1 px-4 py-2 bg-stone-300 hover:bg-stone-400 text-stone-900 font-semibold rounded-lg transition-colors text-sm"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-stone-500 mt-3">Showing {filteredReservations.length} of {reservations.length} reservations</p>
+              </div>
+
+              {/* Error Message */}
               {reservationActionError && (
-               <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium">{reservationActionError}</div>
+               <div className="mx-6 mt-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium">{reservationActionError}</div>
               )}
+
+              {/* Reservations Table */}
               <table className="w-full text-left">
                 <thead className="bg-stone-50 border-b border-stone-200">
                   <tr>
@@ -414,12 +493,14 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
                     <th className="p-4 font-bold text-stone-600 text-sm">Guest Name</th>
                     <th className="p-4 font-bold text-stone-600 text-sm">Party Size</th>
                     <th className="p-4 font-bold text-stone-600 text-sm">Contact</th>
-                    <th className="p-4 font-bold text-stone-600 text-sm">Notes</th>
+                    <th className="p-4 font-bold text-stone-600 text-sm">Email</th>
+                    <th className="p-4 font-bold text-stone-600 text-sm">Table</th>
+                    <th className="p-4 font-bold text-stone-600 text-sm">Status</th>
                     <th className="p-4 font-bold text-stone-600 text-sm">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
-                  {reservations.map((res) => (
+                  {filteredReservations.map((res) => (
                     <tr key={res._id || res.date + res.time} className="hover:bg-stone-50">
                       <td className="p-4 text-sm font-medium">
                         <div className="flex items-center gap-2">
@@ -434,24 +515,47 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
                         </div>
                       </td>
                       <td className="p-4 text-sm text-stone-600">{res.phone}</td>
-                      <td className="p-4 text-sm text-stone-500 italic">{res.notes || '-'}</td>
+                      <td className="p-4 text-sm text-stone-600 break-all">{res.email}</td>
                       <td className="p-4 text-sm">
-                       {/* Only show actions if reservation is not completed/cancelled */}
+                        {res.tableNumber ? (
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded font-semibold text-xs">Table {res.tableNumber}</span>
+                        ) : (
+                          <span className="text-stone-400 text-xs">Unassigned</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-sm">
+                        <span className={`px-2 py-1 rounded-lg font-semibold text-xs ${
+                          res.status === 'Confirmed' ? 'bg-blue-100 text-blue-800' :
+                          res.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          res.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {res.status || 'Pending'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-sm">
                        {res.status !== 'Completed' && res.status !== 'Cancelled' && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <button
-                           className="px-3 py-1 rounded-lg bg-green-600 text-white font-bold text-xs disabled:opacity-50"
+                           className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs disabled:opacity-50 transition-colors"
+                           disabled={reservationActionLoading === res._id || loading}
+                           onClick={() => { setTableAssignmentModal({ open: true, reservationId: res._id || '', currentTable: res.tableNumber || '' }); setTableInputValue(res.tableNumber || ''); }}
+                          >
+                           🪑 Table
+                          </button>
+                          <button
+                           className="px-2 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold text-xs disabled:opacity-50 transition-colors"
                            disabled={reservationActionLoading === res._id || loading}
                            onClick={() => res._id && handleReservationAction(res._id, 'complete')}
                           >
-                           {reservationActionLoading === res._id ? '...' : 'Mark Completed'}
+                           {reservationActionLoading === res._id ? '...' : '✓'}
                           </button>
                           <button
-                           className="px-3 py-1 rounded-lg bg-red-600 text-white font-bold text-xs disabled:opacity-50"
+                           className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs disabled:opacity-50 transition-colors"
                            disabled={reservationActionLoading === res._id || loading}
                            onClick={() => res._id && handleReservationAction(res._id, 'cancel')}
                           >
-                           {reservationActionLoading === res._id ? '...' : 'Cancel'}
+                           ✕
                           </button>
                         </div>
                        )}
@@ -463,10 +567,53 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
                   ))}
                 </tbody>
               </table>
-              {reservations.length === 0 && (
-                <div className="p-12 text-center text-stone-500">No upcoming reservations found.</div>
+              {filteredReservations.length === 0 && (
+                <div className="p-12 text-center text-stone-500">No reservations matching filters found.</div>
               )}
             </div>
+        )}
+
+        {/* Table Assignment Modal */}
+        {tableAssignmentModal.open && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-stone-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-stone-900">Assign Table</h2>
+                <button
+                  onClick={() => setTableAssignmentModal({ open: false, reservationId: null, currentTable: '' })}
+                  className="text-stone-400 hover:text-stone-600"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <p className="text-stone-600">Enter table number for this reservation</p>
+                <input
+                  type="text"
+                  placeholder="e.g., 1, A1, Window-2"
+                  value={tableInputValue}
+                  onChange={(e) => setTableInputValue(e.target.value)}
+                  className="w-full px-4 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+                  autoFocus
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setTableAssignmentModal({ open: false, reservationId: null, currentTable: '' })}
+                    className="flex-1 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-900 font-semibold rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => tableAssignmentModal.reservationId && handleAssignTable(tableAssignmentModal.reservationId)}
+                    disabled={reservationActionLoading !== null}
+                    className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {reservationActionLoading ? 'Assigning...' : 'Assign Table'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         {activeTab === 'events' && (
           <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">

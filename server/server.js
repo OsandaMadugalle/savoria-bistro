@@ -18,6 +18,7 @@ const paymentRoutes = require('./routes/payments');
 const privateEventRoutes = require('./routes/privateEvents');
 const stockRoutes = require('./routes/stock');
 const feedbackRoutes = require('./routes/feedback');
+const settingsRoutes = require('./routes/settings');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -74,6 +75,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/private-events', privateEventRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/settings', settingsRoutes);
 
 
 // Database Connection
