@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ZoomIn, X, Upload, Trash2, ChevronLeft, ChevronRight, Search, Loader2, Zap } from 'lucide-react';
+import { X, Upload, Trash2, Loader2, Zap } from 'lucide-react';
 import { fetchGalleryImages, uploadGalleryImage, deleteGalleryImage } from '../services/api';
 import { User } from '../types';
 
@@ -20,7 +20,6 @@ interface GalleryImage {
 }
 
 const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
-  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -28,8 +27,6 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [searchTerm, setSearchTerm] = useState('');
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -41,44 +38,6 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
   useEffect(() => {
     loadGalleryImages();
   }, []);
-
-  // Get unique categories
-  const categories = ['All', ...new Set(galleryImages.map(img => img.category))];
-
-  // Filter images by category and search
-  const filteredImages = galleryImages.filter(img => {
-    const matchesCategory = selectedCategory === 'All' || img.category === selectedCategory;
-    const matchesSearch = img.caption.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  // Find current image index for navigation
-  const currentImageIndex = filteredImages.findIndex(img => img._id === selectedImage?._id || img.id === selectedImage?.id);
-
-  // Handle image navigation
-  const handlePrevImage = () => {
-    if (currentImageIndex > 0) {
-      setSelectedImage(filteredImages[currentImageIndex - 1]);
-    }
-  };
-
-  const handleNextImage = () => {
-    if (currentImageIndex < filteredImages.length - 1) {
-      setSelectedImage(filteredImages[currentImageIndex + 1]);
-    }
-  };
-
-  // Prevent scroll when lightbox is open
-  useEffect(() => {
-    if (selectedImage) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [selectedImage]);
 
   const loadGalleryImages = async () => {
     try {
@@ -177,207 +136,49 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
 
       <div className="pt-0 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Search and Filter Section */}
-          <div className="py-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 sm:p-3 -mx-4 sm:mx-0 sticky top-20 z-30 shadow-sm border border-white/50 mb-4 md:mb-6">
-            {/* Search Bar */}
-            <div className="relative w-full max-w-sm mx-auto mb-1.5 sm:mb-2">
-              <Search className="absolute left-3 top-2 text-stone-400" size={14} />
-              <input 
-                type="text" 
-                placeholder="Search images..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-full border border-stone-200 focus:ring-1 focus:ring-orange-500 outline-none text-stone-800 placeholder-stone-400 text-xs"
-              />
-            </div>
-
-            {/* Category Filter */}
-            <div className="flex justify-center">
-              <div className="flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-orange-300 scrollbar-track-transparent max-w-full">
-                {categories.map(cat => {
-                  const count = galleryImages.filter(img => img.category === cat).length;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
-                        selectedCategory === cat 
-                          ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg' 
-                          : 'bg-white text-stone-600 border-2 border-stone-200 hover:border-orange-400'
-                      }`}
-                    >
-                      {cat}
-                      {cat !== 'All' && <span className={`text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-bold ${selectedCategory === cat ? 'bg-white/20' : 'bg-orange-100 text-orange-700'}`}>{count}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-        {/* Results Count */}
-        {!loading && galleryImages.length > 0 && (
-          <div className="text-center mb-8">
-            <p className="text-stone-600 font-medium">
-              Showing <span className="text-orange-600 font-bold">{filteredImages.length}</span> {filteredImages.length === 1 ? 'image' : 'images'}
-            </p>
-          </div>
-        )}
 
         {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 size={40} className="animate-spin text-orange-600" />
           </div>
-        ) : filteredImages.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-12">
-            {filteredImages.map((img) => (
+        ) : galleryImages.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-12 mt-8">
+            {galleryImages.map((img) => (
               <div 
                 key={img._id || img.id} 
-                className="bg-white rounded-2xl shadow-sm border-2 border-stone-100 overflow-hidden hover:shadow-2xl hover:border-orange-400 transition-all cursor-pointer group transform hover:scale-105 flex flex-col"
+                className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all group aspect-square"
               >
-                <div className="relative overflow-hidden h-56 bg-gradient-to-br from-stone-300 to-stone-200">
-                  <img 
-                    src={img.src} 
-                    alt={img.caption} 
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125"
-                    onClick={() => setSelectedImage(img)}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="absolute top-4 left-4 right-4 flex gap-2 flex-wrap">
-                    {img.category && (
-                      <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
-                        {img.category}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="p-6 flex-1 flex flex-col">
-                  <h3 className="font-serif font-bold text-xl text-stone-900 group-hover:text-orange-600 transition-colors line-clamp-2">{img.caption}</h3>
-                  <p className="text-xs text-orange-600 uppercase tracking-widest font-semibold mt-1">{img.category}</p>
-                  <div className="flex-1" />
-                  <div className="flex justify-end items-center pt-4 border-t-2 border-stone-100">
-                    <button 
-                      onClick={() => setSelectedImage(img)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 font-semibold text-sm rounded-lg group-hover:bg-orange-100 transition-colors"
-                    >
-                      View <ZoomIn size={16} />
-                    </button>
-                    {isAdmin && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(img._id);
-                        }}
-                        className="ml-2 p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={16} className="text-white" />
-                      </button>
-                    )}
-                  </div>
+                <img 
+                  src={img.src} 
+                  alt={img.caption} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {isAdmin && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(img._id);
+                    }}
+                    className="absolute top-2 right-2 p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100 z-10"
+                  >
+                    <Trash2 size={16} className="text-white" />
+                  </button>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <p className="font-semibold text-sm line-clamp-2">{img.caption}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-20 bg-stone-50 rounded-xl border border-dashed border-stone-300">
-            <ZoomIn size={40} className="text-stone-300 mx-auto mb-4" />
-            <p className="text-stone-600 font-medium">No images found</p>
-            <p className="text-stone-500 text-sm">Try adjusting your search or filters</p>
+            <p className="text-stone-600 font-medium text-2xl mb-2">No images found</p>
+            <p className="text-stone-500 text-sm">Upload images to get started</p>
           </div>
         )}
         </div>
       </div>
-
-      {/* Lightbox Modal */}
-      {selectedImage && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-2 sm:p-4 animate-in fade-in duration-200"
-          onClick={() => setSelectedImage(null)}
-        >
-          <button 
-             className="absolute top-3 sm:top-6 right-3 sm:right-6 p-2 sm:p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all transform hover:scale-110 z-10 backdrop-blur-sm"
-             onClick={() => setSelectedImage(null)}
-             title="Close"
-          >
-            <X size={24} className="sm:size-28" />
-          </button>
-
-          {/* Navigation Buttons */}
-          {currentImageIndex > 0 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePrevImage();
-              }}
-              className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all transform hover:scale-110 z-10 backdrop-blur-sm"
-              title="Previous"
-            >
-              <ChevronLeft size={28} className="sm:size-32" />
-            </button>
-          )}
-
-          {currentImageIndex < filteredImages.length - 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNextImage();
-              }}
-              className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all transform hover:scale-110 z-10 backdrop-blur-sm"
-              title="Next"
-            >
-              <ChevronRight size={28} className="sm:size-32" />
-            </button>
-          )}
-
-          <div 
-            className="w-full max-w-md sm:max-w-2xl md:max-w-4xl lg:max-w-5xl max-h-[90vh] relative rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img 
-              src={selectedImage.src} 
-              alt={selectedImage.caption} 
-              className="w-full h-[40vh] sm:h-[60vh] md:h-[70vh] object-contain bg-black"
-            />
-            <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent p-4 sm:p-8 text-white">
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold mb-2 sm:mb-3">{selectedImage.caption}</h3>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
-                <span className="inline-block px-3 py-1 bg-orange-600 rounded-full text-xs sm:text-sm font-semibold">{selectedImage.category}</span>
-                {selectedImage.createdAt && (
-                  <span className="text-xs sm:text-sm text-stone-300">{new Date(selectedImage.createdAt).toLocaleDateString()}</span>
-                )}
-              </div>
-              {/* Image Counter */}
-              <div className="mt-2 sm:mt-4 text-xs text-stone-300 flex items-center justify-between">
-                <span>{currentImageIndex + 1} / {filteredImages.length}</span>
-                {filteredImages.length > 1 && (
-                  <div className="flex gap-1 sm:gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePrevImage();
-                      }}
-                      disabled={currentImageIndex === 0}
-                      className="px-2 sm:px-3 py-1 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded transition-colors"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNextImage();
-                      }}
-                      disabled={currentImageIndex === filteredImages.length - 1}
-                      className="px-2 sm:px-3 py-1 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded transition-colors"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Notification */}
       {notification && (
