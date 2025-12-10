@@ -279,7 +279,7 @@ const Home: React.FC = () => {
                       
                       {/* Price Badge */}
                       <div className="absolute top-4 right-4 bg-orange-600 text-white px-4 py-2 rounded-full font-bold text-lg shadow-lg">
-                        ${dish.price.toFixed(2)}
+                        Rs {dish.price.toFixed(2)}
                       </div>
 
                       {/* Featured Badge */}

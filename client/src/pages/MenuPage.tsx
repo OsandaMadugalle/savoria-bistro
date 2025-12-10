@@ -14,7 +14,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'price-low' | 'price-high' | 'popular'>('name');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -207,7 +207,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
               <input 
                 type="range" 
                 min="0" 
-                max="1000" 
+                max="2000" 
                 value={priceRange[1]}
                 onChange={(e) => setPriceRange([0, parseInt(e.target.value)])}
                 className="w-full cursor-pointer accent-orange-600"
