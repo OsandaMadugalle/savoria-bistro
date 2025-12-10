@@ -43,7 +43,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
    const [eventInquiries, setEventInquiries] = useState<PrivateEventInquiry[]>([]);
    const [eventsLoading, setEventsLoading] = useState(true);
    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews' | 'events' | 'loyalty' | 'feedback'>('orders');
+   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews' | 'events' | 'loyalty' | 'feedback' | 'preferences'>('orders');
    const [feedback, setFeedback] = useState<any[]>([]);
    const [feedbackLoading, setFeedbackLoading] = useState(true);
    const navigate = useNavigate();
@@ -52,7 +52,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
    useEffect(() => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam && ['orders', 'reservations', 'reviews', 'events', 'loyalty', 'feedback'].includes(tabParam)) {
+      if (tabParam && ['orders', 'reservations', 'reviews', 'events', 'loyalty', 'feedback', 'preferences'].includes(tabParam)) {
          setProfileTab(tabParam as any);
       }
    }, []);
@@ -562,14 +562,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                <div className="md:col-span-2">
                   <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
                      <div className="p-4 border-b border-stone-100">
-                        <div className="flex items-center justify-center gap-2">
-                           {['loyalty', 'orders', 'reservations', 'reviews', 'events', 'feedback'].map(tab => (
+                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                           {['loyalty', 'orders', 'reservations', 'reviews', 'events', 'feedback', 'preferences'].map(tab => (
                               <button
                                  key={tab}
                                  onClick={() => setProfileTab(tab as any)}
                                  className={`px-3 py-2 rounded-lg font-semibold text-xs transition-all whitespace-nowrap ${profileTab === tab ? 'bg-orange-600 text-white shadow-md' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
                               >
-                                 {tab === 'loyalty' ? '🏅 Loyalty' : tab === 'orders' ? '📦 Orders' : tab === 'reservations' ? '📅 Reservations' : tab === 'reviews' ? '⭐ Reviews' : tab === 'events' ? '🎉 Events' : '💬 Feedback'}
+                                 {tab === 'loyalty' ? '🏅 Loyalty' : tab === 'orders' ? '📦 Orders' : tab === 'reservations' ? '📅 Reservations' : tab === 'reviews' ? '⭐ Reviews' : tab === 'events' ? '🎉 Events' : tab === 'feedback' ? '💬 Feedback' : '❤️ Preferences'}
                               </button>
                            ))}
                         </div>

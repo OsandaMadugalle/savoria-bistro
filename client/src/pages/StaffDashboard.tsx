@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { fetchAllOrders, updateOrderStatus, fetchReservations, loginUser, fetchPrivateEventInquiries, updatePrivateEventInquiryStatus, sendPrivateEventEmail } from '../services/api';
 import { Order, ReservationData, User, PrivateEventInquiry } from '../types';
 import { ChefHat, CheckCircle, Clock, Utensils, Calendar, RefreshCcw, Lock, AlertTriangle, X, Filter } from 'lucide-react';
@@ -14,7 +13,6 @@ interface StaffDashboardProps {
 }
 
 const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout }) => {
-  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [reservations, setReservations] = useState<ReservationData[]>([]);
   const [activeTab, setActiveTab] = useState<'kitchen' | 'reservations' | 'events'>('kitchen');
