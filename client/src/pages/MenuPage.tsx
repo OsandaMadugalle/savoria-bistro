@@ -253,6 +253,17 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
                         ⭐ Chef's Pick
                       </div>
                     )}
+                    {/* Stock Status Badge */}
+                    {item.stock !== undefined && item.stock === 0 && (
+                      <div className="bg-red-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                        Out of Stock
+                      </div>
+                    )}
+                    {item.stock !== undefined && item.stock > 0 && item.stock <= (item.lowStockThreshold || 5) && (
+                      <div className="bg-amber-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                        Only {item.stock} left
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -349,6 +360,19 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
                </p>
 
                <div className="space-y-6 flex-grow">
+                 {/* Stock Status */}
+                 {selectedItem.stock !== undefined && (
+                    <div className={`p-3 rounded-lg ${selectedItem.stock === 0 ? 'bg-red-50 border border-red-200' : selectedItem.stock <= (selectedItem.lowStockThreshold || 5) ? 'bg-amber-50 border border-amber-200' : 'bg-green-50 border border-green-200'}`}>
+                       {selectedItem.stock === 0 ? (
+                         <p className="text-sm font-bold text-red-700">❌ Out of Stock - Not available for order</p>
+                       ) : selectedItem.stock <= (selectedItem.lowStockThreshold || 5) ? (
+                         <p className="text-sm font-bold text-amber-700">⚠️ Limited availability - Only {selectedItem.stock} {selectedItem.stock === 1 ? 'item' : 'items'} left</p>
+                       ) : (
+                         <p className="text-sm font-bold text-green-700">✓ In stock and ready to order</p>
+                       )}
+                    </div>
+                 )}
+
                  {/* Details Grid */}
                  <div className="grid grid-cols-2 gap-4">
                     {selectedItem.prepTime && (
@@ -401,10 +425,15 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
                       addToCart(selectedItem);
                       setSelectedItem(null);
                     }}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-orange-200 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                    disabled={selectedItem.stock === 0}
+                    className={`flex-1 font-bold py-3.5 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all ${
+                      selectedItem.stock === 0
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
+                        : 'bg-orange-600 hover:bg-orange-700 text-white hover:scale-[1.02] active:scale-95 shadow-orange-200'
+                    }`}
                   >
                     <Plus size={20} />
-                    Add to Order
+                    {selectedItem.stock === 0 ? 'Out of Stock' : 'Add to Order'}
                   </button>
                </div>
             </div>

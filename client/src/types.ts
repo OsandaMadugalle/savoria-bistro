@@ -12,6 +12,8 @@ export interface MenuItem {
   calories?: number;
   prepTime?: number;
   featured?: boolean; // For Chef's Specialties on home page
+  stock?: number; // Stock availability (0 = out of stock, undefined = unlimited)
+  lowStockThreshold?: number; // Threshold to show "Only X left" warning
 }
 
 export interface CartItem extends MenuItem {
