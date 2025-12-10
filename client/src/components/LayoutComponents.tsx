@@ -179,8 +179,9 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
       errors.email = 'Please enter a valid email address.';
     }
     
-    if (!signupPhone || !/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/.test(signupPhone)) {
-      errors.phone = 'Please enter a valid phone number (e.g., (555) 123-4567).';
+    // Sri Lankan phone number validation: +94 XX XXX XXXX or 0XX XXX XXXX
+    if (!signupPhone || !/^(\+94|0)?[1-9]\d{8}$/.test(signupPhone.replace(/[\s\-]/g, ''))) {
+      errors.phone = 'Please enter a valid Sri Lankan phone number (e.g., +94 11 234 5678 or 011 234 5678).';
     }
     
     // Strong password validation

@@ -184,8 +184,8 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                   </div>
                   <div>
                     <h4 className="font-bold text-stone-900 mb-1">📍 Location</h4>
-                    <p className="text-stone-700 font-medium">123 Culinary Avenue</p>
-                    <p className="text-stone-600">Food District, NY 10012</p>
+                    <p className="text-stone-700 font-medium">123 Galle Road</p>
+                    <p className="text-stone-600">Colombo 03, Sri Lanka</p>
                   </div>
                 </div>
 
@@ -195,7 +195,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                   </div>
                   <div>
                     <h4 className="font-bold text-stone-900 mb-1">📞 Phone</h4>
-                    <p className="text-stone-700 font-medium">(555) 123-4567</p>
+                    <p className="text-stone-700 font-medium">+94 11 234 5678</p>
                   </div>
                 </div>
 
@@ -216,9 +216,9 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                   </div>
                   <div>
                     <h4 className="font-bold text-stone-900 mb-1">🕐 Hours</h4>
-                    <p className="text-stone-700 font-medium text-sm">Mon-Thu: 11am - 10pm</p>
-                    <p className="text-stone-700 font-medium text-sm">Fri-Sat: 11am - 11pm</p>
-                    <p className="text-stone-600 text-sm">Sun: 10am - 9:30pm</p>
+                    <p className="text-stone-700 font-medium text-sm">Mon-Thu: 11:00 AM - 10:00 PM</p>
+                    <p className="text-stone-700 font-medium text-sm">Fri-Sat: 11:00 AM - 11:00 PM</p>
+                    <p className="text-stone-600 text-sm">Sun: 10:00 AM - 9:30 PM</p>
                   </div>
                 </div>
               </div>
@@ -229,7 +229,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
               <iframe
                 title="Savoria Bistro Locations"
                 className="w-full h-64"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3024.2219901290355!2d-74.00601!3d40.71455!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a2aabe4f6d7%3A0x1c9e8b8b8b8b8b8b!2s123%20Culinary%20Avenue%2C%20New%20York%2C%20NY%2010012!5e0!3m2!1sen!2sus!4v1639846800000!5m2!1sen!2sus"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.798467892845!2d79.8428!3d6.9271!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae25963120b1509%3A0x2db2c18a68712863!2sGalle%20Road%2C%20Colombo%2003%2C%20Sri%20Lanka!5e0!3m2!1sen!2slk!4v1639846800000!5m2!1sen!2slk"
                 style={{ border: 0 }}
                 allowFullScreen
                 loading="lazy"
@@ -245,13 +245,13 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                 <div className="space-y-2">
                   <div className="text-xs">
                     <p className="font-semibold text-stone-900">Main Branch</p>
-                    <p className="text-stone-600">123 Culinary Avenue, Food District, NY 10012</p>
-                    <p className="text-orange-600 font-bold mt-0.5">📞 (555) 123-4567</p>
+                    <p className="text-stone-600">123 Galle Road, Colombo 03, Sri Lanka</p>
+                    <p className="text-orange-600 font-bold mt-0.5">📞 +94 11 234 5678</p>
                   </div>
                   <div className="text-xs">
-                    <p className="font-semibold text-stone-900">Downtown Branch</p>
-                    <p className="text-stone-600">456 Gourmet Street, Downtown, NY 10001</p>
-                    <p className="text-orange-600 font-bold mt-0.5">📞 (555) 987-6543</p>
+                    <p className="font-semibold text-stone-900">Kandy Branch</p>
+                    <p className="text-stone-600">456 Peradeniya Road, Kandy, Sri Lanka</p>
+                    <p className="text-orange-600 font-bold mt-0.5">📞 +94 81 222 3344</p>
                   </div>
                 </div>
               </div>

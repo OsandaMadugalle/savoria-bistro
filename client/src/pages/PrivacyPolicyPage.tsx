@@ -83,7 +83,7 @@ const PrivacyPolicyPage: React.FC = () => {
             </p>
             <div className="mt-4 bg-stone-50 p-4 rounded-lg">
               <p className="text-stone-700"><strong>Email:</strong> privacy@savoriabistro.com</p>
-              <p className="text-stone-700"><strong>Address:</strong> Savoria Bistro, Your City, Your Country</p>
+              <p className="text-stone-700"><strong>Address:</strong> Savoria Bistro, 123 Galle Road, Colombo 03, Sri Lanka</p>
             </div>
           </section>
         </div>

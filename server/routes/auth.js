@@ -291,7 +291,7 @@ const seedAccounts = async () => {
   if (!masterExists) {
     const masterPassword = 'Master@1234';
     const hashed = await bcrypt.hash(masterPassword, 10);
-    await User.create({ name: 'Master Admin', email: 'master@savoria.com', password: hashed, role: 'masterAdmin', phone: '000-000-0000' });
+    await User.create({ name: 'Master Admin', email: 'master@savoria.com', password: hashed, role: 'masterAdmin', phone: '+94 11 000 0001' });
     console.log(`👑 MasterAdmin account created: master@savoria.com / ${masterPassword}`);
   } else {
     // Ensure existing master has correct role
@@ -302,7 +302,7 @@ const seedAccounts = async () => {
   if (!adminExists) {
     const adminPassword = 'Admin@1234';
     const hashed = await bcrypt.hash(adminPassword, 10);
-    await User.create({ name: 'Admin Owner', email: 'admin@savoria.com', password: hashed, role: 'admin', phone: '000-000-0000' });
+    await User.create({ name: 'Admin Owner', email: 'admin@savoria.com', password: hashed, role: 'admin', phone: '+94 11 000 0002' });
     console.log(`👑 Admin account created: admin@savoria.com / ${adminPassword}`);
   } else {
     // Ensure existing admin has correct role
@@ -313,7 +313,7 @@ const seedAccounts = async () => {
   if (!staffExists) {
     const staffPassword = 'Staff@1234';
     const hashed = await bcrypt.hash(staffPassword, 10);
-    await User.create({ name: 'Kitchen Staff', email: 'staff@savoria.com', password: hashed, role: 'staff', phone: '000-000-0000' });
+    await User.create({ name: 'Kitchen Staff', email: 'staff@savoria.com', password: hashed, role: 'staff', phone: '+94 11 000 0003' });
     console.log(`👨‍🍳 Staff account created: staff@savoria.com / ${staffPassword}`);
   } else {
     // Ensure existing staff has correct role
