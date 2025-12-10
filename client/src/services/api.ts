@@ -186,7 +186,10 @@ export const createOrder = async (order: any): Promise<{ orderId: string; points
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(order)
   });
-  if (!res.ok) throw new Error('Order failed');
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || `Order failed (${res.status})`);
+  }
   const data = await res.json();
   return { 
     orderId: data.orderId || data._id,

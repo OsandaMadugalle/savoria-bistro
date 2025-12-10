@@ -37,10 +37,22 @@ router.post('/', async (req, res) => {
     // Check stock availability before creating order
     const MenuItem = require('../models/MenuItem');
     for (const item of req.body.items) {
-      const menuItem = await MenuItem.findOne({ id: item.itemId });
-      if (!menuItem || menuItem.stock < item.quantity) {
+      let menuItem = await MenuItem.findOne({ id: item.itemId });
+      
+      // If not found by custom id, try by MongoDB _id
+      if (!menuItem && item.itemId.length === 24) {
+        menuItem = await MenuItem.findById(item.itemId);
+      }
+      
+      if (!menuItem) {
         return res.status(400).json({
-          message: `Insufficient stock for ${item.name}. Available: ${menuItem?.stock || 0}, Requested: ${item.quantity}`
+          message: `Menu item not found: ${item.name} (ID: ${item.itemId})`
+        });
+      }
+      
+      if (menuItem.stock < item.quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock for ${item.name}. Available: ${menuItem.stock}, Requested: ${item.quantity}`
         });
       }
     }
@@ -52,8 +64,9 @@ router.post('/', async (req, res) => {
 
     // Deduct stock for ordered items
     for (const item of req.body.items) {
+      const query = item.itemId.length === 24 ? { _id: item.itemId } : { id: item.itemId };
       await MenuItem.findOneAndUpdate(
-        { id: item.itemId },
+        query,
         { $inc: { stock: -item.quantity } }
       );
     }
