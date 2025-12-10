@@ -87,13 +87,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
          });
          setLoading(false);
          // Continue loading other data...
-         const userId = initialUser.id ? initialUser.id : (initialUser._id ? initialUser._id : '');
-         if (userId) {
-           fetchUserOrders(userId)
+         const userIdInitial = initialUser.id ? initialUser.id : (initialUser._id ? initialUser._id : '');
+         if (userIdInitial) {
+           fetchUserOrders(userIdInitial)
              .then(setOrders)
              .catch(() => setOrders([]))
              .finally(() => setOrdersLoading(false));
-           getUserFeedbackHistory(userId)
+           getUserFeedbackHistory(userIdInitial)
              .then(setFeedback)
              .catch(() => setFeedback([]))
              .finally(() => setFeedbackLoading(false));
@@ -103,9 +103,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
            setFeedback([]);
            setFeedbackLoading(false);
          }
-         const userId = initialUser.id ? initialUser.id : (initialUser._id ? initialUser._id : '');
-         if (userId) {
-           fetchUserReservations(userId)
+         if (userIdInitial) {
+           fetchUserReservations(userIdInitial)
              .then(setReservations)
              .catch(() => setReservations([]))
              .finally(() => setReservationsLoading(false));
@@ -152,15 +151,15 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                   });
             setLoading(false);
             // Fetch user's orders
-            const userId = profile.id ? profile.id : (profile._id ? profile._id : '');
-            if (userId) {
-              fetchUserOrders(userId)
+            const userIdProfile = profile.id ? profile.id : (profile._id ? profile._id : '');
+            if (userIdProfile) {
+              fetchUserOrders(userIdProfile)
                 .then(setOrders)
                 .catch(() => setOrders([]))
                 .finally(() => setOrdersLoading(false));
               
               // Fetch user's feedback
-              getUserFeedbackHistory(userId)
+              getUserFeedbackHistory(userIdProfile)
                 .then(setFeedback)
                 .catch(() => setFeedback([]))
                 .finally(() => setFeedbackLoading(false));
@@ -171,9 +170,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
               setFeedbackLoading(false);
             }
             // Fetch user's reservations
-            const userId = profile.id ? profile.id : (profile._id ? profile._id : '');
-            if (userId) {
-              fetchUserReservations(userId)
+            if (userIdProfile) {
+              fetchUserReservations(userIdProfile)
                 .then(setReservations)
                 .catch(() => setReservations([]))
                 .finally(() => setReservationsLoading(false));
