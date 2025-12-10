@@ -562,7 +562,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           discount: promoForm.discount,
           expiryDate: promoForm.expiryDate,
           active: promoForm.active
-        });
+        }, user?.email);
         showToast(`Promo code "${promoForm.code}" updated successfully!`, 'success');
         setEditingPromoId(null);
       } else {
@@ -572,12 +572,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           discount: promoForm.discount,
           expiryDate: promoForm.expiryDate,
           active: promoForm.active
-        });
+        }, user?.email);
         showToast(`Promo code "${promoForm.code}" created successfully!`, 'success');
       }
 
       // Reload promos from API
-      const updated = await fetchAllPromos();
+      const updated = await fetchAllPromos(user?.email);
       setPromos(updated);
       
       setPromoForm({ code: '', discount: 20, expiryDate: '', active: true });
@@ -609,10 +609,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     if (window.confirm('Are you sure you want to delete this promo code?')) {
       try {
         const deleted = promos.find(p => p._id === id);
-        await deletePromo(id);
+        await deletePromo(id, user?.email);
         
         // Reload promos from API
-        const updated = await fetchAllPromos();
+        const updated = await fetchAllPromos(user?.email);
         setPromos(updated);
         
         showToast(`Promo code "${deleted?.code}" deleted successfully!`, 'success');
@@ -1051,7 +1051,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   useEffect(() => {
     const loadPromos = async () => {
       try {
-        const data = await fetchAllPromos();
+        const data = await fetchAllPromos(user?.email);
         setPromos(data);
       } catch (err) {
         console.error('Failed to fetch promos:', err);
@@ -1059,7 +1059,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       }
     };
     loadPromos();
-  }, []);
+  }, [user?.email]);
 
   return (
     <div>

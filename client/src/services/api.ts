@@ -757,17 +757,19 @@ export const fetchActivePromos = async (): Promise<Promo[]> => {
   return await res.json();
 };
 
-export const fetchAllPromos = async (): Promise<Promo[]> => {
-  const res = await fetch(`${API_URL}/promos/admin/all`);
+export const fetchAllPromos = async (requesterEmail?: string): Promise<Promo[]> => {
+  const email = requesterEmail || localStorage.getItem('email') || '';
+  const res = await fetch(`${API_URL}/promos/admin/all?requesterEmail=${encodeURIComponent(email)}`);
   if (!res.ok) throw new Error('Failed to fetch promos');
   return await res.json();
 };
 
-export const createPromo = async (promo: Omit<Promo, '_id'>): Promise<Promo> => {
+export const createPromo = async (promo: Omit<Promo, '_id'>, requesterEmail?: string): Promise<Promo> => {
+  const email = requesterEmail || localStorage.getItem('email') || '';
   const res = await fetch(`${API_URL}/promos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(promo)
+    body: JSON.stringify({ ...promo, requesterEmail: email })
   });
   if (!res.ok) {
     const error = await res.json();
@@ -776,11 +778,12 @@ export const createPromo = async (promo: Omit<Promo, '_id'>): Promise<Promo> => 
   return await res.json();
 };
 
-export const updatePromo = async (id: string, promo: Partial<Promo>): Promise<Promo> => {
+export const updatePromo = async (id: string, promo: Partial<Promo>, requesterEmail?: string): Promise<Promo> => {
+  const email = requesterEmail || localStorage.getItem('email') || '';
   const res = await fetch(`${API_URL}/promos/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(promo)
+    body: JSON.stringify({ ...promo, requesterEmail: email })
   });
   if (!res.ok) {
     const error = await res.json();
@@ -789,16 +792,22 @@ export const updatePromo = async (id: string, promo: Partial<Promo>): Promise<Pr
   return await res.json();
 };
 
-export const deletePromo = async (id: string): Promise<void> => {
+export const deletePromo = async (id: string, requesterEmail?: string): Promise<void> => {
+  const email = requesterEmail || localStorage.getItem('email') || '';
   const res = await fetch(`${API_URL}/promos/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requesterEmail: email })
   });
   if (!res.ok) throw new Error('Failed to delete promo');
 };
 
-export const togglePromoStatus = async (id: string): Promise<Promo> => {
+export const togglePromoStatus = async (id: string, requesterEmail?: string): Promise<Promo> => {
+  const email = requesterEmail || localStorage.getItem('email') || '';
   const res = await fetch(`${API_URL}/promos/${id}/toggle`, {
-    method: 'PATCH'
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requesterEmail: email })
   });
   if (!res.ok) throw new Error('Failed to toggle promo status');
   return await res.json();
