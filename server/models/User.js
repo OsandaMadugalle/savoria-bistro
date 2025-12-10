@@ -26,7 +26,15 @@ const userSchema = new mongoose.Schema({
     manageMenu: { type: Boolean, default: false },
     viewOrders: { type: Boolean, default: false },
     manageUsers: { type: Boolean, default: false }
-  }
+  },
+  // Email verification & JWT fields
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationCode: String,
+  verificationCodeExpires: Date,
+  refreshTokens: [String]
 });
 
 // Pre-save hook to remove customer fields from non-customer users

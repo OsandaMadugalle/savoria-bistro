@@ -3,6 +3,68 @@ import { MenuItem, User, Order, ReservationData, PrivateEventInquiry } from '../
 // Use environment variable for API URL with a default fallback
 const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
+// JWT Token Management
+export const getAuthToken = (): { accessToken: string | null; refreshToken: string | null } => {
+  return {
+    accessToken: localStorage.getItem('accessToken'),
+    refreshToken: localStorage.getItem('refreshToken')
+  };
+};
+
+export const setAuthTokens = (accessToken: string, refreshToken: string): void => {
+  localStorage.setItem('accessToken', accessToken);
+  localStorage.setItem('refreshToken', refreshToken);
+  localStorage.setItem('tokenExpiry', new Date(Date.now() + 3600000).toISOString());
+};
+
+export const clearAuthTokens = (): void => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('tokenExpiry');
+};
+
+export const getAuthHeaders = (includeAuth = true): HeadersInit => {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (includeAuth) {
+    const { accessToken } = getAuthToken();
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+  }
+  return headers;
+};
+
+export const isTokenExpired = (): boolean => {
+  const expiry = localStorage.getItem('tokenExpiry');
+  if (!expiry) return true;
+  return new Date() > new Date(expiry);
+};
+
+export const refreshAuthToken = async (): Promise<boolean> => {
+  try {
+    const { refreshToken } = getAuthToken();
+    if (!refreshToken) return false;
+
+    const res = await fetch(`${API_URL}/auth/refresh-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken })
+    });
+
+    if (!res.ok) {
+      clearAuthTokens();
+      return false;
+    }
+
+    const data = await res.json();
+    setAuthTokens(data.accessToken, data.refreshToken);
+    return true;
+  } catch (err) {
+    clearAuthTokens();
+    return false;
+  }
+};
+
 // Fetch all reservations for a user (by userId)
 export const fetchUserReservations = async (userId: string): Promise<ReservationData[]> => {
   const res = await fetch(`${API_URL}/reservations/user/${userId}`);
@@ -165,8 +227,25 @@ export const loginUser = async (email: string, password: string): Promise<User> 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
   });
-  if (!res.ok) throw new Error('Login failed');
-  return await res.json();
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Login failed');
+  }
+  
+  const data = await res.json();
+  
+  // Store JWT tokens if provided
+  if (data.accessToken && data.refreshToken) {
+    setAuthTokens(data.accessToken, data.refreshToken);
+  } else {
+    // Fallback: store email for backward compatibility
+    localStorage.setItem('email', email);
+  }
+  
+  // Remove sensitive fields before returning
+  const { accessToken, refreshToken, ...user } = data;
+  return user;
 };
 
 export const registerUser = async (userData: any): Promise<User> => {
@@ -175,8 +254,52 @@ export const registerUser = async (userData: any): Promise<User> => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(userData)
   });
-  if (!res.ok) throw new Error('Signup failed');
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Signup failed');
+  }
+  
   return await res.json();
+};
+
+export const verifyEmail = async (email: string, code: string): Promise<void> => {
+  const res = await fetch(`${API_URL}/auth/verify-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code })
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Email verification failed');
+  }
+};
+
+export const resendVerificationEmail = async (email: string): Promise<void> => {
+  const res = await fetch(`${API_URL}/auth/resend-verification`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to resend verification email');
+  }
+};
+
+export const logoutUser = async (email: string, refreshToken?: string): Promise<void> => {
+  try {
+    await fetch(`${API_URL}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, refreshToken })
+    });
+  } finally {
+    clearAuthTokens();
+    localStorage.removeItem('email');
+  }
 };
 
 // --- ORDER API ---
