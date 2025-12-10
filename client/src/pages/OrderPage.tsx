@@ -397,7 +397,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
                       <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-bold">Tier Benefit</span>
                     )}
                   </div>
-                  <span className="font-bold">-${discount.toFixed(2)}</span>
+                  <span className="font-bold">-Rs {discount.toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -405,7 +405,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
             <div className="bg-orange-50 p-4 rounded-lg border border-orange-200 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-stone-900">Total</span>
-                <span className="text-2xl font-bold text-orange-600">${finalTotal.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-orange-600">Rs {finalTotal.toFixed(2)}</span>
               </div>
               {discount > 0 && (
                 <p className="text-xs text-orange-700">You're saving Rs {discount.toFixed(2)}!</p>
