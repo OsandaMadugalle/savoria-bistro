@@ -103,10 +103,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
            setFeedback([]);
            setFeedbackLoading(false);
          }
-         fetchUserReservations(initialUser.email)
-           .then(setReservations)
-           .catch(() => setReservations([]))
-           .finally(() => setReservationsLoading(false));
+         const userId = initialUser.id ? initialUser.id : (initialUser._id ? initialUser._id : '');
+         if (userId) {
+           fetchUserReservations(userId)
+             .then(setReservations)
+             .catch(() => setReservations([]))
+             .finally(() => setReservationsLoading(false));
+         } else {
+           setReservations([]);
+           setReservationsLoading(false);
+         }
          fetchUserReviews(initialUser.email)
            .then(setReviews)
            .catch(() => setReviews([]))
@@ -165,10 +171,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
               setFeedbackLoading(false);
             }
             // Fetch user's reservations
-            fetchUserReservations(profile.email)
-              .then(setReservations)
-              .catch(() => setReservations([]))
-              .finally(() => setReservationsLoading(false));
+            const userId = profile.id ? profile.id : (profile._id ? profile._id : '');
+            if (userId) {
+              fetchUserReservations(userId)
+                .then(setReservations)
+                .catch(() => setReservations([]))
+                .finally(() => setReservationsLoading(false));
+            } else {
+              setReservations([]);
+              setReservationsLoading(false);
+            }
             
             // Fetch user's reviews
             fetchUserReviews(profile.email)

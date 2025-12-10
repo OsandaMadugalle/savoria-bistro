@@ -3,9 +3,9 @@ import { MenuItem, User, Order, ReservationData, PrivateEventInquiry } from '../
 // Use environment variable for API URL with a default fallback
 const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Fetch all reservations for a user (by email)
-export const fetchUserReservations = async (email: string): Promise<ReservationData[]> => {
-  const res = await fetch(`${API_URL}/reservations?email=${encodeURIComponent(email)}`);
+// Fetch all reservations for a user (by userId)
+export const fetchUserReservations = async (userId: string): Promise<ReservationData[]> => {
+  const res = await fetch(`${API_URL}/reservations/user/${userId}`);
   if (!res.ok) throw new Error('Failed to fetch reservations');
   return await res.json();
 };
