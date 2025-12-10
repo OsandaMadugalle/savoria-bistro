@@ -5,6 +5,8 @@ import { Order, ReservationData, User, PrivateEventInquiry } from '../types';
 import { ChefHat, CheckCircle, Clock, Utensils, Calendar, RefreshCcw, Lock, AlertTriangle, X, Filter } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
 
+import AdminNavigation from '../components/AdminNavigation';
+
 interface StaffDashboardProps {
   user: User | null;
   onLogin: (user: User) => void;
@@ -175,8 +177,10 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
     switch (current) {
       case 'Confirmed': return 'Preparing';
       case 'Preparing': return 'Quality Check';
-      case 'Quality Check': return 'Ready';
-      case 'Ready': return 'Delivered';
+      case 'Quality Check': return 'Packing';
+      case 'Packing': return 'Packed & Ready';
+      case 'Packed & Ready': return 'Out for Delivery';
+      case 'Out for Delivery': return 'Delivered';
       default: return null;
     }
   };
@@ -285,66 +289,9 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
 
   return (
     <div className="min-h-screen bg-stone-100">
-      {/* Staff Navbar - Similar to Admin Navbar */}
+      {/* Staff Navbar */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
-      <nav className="fixed top-0 left-0 w-full bg-gradient-to-r from-stone-900 to-orange-900 border-b border-orange-700 z-40 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                <ChefHat size={28} className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-serif font-bold text-white tracking-tight">Staff Portal</h1>
-                <p className="text-xs text-orange-200">Kitchen Management System</p>
-              </div>
-            </div>
-
-            {/* Navigation Links */}
-            <div className="hidden md:flex items-center space-x-2">
-              {(user?.role === 'admin' || user?.role === 'masterAdmin') && (
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="px-4 py-2 rounded-lg font-medium transition-all text-orange-100 hover:bg-stone-800"
-                >
-                  Dashboard
-                </button>
-              )}
-              <button
-                onClick={() => navigate('/staff')}
-                className="px-4 py-2 rounded-lg font-medium transition-all bg-orange-600 text-white"
-              >
-                Staff Portal
-              </button>
-            </div>
-
-            {/* Right Side - User Menu */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3 bg-stone-800 bg-opacity-50 px-4 py-2 rounded-lg border border-orange-700">
-                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-bold text-white">
-                  {user?.name?.charAt(0)?.toUpperCase()}
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-semibold text-white">{user?.name}</p>
-                  <p className="text-xs text-orange-200 capitalize">{user?.role}</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  localStorage.removeItem('userEmail');
-                  onLogout();
-                  navigate('/');
-                }}
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold text-sm transition-colors shadow-md"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AdminNavigation user={user} onLogout={onLogout} />
 
       {/* Main Content */}
       <div className="pt-24 pb-20 px-4 relative">
@@ -397,14 +344,29 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
                   <div className={`p-4 text-white flex justify-between items-center ${
                       order.status === 'Confirmed' ? 'bg-red-500' : 
                       order.status === 'Preparing' ? 'bg-orange-500' : 
-                      order.status === 'Quality Check' ? 'bg-yellow-500' : 'bg-green-600'
+                      order.status === 'Quality Check' ? 'bg-yellow-500' : 
+                      order.status === 'Packing' ? 'bg-blue-500' : 
+                      order.status === 'Packed & Ready' ? 'bg-indigo-500' : 
+                      order.status === 'Out for Delivery' ? 'bg-purple-500' : 'bg-green-600'
                   }`}>
                      <span className="font-bold">#{order.orderId}</span>
                      <span className="text-xs uppercase font-bold tracking-wider bg-black/20 px-2 py-1 rounded">{order.status}</span>
                   </div>
                   <div className="p-4 flex-1">
-                     <div className="flex items-center text-xs text-stone-500 mb-3 gap-1">
-                        <Clock size={12} /> {new Date(order.createdAt).toLocaleTimeString()}
+                     <div className="flex items-center justify-between text-xs text-stone-500 mb-3">
+                        <div className="flex items-center gap-1">
+                          <Clock size={12} /> {new Date(order.createdAt).toLocaleTimeString()}
+                        </div>
+                        {/* Payment Status Badge */}
+                        {order.paymentMethod === 'cod' && order.paymentStatus === 'Pending' ? (
+                          <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-bold">
+                            💵 COD - Payment Pending
+                          </span>
+                        ) : (
+                          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">
+                            ✅ Paid
+                          </span>
+                        )}
                      </div>
                      <ul className="space-y-2 mb-4">
                         {order.items.map((item, idx) => (

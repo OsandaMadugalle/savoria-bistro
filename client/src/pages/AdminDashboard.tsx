@@ -4,12 +4,14 @@ import {
   AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
 import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin, fetchPrivateEventInquiries, fetchReservations, fetchAllPromos, createPromo, updatePromo, deletePromo } from '../services/api';
+import { createRider, getAllRiders } from '../services/deliveryApi';
 import type { MenuItemPayload, Promo } from '../services/api';
 import { MenuItem, User, Order, PrivateEventInquiry } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, Calendar } from 'lucide-react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
 import StockManagement from '../components/StockManagement';
 import FeedbackAnalytics from '../components/FeedbackAnalytics';
+import AdminNavigation from '../components/AdminNavigation';
 
 const DIETARY_TAGS = ['Vegetarian', 'Vegan', 'GF'];
 
@@ -190,9 +192,10 @@ const getRevenueTrend = (orders: any[]) => {
 // ===== COMPONENT =====
 interface AdminDashboardProps {
   user: User | null;
+  onLogout: () => void;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
   // ===== STATE: EDIT/DELETE =====
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -206,7 +209,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [editMsg, setEditMsg] = useState('');
 
   // ===== STATE: TABS & LISTS =====
-  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'reservationsHistory' | 'eventsHistory' | 'settings' | 'addAdmin' | 'addStaff' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter' | 'promos' | 'stock' | 'feedback'>('analytics');
+  const [activeTab, setActiveTab] = useState<'menu' | 'orders' | 'reservationsHistory' | 'eventsHistory' | 'settings' | 'addAdmin' | 'addStaff' | 'addRider' | 'customers' | 'logs' | 'analytics' | 'profile' | 'reviews' | 'gallery' | 'newsletter' | 'promos' | 'stock' | 'feedback'>('analytics');
   const [reservationSubTab, setReservationSubTab] = useState<'reservations' | 'payments'>('reservations');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -241,10 +244,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   // ===== STATE: FORMS =====
   const [adminForm, setAdminForm] = useState<{ name: string; email: string; password: string; phone?: string }>({ name: '', email: '', password: '', phone: '' });
   const [staffForm, setStaffForm] = useState<{ name: string; email: string; password: string; phone?: string }>({ name: '', email: '', password: '', phone: '' });
+  const [riderForm, setRiderForm] = useState<{ name: string; email: string; password: string; phone: string; vehicleType: string; vehicleNumber: string }>({ 
+    name: '', email: '', password: '', phone: '', vehicleType: 'Bike', vehicleNumber: '' 
+  });
   const [adminMsg, setAdminMsg] = useState('');
   const [staffMsg, setStaffMsg] = useState('');
+  const [riderMsg, setRiderMsg] = useState('');
   const [showAddAdminForm, setShowAddAdminForm] = useState(false);
   const [showAddStaffForm, setShowAddStaffForm] = useState(false);
+  const [showAddRiderForm, setShowAddRiderForm] = useState(false);
   
   // ===== STATE: ADMIN MANAGEMENT =====
   const [allAdmins, setAllAdmins] = useState<User[]>([]);
@@ -262,6 +270,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [menuSearch, setMenuSearch] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [staffSearch, setStaffSearch] = useState('');
+  const [riderSearch, setRiderSearch] = useState('');
+  const [allRiders, setAllRiders] = useState<any[]>([]);
 
   // ===== STATE: MENU MANAGEMENT =====
   const [showMenuForm, setShowMenuForm] = useState(false);
@@ -756,6 +766,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     }
   }, []);
 
+  const loadRiders = useCallback(async () => {
+    try {
+      // console.log('🚴 Attempting to fetch riders...');
+      // console.log('Token:', localStorage.getItem('token'));
+      const riders = await getAllRiders();
+      // console.log('✅ Loaded riders:', riders);
+      // console.log('Riders count:', riders?.length);
+      setAllRiders(riders);
+    } catch (err: any) {
+      // Ignore network errors that happen on page refresh/unload
+      if (err.code === 'ERR_CANCELED' || err.message === 'Network Error' || err.name === 'AbortError') {
+        return;
+      }
+      console.error('❌ Failed to fetch riders:', err);
+      // console.error('Error response:', err.response?.data);
+      // console.error('Error status:', err.response?.status);
+      // showToast(err.response?.data?.message || err.message || 'Failed to load delivery persons', 'error');
+    }
+  }, [showToast]);
+
   const loadGalleryImages = useCallback(async () => {
     try {
       const images = await fetchGalleryImages();
@@ -789,9 +819,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       const data = await response.json();
       setPayments(data);
     } catch (err: any) {
+      // Ignore network errors that happen on page refresh/unload
+      if (err.code === 'ERR_CANCELED' || err.message === 'Network Error' || err.name === 'AbortError' || err.message?.includes('NetworkError')) {
+        return;
+      }
       const errorMsg = err.message || 'Failed to load payments';
       console.error('Failed to load payments:', errorMsg);
-      showToast(errorMsg, 'error');
+      // showToast(errorMsg, 'error');
     } finally {
       setPaymentsLoading(false);
     }
@@ -808,9 +842,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       const data = await response.json();
       setSettings(data);
     } catch (err: any) {
+      // Ignore network errors that happen on page refresh/unload
+      if (err.code === 'ERR_CANCELED' || err.message === 'Network Error' || err.name === 'AbortError' || err.message?.includes('NetworkError')) {
+        return;
+      }
       const errorMsg = err.message || 'Failed to load settings';
       console.error('Failed to load settings:', errorMsg);
-      showToast(errorMsg, 'error');
+      // showToast(errorMsg, 'error');
     } finally {
       setSettingsLoading(false);
     }
@@ -912,6 +950,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     }
   }, [staffForm, user, loadUsers, showToast, validateStaffForm]);
 
+  const handleAddRider = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!riderForm.name || !riderForm.email || !riderForm.password || !riderForm.phone || !riderForm.vehicleType || !riderForm.vehicleNumber) {
+      setRiderMsg('Please fill in all required fields');
+      return;
+    }
+    try {
+      await createRider({
+        name: riderForm.name,
+        email: riderForm.email,
+        password: riderForm.password,
+        phone: riderForm.phone,
+        vehicleType: riderForm.vehicleType,
+        vehicleNumber: riderForm.vehicleNumber,
+      });
+      showToast('Delivery person added successfully!', 'success');
+      setRiderForm({ name: '', email: '', password: '', phone: '', vehicleType: 'Bike', vehicleNumber: '' });
+      setRiderMsg('');
+      await loadRiders();
+    } catch (err: any) {
+      setRiderMsg(err.message || 'Failed to add delivery person');
+      showToast(err.message || 'Failed to add delivery person', 'error');
+    }
+  }, [riderForm, loadRiders, showToast]);
+
   // ===== HANDLERS: MASTER ADMIN OPERATIONS =====
   const handleRefreshData = useCallback(async () => {
     try {
@@ -976,6 +1039,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     if (user && (user.role === 'admin' || user.role === 'staff' || user.role === 'masterAdmin')) {
       loadData();
       loadUsers();
+      loadRiders();
       if (user.role === 'masterAdmin') {
         loadAdmins();
       }
@@ -983,7 +1047,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         loadEventInquiries();
       }
     }
-  }, [user, loadData, loadUsers, loadAdmins, loadEventInquiries]);
+  }, [user, loadData, loadUsers, loadRiders, loadAdmins, loadEventInquiries]);
 
   useEffect(() => {
     if (user && user.role === 'masterAdmin' && activeTab === 'logs') {
@@ -1053,9 +1117,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       try {
         const data = await fetchAllPromos(user?.email);
         setPromos(data);
-      } catch (err) {
+      } catch (err: any) {
+        // Ignore network errors that happen on page refresh/unload
+        if (err.code === 'ERR_CANCELED' || err.message === 'Network Error' || err.name === 'AbortError' || err.message?.includes('NetworkError')) {
+          return;
+        }
         console.error('Failed to fetch promos:', err);
-        showToast('Failed to load promo codes', 'error');
+        // showToast('Failed to load promo codes', 'error');
       }
     };
     loadPromos();
@@ -1064,6 +1132,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   return (
     <div>
       <ToastContainer toasts={toasts} onClose={removeToast} />
+      <AdminNavigation user={user} onLogout={onLogout} />
       
       {/* Edit Modal (always rendered at top level) */}
       {editUser ? (
@@ -1229,6 +1298,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                 onClick={() => setActiveTab('addStaff')}
                               >
                                 Staff
+                              </button>
+                            )}
+                            {(user?.role === 'masterAdmin' || user?.role === 'admin') && (
+                              <button 
+                                className={`w-full text-left px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === 'addRider' ? 'bg-orange-600 text-white' : 'text-stone-700 hover:bg-stone-100'}`} 
+                                onClick={() => setActiveTab('addRider')}
+                              >
+                                Delivery Persons
                               </button>
                             )}
                             <button 
@@ -2294,6 +2371,144 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             </td>
                           </tr>
                         ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              {/* Delivery Persons Tab */}
+              {activeTab === 'addRider' && (
+                <div>
+                  <div className="mb-4 bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold">Delivery Person Management</h2>
+                      <button 
+                        onClick={() => {
+                          setShowAddRiderForm(!showAddRiderForm);
+                          if (!showAddRiderForm) {
+                            setRiderForm({ name: '', email: '', password: '', phone: '', vehicleType: 'Bike', vehicleNumber: '' });
+                            setRiderMsg('');
+                          }
+                        }}
+                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
+                      >
+                        <Plus size={18} /> {showAddRiderForm ? 'Cancel' : 'Add Delivery Person'}
+                      </button>
+                    </div>
+
+                    {/* Add Rider Modal Popup */}
+                    {showAddRiderForm && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full mx-4 animate-in fade-in scale-in-95">
+                          <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold text-stone-900">Add New Delivery Person</h3>
+                            <button 
+                              onClick={() => setShowAddRiderForm(false)}
+                              className="text-stone-400 hover:text-stone-600 text-2xl"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <form onSubmit={e => {
+                            handleAddRider(e);
+                            setShowAddRiderForm(false);
+                          }} className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Name *</label>
+                              <input required placeholder="Rider Name" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.name} onChange={e => setRiderForm(f => ({...f, name: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Email *</label>
+                              <input required type="email" placeholder="rider@example.com" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.email} onChange={e => setRiderForm(f => ({...f, email: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Password *</label>
+                              <input required type="password" placeholder="••••••••" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.password} onChange={e => setRiderForm(f => ({...f, password: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Phone *</label>
+                              <input required placeholder="+94 77 123 4567" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.phone} onChange={e => setRiderForm(f => ({...f, phone: e.target.value}))} />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Vehicle Type *</label>
+                              <select required className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.vehicleType} onChange={e => setRiderForm(f => ({...f, vehicleType: e.target.value}))}>
+                                <option value="Bike">Bike</option>
+                                <option value="Scooter">Scooter</option>
+                                <option value="Car">Car</option>
+                                <option value="Bicycle">Bicycle</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-bold text-stone-700 mb-1">Vehicle Number *</label>
+                              <input required placeholder="ABC-1234" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.vehicleNumber} onChange={e => setRiderForm(f => ({...f, vehicleNumber: e.target.value}))} />
+                            </div>
+                            {riderMsg && (
+                              <div className="p-3 rounded-lg font-bold text-center bg-red-50 text-red-600 border border-red-300">
+                                {riderMsg}
+                              </div>
+                            )}
+                            <div className="flex gap-2 pt-4">
+                              <button type="submit" className="flex-1 px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Rider</button>
+                              <button type="button" onClick={() => setShowAddRiderForm(false)} className="flex-1 px-6 py-2 bg-stone-200 text-stone-900 rounded-lg font-bold hover:bg-stone-300 transition-colors">Cancel</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                    <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
+                      <span>Delivery Persons ({allRiders.length})</span>
+                    </h2>
+                    <div className="flex gap-2 mb-4 flex-wrap">
+                      <input
+                        type="text"
+                        className="p-2 border rounded min-w-[160px]"
+                        placeholder="Search name, email, phone..."
+                        value={riderSearch}
+                        onChange={e => setRiderSearch(e.target.value)}
+                      />
+                    </div>
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-stone-100">
+                          <th className="p-2">Name</th>
+                          <th className="p-2">Email</th>
+                          <th className="p-2">Phone</th>
+                          <th className="p-2">Vehicle</th>
+                          <th className="p-2">Status</th>
+                          <th className="p-2">Rating</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allRiders.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="p-6 text-center text-stone-500">
+                              No delivery persons found. Click "Add Delivery Person" to create one.
+                            </td>
+                          </tr>
+                        ) : (
+                          allRiders.filter(r =>
+                            [r.name, r.email, r.phone, r.vehicleType, r.vehicleNumber].join(' ').toLowerCase().includes(riderSearch.toLowerCase())
+                          ).map((r, idx) => (
+                            <tr key={r._id || idx} className="border-b">
+                              <td className="p-2">{r.name}</td>
+                              <td className="p-2">{r.email}</td>
+                              <td className="p-2">{r.phone}</td>
+                              <td className="p-2">{r.vehicleType} - {r.vehicleNumber}</td>
+                              <td className="p-2">
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                  r.status === 'Available' ? 'bg-green-100 text-green-700' :
+                                  r.status === 'On Delivery' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {r.status}
+                                </span>
+                              </td>
+                              <td className="p-2">⭐ {r.rating?.toFixed(1) || '0.0'} ({r.totalDeliveries || 0} deliveries)</td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>

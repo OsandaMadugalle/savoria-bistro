@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   specialRequests: String,
   loyaltyPoints: { type: Number, default: 0 },
   tier: { type: String, enum: ['Bronze', 'Silver', 'Gold'], default: 'Bronze' },
-  role: { type: String, enum: ['customer', 'staff', 'admin', 'masterAdmin'], default: 'customer' },
+  role: { type: String, enum: ['customer', 'staff', 'admin', 'masterAdmin', 'rider', 'deliveryManager'], default: 'customer' },
   memberSince: { type: String, default: () => new Date().getFullYear().toString() },
   history: [{
     orderId: String,
@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema({
 
 // Pre-save hook to remove customer fields from non-customer users
 userSchema.pre('save', function(next) {
-  if (['admin', 'staff', 'masterAdmin'].includes(this.role)) {
+  if (['admin', 'staff', 'masterAdmin', 'rider', 'deliveryManager'].includes(this.role)) {
     // Remove customer-specific fields for non-customer roles
     this.loyaltyPoints = undefined;
     this.tier = undefined;
@@ -58,7 +58,7 @@ userSchema.pre('save', function(next) {
 // Pre-update hook for findOneAndUpdate operations
 userSchema.pre('findOneAndUpdate', function(next) {
   const update = this.getUpdate();
-  if (update && update.$set && update.role && ['admin', 'staff', 'masterAdmin'].includes(update.$set.role)) {
+  if (update && update.$set && update.role && ['admin', 'staff', 'masterAdmin', 'rider', 'deliveryManager'].includes(update.$set.role)) {
     // Remove customer-specific fields for non-customer roles
     update.$set.loyaltyPoints = undefined;
     update.$set.tier = undefined;
@@ -71,7 +71,7 @@ userSchema.pre('findOneAndUpdate', function(next) {
 // Pre-update hook for findByIdAndUpdate operations
 userSchema.pre('findByIdAndUpdate', function(next) {
   const update = this.getUpdate();
-  if (update && update.$set && update.role && ['admin', 'staff', 'masterAdmin'].includes(update.$set.role)) {
+  if (update && update.$set && update.role && ['admin', 'staff', 'masterAdmin', 'rider', 'deliveryManager'].includes(update.$set.role)) {
     // Remove customer-specific fields for non-customer roles
     update.$set.loyaltyPoints = undefined;
     update.$set.tier = undefined;

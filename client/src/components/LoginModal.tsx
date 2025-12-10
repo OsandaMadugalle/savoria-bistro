@@ -43,7 +43,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
       // Store token
       localStorage.setItem('token', data.token);
+      localStorage.setItem('accessToken', data.token); // Store as accessToken as well for compatibility
       localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Small delay to ensure localStorage is written before reload
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Reload page to update user context
       window.location.reload();

@@ -22,6 +22,7 @@ const stockRoutes = require('./routes/stock');
 const feedbackRoutes = require('./routes/feedback');
 const settingsRoutes = require('./routes/settings');
 const promoRoutes = require('./routes/promos');
+const deliveryRoutes = require('./routes/delivery');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -97,6 +98,7 @@ app.use('/api/stock', stockRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/promos', promoRoutes);
+app.use('/api/delivery', deliveryRoutes);
 
 // Health check endpoint for deployment
 app.get('/health', (req, res) => {

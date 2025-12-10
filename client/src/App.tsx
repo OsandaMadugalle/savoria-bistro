@@ -15,6 +15,8 @@ import TrackerPage from './pages/TrackerPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminDashboard from './pages/AdminDashboard';
 import StaffDashboard from './pages/StaffDashboard';
+import DeliveryDashboard from './pages/DeliveryDashboard';
+import RiderDashboard from './pages/RiderDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
@@ -33,9 +35,15 @@ const ScrollToTop = () => {
 
 // Protected Route Component - Only customers can access
 const ProtectedCustomerRoute: React.FC<{ element: React.ReactElement; user: User | null }> = ({ element, user }) => {
-  // Allow only customers (no role or role === 'customer')
-  if (user && (user.role === 'admin' || user.role === 'masterAdmin' || user.role === 'staff')) {
+  // Redirect admin/staff/masterAdmin/rider to their dashboards
+  if (user && (user.role === 'admin' || user.role === 'masterAdmin')) {
     return <Navigate to="/admin" replace />;
+  }
+  if (user && user.role === 'staff') {
+    return <Navigate to="/staff" replace />;
+  }
+  if (user && user.role === 'rider') {
+    return <Navigate to="/rider" replace />;
   }
   return element;
 };
@@ -64,6 +72,97 @@ const ProtectedAuthRoute: React.FC<{ element: React.ReactElement; user: User | n
   return element;
 };
 
+// Protected Route Component - Only riders can access
+const ProtectedRiderRoute: React.FC<{ element: React.ReactElement; user: User | null }> = ({ element, user }) => {
+  if (!user || user.role !== 'rider') {
+    return <Navigate to="/" replace />;
+  }
+  return element;
+};
+
+// HomeRedirector: redirect staff/admin/masterAdmin from Home to dashboard
+const HomeRedirector: React.FC<{ user: User | null }> = ({ user }) => {
+  if (user && (user.role === 'staff' || user.role === 'admin' || user.role === 'masterAdmin' || user.role === 'rider')) {
+    if (user.role === 'staff') {
+      return <Navigate to="/staff" replace />;
+    } else if (user.role === 'rider') {
+      return <Navigate to="/rider" replace />;
+    } else {
+      return <Navigate to="/admin" replace />;
+    }
+  }
+  return <Home />;
+};
+
+const AppContent: React.FC<{
+  user: User | null;
+  cart: CartItem[];
+  addToCart: (item: MenuItem) => void;
+  updateQuantity: (id: string, delta: number) => void;
+  removeFromCart: (id: string) => void;
+  clearCart: () => void;
+  handleLogin: (user: User) => void;
+  handleLogout: () => void;
+  isLoginModalOpen: boolean;
+  setIsLoginModalOpen: (isOpen: boolean) => void;
+  authMode: 'signin' | 'signup';
+  setAuthMode: (mode: 'signin' | 'signup') => void;
+  setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
+}> = ({
+  user, cart, addToCart, updateQuantity, removeFromCart, clearCart,
+  handleLogin, handleLogout, isLoginModalOpen, setIsLoginModalOpen,
+  authMode, setAuthMode, setCart
+}) => {
+  const location = useLocation();
+  const isDashboardRoute = location.pathname.startsWith('/staff') || location.pathname.startsWith('/rider') || location.pathname.startsWith('/admin') || location.pathname.startsWith('/delivery');
+  const isFooterHiddenRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/staff') || location.pathname.startsWith('/rider') || location.pathname.startsWith('/delivery');
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {!isDashboardRoute && <Navbar cart={cart} user={user} onLogin={handleLogin} onLogout={handleLogout} isLoginModalOpen={isLoginModalOpen} setIsLoginModalOpen={setIsLoginModalOpen} authMode={authMode} setAuthMode={setAuthMode} />}
+
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={<HomeRedirector user={user} />} />
+          <Route path="/menu" element={<MenuPage addToCart={addToCart} />} />
+          <Route path="/gallery" element={<GalleryPage user={user} />} />
+          <Route path="/contact" element={<ContactPage user={user} />} />
+          <Route path="/reviews" element={<ReviewsPage user={user} onOpenSignIn={() => { setAuthMode('signin'); setIsLoginModalOpen(true); }} />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+
+          {/* Customer-only routes - staff/admin/masterAdmin redirected to /admin */}
+          <Route path="/reservation" element={<ProtectedCustomerRoute element={<ReservationPage user={user} />} user={user} />} />
+          <Route path="/my-reservations" element={<ProtectedAuthRoute element={<MyReservationsPage user={user} />} user={user} />} />
+          <Route path="/order" element={<ProtectedCustomerRoute element={<OrderPage cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} clearCart={clearCart} user={user} />} user={user} />} />
+          <Route path="/tracker" element={<ProtectedCustomerRoute element={<TrackerPage user={user} />} user={user} />} />
+
+          {/* Profile route - accessible to all authenticated users */}
+          <Route path="/profile" element={<ProtectedAuthRoute element={<ProfilePage initialUser={user} />} user={user} />} />
+
+          {/* Protected Dashboard Routes - admin and masterAdmin only */}
+          <Route path="/admin" element={<ProtectedAdminRoute element={<AdminDashboard user={user} onLogout={handleLogout} />} user={user} />} />
+
+          {/* Protected Staff Portal - staff, admin, masterAdmin */}
+          <Route path="/staff" element={<ProtectedStaffRoute element={<StaffDashboard user={user} onLogin={handleLogin} onLogout={handleLogout} />} user={user} />} />
+
+          {/* Protected Rider Dashboard - riders only */}
+          <Route path="/rider" element={<ProtectedRiderRoute element={<RiderDashboard user={user} onLogout={handleLogout} />} user={user} />} />
+
+          {/* Protected Delivery Dashboard - deliveryManager, admin, masterAdmin */}
+          <Route path="/delivery" element={<ProtectedAdminRoute element={<DeliveryDashboard user={user} onLogout={handleLogout} />} user={user} />} />
+
+          {/* 404 Route */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </main>
+
+      {!isFooterHiddenRoute && <Footer />}
+      {!isFooterHiddenRoute && <AIChef user={user} cart={cart} setCart={setCart} />}
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>(() => {
     const storedCart = localStorage.getItem('cart');
@@ -82,13 +181,12 @@ const App: React.FC = () => {
     }
     return [];
   });
-    // Load cart from localStorage on app load
-    // (removed duplicate cart initialization)
 
-    // Save cart to localStorage whenever it changes
-    useEffect(() => {
-      localStorage.setItem('cart', JSON.stringify(cart));
-    }, [cart]);
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
   const [user, setUser] = useState<User | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -130,6 +228,7 @@ const App: React.FC = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
   };
 
   // Initialize user from localStorage on app load
@@ -160,62 +259,24 @@ const App: React.FC = () => {
     }
   }, []);
 
-
-  // Only hide Navbar/Footer on dashboard routes
-  const location = window.location.pathname;
-  const isDashboardRoute = location.startsWith('/admin') || location.startsWith('/staff');
-
-  // HomeRedirector: redirect staff/admin/masterAdmin from Home to dashboard
-  const HomeRedirector: React.FC<{ user: User | null }> = ({ user }) => {
-    if (user && (user.role === 'staff' || user.role === 'admin' || user.role === 'masterAdmin')) {
-      if (user.role === 'staff') {
-        return <Navigate to="/staff" replace />;
-      } else {
-        return <Navigate to="/admin" replace />;
-      }
-    }
-    return <Home />;
-  };
-
   return (
     <Router>
       <ScrollToTop />
-      <div className="flex flex-col min-h-screen">
-        <Navbar cart={cart} user={user} onLogin={handleLogin} onLogout={handleLogout} isLoginModalOpen={isLoginModalOpen} setIsLoginModalOpen={setIsLoginModalOpen} authMode={authMode} setAuthMode={setAuthMode} />
-
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<HomeRedirector user={user} />} />
-            <Route path="/menu" element={<MenuPage addToCart={addToCart} />} />
-            <Route path="/gallery" element={<GalleryPage user={user} />} />
-            <Route path="/contact" element={<ContactPage user={user} />} />
-            <Route path="/reviews" element={<ReviewsPage user={user} onOpenSignIn={() => { setAuthMode('signin'); setIsLoginModalOpen(true); }} />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-            <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-
-            {/* Customer-only routes - staff/admin/masterAdmin redirected to /admin */}
-            <Route path="/reservation" element={<ProtectedCustomerRoute element={<ReservationPage user={user} />} user={user} />} />
-            <Route path="/my-reservations" element={<ProtectedAuthRoute element={<MyReservationsPage user={user} />} user={user} />} />
-            <Route path="/order" element={<ProtectedCustomerRoute element={<OrderPage cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} clearCart={clearCart} user={user} />} user={user} />} />
-            <Route path="/tracker" element={<ProtectedCustomerRoute element={<TrackerPage user={user} />} user={user} />} />
-
-            {/* Profile route - accessible to all authenticated users */}
-            <Route path="/profile" element={<ProtectedAuthRoute element={<ProfilePage initialUser={user} />} user={user} />} />
-
-            {/* Protected Dashboard Routes - admin and masterAdmin only */}
-            <Route path="/admin" element={<ProtectedAdminRoute element={<AdminDashboard user={user} />} user={user} />} />
-
-            {/* Protected Staff Portal - staff, admin, masterAdmin */}
-            <Route path="/staff" element={<ProtectedStaffRoute element={<StaffDashboard user={user} onLogin={handleLogin} onLogout={handleLogout} />} user={user} />} />
-
-            {/* 404 Route */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </main>
-
-        {!isDashboardRoute && <Footer />}
-        {!isDashboardRoute && <AIChef user={user} cart={cart} setCart={setCart} />}
-      </div>
+      <AppContent
+        user={user}
+        cart={cart}
+        addToCart={addToCart}
+        updateQuantity={updateQuantity}
+        removeFromCart={removeFromCart}
+        clearCart={clearCart}
+        handleLogin={handleLogin}
+        handleLogout={handleLogout}
+        isLoginModalOpen={isLoginModalOpen}
+        setIsLoginModalOpen={setIsLoginModalOpen}
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        setCart={setCart}
+      />
     </Router>
   );
 };

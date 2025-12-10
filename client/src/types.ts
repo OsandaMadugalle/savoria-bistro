@@ -97,8 +97,25 @@ export interface Order {
   orderId: string;
   items: { name: string; quantity: number; price?: number }[];
   total: number;
-  status: 'Confirmed' | 'Preparing' | 'Quality Check' | 'Ready' | 'Delivered';
+  status: 'Confirmed' | 'Preparing' | 'Quality Check' | 'Packing' | 'Packed & Ready' | 'Assigned' | 'Picked Up' | 'Out for Delivery' | 'Delivered' | 'Cancelled';
   createdAt: string;
+  paymentMethod?: 'stripe' | 'cod';
+  paymentStatus?: 'Pending' | 'Paid';
+  deliveryAddress?: {
+    street: string;
+    city: string;
+    postalCode: string;
+    phone: string;
+    notes?: string;
+  };
+  assignedRider?: any;
+  assignedAt?: string;
+  pickedUpAt?: string;
+  deliveredAt?: string;
+  estimatedDeliveryTime?: string;
+  deliveryProof?: string;
+  deliveryNotes?: string;
+  codAmount?: number;
 }
 
 export interface User {
@@ -116,7 +133,7 @@ export interface User {
   loyaltyPoints: number;
   memberSince: string;
   tier: 'Bronze' | 'Silver' | 'Gold';
-  role: 'customer' | 'staff' | 'admin' | 'masterAdmin';
+  role: 'customer' | 'staff' | 'admin' | 'masterAdmin' | 'rider' | 'deliveryManager';
   history: OrderHistoryItem[];
   permissions?: {
     manageMenu?: boolean;

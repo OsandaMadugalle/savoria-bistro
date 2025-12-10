@@ -402,6 +402,12 @@ const AdminNavbar: React.FC<{ user: User; onLogout: () => void }> = ({ user, onL
             >
               Staff Portal
             </NavLink>
+            <NavLink
+              to="/delivery"
+              className={({ isActive }) => `px-4 py-2 rounded-lg font-medium transition-all ${isActive ? 'bg-orange-600 text-white' : 'text-orange-100 hover:bg-stone-800'}`}
+            >
+              Delivery
+            </NavLink>
           </div>
 
           {/* User Menu */}

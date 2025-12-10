@@ -6,7 +6,7 @@ const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/
 // JWT Token Management
 export const getAuthToken = (): { accessToken: string | null; refreshToken: string | null } => {
   return {
-    accessToken: localStorage.getItem('accessToken'),
+    accessToken: localStorage.getItem('accessToken') || localStorage.getItem('token'),
     refreshToken: localStorage.getItem('refreshToken')
   };
 };
@@ -19,6 +19,7 @@ export const setAuthTokens = (accessToken: string, refreshToken: string): void =
 
 export const clearAuthTokens = (): void => {
   localStorage.removeItem('accessToken');
+  localStorage.removeItem('token');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('tokenExpiry');
 };
@@ -180,7 +181,9 @@ export const addAdmin = async (adminData: { name: string; email: string; passwor
 // Fetch all admins (masterAdmin only)
 export const fetchAllAdmins = async (email?: string): Promise<User[]> => {
   const url = email ? `${API_URL}/auth/admins?requesterEmail=${encodeURIComponent(email)}` : `${API_URL}/auth/admins`;
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: getAuthHeaders()
+  });
   if (!res.ok) throw new Error('Failed to fetch admins');
   return await res.json();
 };
