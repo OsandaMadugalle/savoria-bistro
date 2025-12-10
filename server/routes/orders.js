@@ -50,9 +50,10 @@ router.post('/', async (req, res) => {
         });
       }
       
-      if (menuItem.stock < item.quantity) {
+      // Check stock - if not set, allow order (treat as unlimited stock)
+      if (menuItem.stock !== undefined && menuItem.stock !== null && menuItem.stock < item.quantity) {
         return res.status(400).json({
-          message: `Insufficient stock for ${item.name}. Available: ${menuItem.stock}, Requested: ${item.quantity}`
+          message: `${menuItem.name} is out of stock. Requested: ${item.quantity}, Available: ${menuItem.stock}`
         });
       }
     }
@@ -62,13 +63,18 @@ router.post('/', async (req, res) => {
     const newOrder = new Order({ ...req.body, orderId, status: 'Confirmed', createdAt: new Date() });
     await newOrder.save();
 
-    // Deduct stock for ordered items
+    // Deduct stock for ordered items (only if stock tracking is enabled)
     for (const item of req.body.items) {
       const query = item.itemId.length === 24 ? { _id: item.itemId } : { id: item.itemId };
-      await MenuItem.findOneAndUpdate(
-        query,
-        { $inc: { stock: -item.quantity } }
-      );
+      const menuItem = await MenuItem.findOne(query);
+      
+      // Only deduct if stock is tracked (not undefined/null)
+      if (menuItem && menuItem.stock !== undefined && menuItem.stock !== null) {
+        await MenuItem.findOneAndUpdate(
+          query,
+          { $inc: { stock: -item.quantity } }
+        );
+      }
     }
 
     // Award loyalty points to user (10 points per $1 spent) and update tier
