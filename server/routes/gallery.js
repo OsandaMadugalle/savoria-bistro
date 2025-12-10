@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const Gallery = require('../models/Gallery');
+const User = require('../models/User');
 const cloudinary = require('cloudinary').v2;
+const { logActivity } = require('./auth');
+
+// Helper: Check if user is admin or masterAdmin
+const checkAdminPermission = async (requesterEmail) => {
+  if (!requesterEmail) return false;
+  const user = await User.findOne({ email: requesterEmail });
+  return user && (user.role === 'admin' || user.role === 'masterAdmin');
+};
 
 // Configure Cloudinary
 cloudinary.config({
@@ -26,6 +35,11 @@ router.post('/gallery', async (req, res) => {
   try {
     const { caption, category, imageBase64, uploadedBy, uploadedByName } = req.body;
 
+    const isAdmin = await checkAdminPermission(uploadedBy);
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can upload gallery images' });
+    }
+
     if (!caption || !category || !imageBase64) {
       return res.status(400).json({ message: 'Caption, category, and image are required' });
     }
@@ -47,6 +61,10 @@ router.post('/gallery', async (req, res) => {
     });
 
     const savedImage = await newImage.save();
+    
+    // Log activity
+    await logActivity(uploadedBy, 'GALLERY_UPLOAD', `Uploaded image "${caption}" to category "${category}"`);
+    
     res.status(201).json(savedImage);
   } catch (error) {
     console.error('Error uploading gallery image:', error);
@@ -54,15 +72,25 @@ router.post('/gallery', async (req, res) => {
   }
 });
 
-// Update gallery image
+// Update gallery image (admin only)
 router.put('/gallery/:id', async (req, res) => {
   try {
-    const { caption, category } = req.body;
+    const { caption, category, requesterEmail } = req.body;
+    
+    const isAdmin = await checkAdminPermission(requesterEmail);
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can update gallery images' });
+    }
+
     const image = await Gallery.findByIdAndUpdate(
       req.params.id,
       { caption, category, updatedAt: new Date() },
       { new: true }
     );
+    
+    // Log activity
+    await logActivity(requesterEmail, 'GALLERY_UPDATE', `Updated image to caption "${caption}" in category "${category}"`);
+    
     res.json(image);
   } catch (error) {
     console.error('Error updating gallery image:', error);
@@ -73,14 +101,28 @@ router.put('/gallery/:id', async (req, res) => {
 // Delete gallery image (admin only)
 router.delete('/gallery/:id', async (req, res) => {
   try {
+    const requesterEmail = req.body.requesterEmail;
+    
+    const isAdmin = await checkAdminPermission(requesterEmail);
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can delete gallery images' });
+    }
+
     const image = await Gallery.findById(req.params.id);
+    if (!image) {
+      return res.status(404).json({ message: 'Image not found' });
+    }
     
     // Delete from Cloudinary if cloudinaryId exists
-    if (image && image.cloudinaryId) {
+    if (image.cloudinaryId) {
       await cloudinary.uploader.destroy(image.cloudinaryId);
     }
 
     await Gallery.findByIdAndDelete(req.params.id);
+    
+    // Log activity
+    await logActivity(requesterEmail, 'GALLERY_DELETE', `Deleted image "${image.caption}"`);
+    
     res.json({ message: 'Image deleted successfully' });
   } catch (error) {
     console.error('Error deleting gallery image:', error);

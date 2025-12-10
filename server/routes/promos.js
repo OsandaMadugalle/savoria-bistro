@@ -1,6 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const Promo = require('../models/Promo');
+const User = require('../models/User');
+const { logActivity } = require('./auth');
+
+// Helper: Check if user is admin or masterAdmin
+const checkAdminPermission = async (requesterEmail) => {
+  if (!requesterEmail) return false;
+  const user = await User.findOne({ email: requesterEmail });
+  return user && (user.role === 'admin' || user.role === 'masterAdmin');
+};
 
 // Get all active promos
 router.get('/', async (req, res) => {
@@ -16,6 +25,13 @@ router.get('/', async (req, res) => {
 // Get all promos (admin - includes inactive/expired)
 router.get('/admin/all', async (req, res) => {
   try {
+    const requesterEmail = req.query.requesterEmail;
+    const isAdmin = await checkAdminPermission(requesterEmail);
+    
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can view all promos' });
+    }
+
     const promos = await Promo.find().sort({ createdAt: -1 });
     res.json(promos);
   } catch (err) {
@@ -27,7 +43,12 @@ router.get('/admin/all', async (req, res) => {
 // Create new promo (admin)
 router.post('/', async (req, res) => {
   try {
-    const { code, discount, expiryDate, active } = req.body;
+    const { code, discount, expiryDate, active, requesterEmail } = req.body;
+
+    const isAdmin = await checkAdminPermission(requesterEmail);
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can create promos' });
+    }
 
     if (!code || discount === undefined || !expiryDate) {
       return res.status(400).json({ message: 'Missing required fields: code, discount, expiryDate' });
@@ -47,6 +68,10 @@ router.post('/', async (req, res) => {
     });
 
     await promo.save();
+    
+    // Log activity
+    await logActivity(requesterEmail, 'PROMO_CREATE', `Created promo code "${code.toUpperCase()}" with ${discount}% discount`);
+    
     res.status(201).json(promo);
   } catch (err) {
     console.error('Create promo error:', err);
@@ -57,12 +82,20 @@ router.post('/', async (req, res) => {
 // Update promo (admin)
 router.put('/:id', async (req, res) => {
   try {
-    const { code, discount, expiryDate, active } = req.body;
+    const { code, discount, expiryDate, active, requesterEmail } = req.body;
+
+    const isAdmin = await checkAdminPermission(requesterEmail);
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can update promos' });
+    }
 
     const promo = await Promo.findById(req.params.id);
     if (!promo) {
       return res.status(404).json({ message: 'Promo not found' });
     }
+
+    const oldCode = promo.code;
+    const oldDiscount = promo.discount;
 
     // If changing code, check if new code already exists
     if (code && code.toUpperCase() !== promo.code) {
@@ -78,6 +111,10 @@ router.put('/:id', async (req, res) => {
     if (active !== undefined) promo.active = active;
 
     await promo.save();
+    
+    // Log activity
+    await logActivity(requesterEmail, 'PROMO_UPDATE', `Updated promo from "${oldCode}" (${oldDiscount}%) to "${promo.code}" (${promo.discount}%)`);
+    
     res.json(promo);
   } catch (err) {
     console.error('Update promo error:', err);
@@ -88,10 +125,21 @@ router.put('/:id', async (req, res) => {
 // Delete promo (admin)
 router.delete('/:id', async (req, res) => {
   try {
+    const requesterEmail = req.body.requesterEmail;
+    
+    const isAdmin = await checkAdminPermission(requesterEmail);
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can delete promos' });
+    }
+
     const promo = await Promo.findByIdAndDelete(req.params.id);
     if (!promo) {
       return res.status(404).json({ message: 'Promo not found' });
     }
+    
+    // Log activity
+    await logActivity(requesterEmail, 'PROMO_DELETE', `Deleted promo code "${promo.code}" (${promo.discount}%)`);
+    
     res.json({ message: 'Promo deleted successfully' });
   } catch (err) {
     console.error('Delete promo error:', err);
@@ -102,13 +150,25 @@ router.delete('/:id', async (req, res) => {
 // Toggle promo active status (admin)
 router.patch('/:id/toggle', async (req, res) => {
   try {
+    const requesterEmail = req.body.requesterEmail;
+    
+    const isAdmin = await checkAdminPermission(requesterEmail);
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can toggle promos' });
+    }
+
     const promo = await Promo.findById(req.params.id);
     if (!promo) {
       return res.status(404).json({ message: 'Promo not found' });
     }
 
+    const oldStatus = promo.active;
     promo.active = !promo.active;
     await promo.save();
+    
+    // Log activity
+    await logActivity(requesterEmail, 'PROMO_TOGGLE', `Toggled promo "${promo.code}" from ${oldStatus ? 'active' : 'inactive'} to ${promo.active ? 'active' : 'inactive'}`);
+    
     res.json(promo);
   } catch (err) {
     console.error('Toggle promo error:', err);

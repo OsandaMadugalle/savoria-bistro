@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const Review = require('../models/Review');
+const User = require('../models/User');
 const cloudinary = require('cloudinary').v2;
+const { logActivity } = require('./auth');
+
+// Helper: Check if user is admin or masterAdmin
+const checkAdminPermission = async (requesterEmail) => {
+  if (!requesterEmail) return false;
+  const user = await User.findOne({ email: requesterEmail });
+  return user && (user.role === 'admin' || user.role === 'masterAdmin');
+};
 
 // Configure Cloudinary
 cloudinary.config({
@@ -89,14 +98,26 @@ router.post('/', async (req, res) => {
 // Update review status (approve/reject - admin only)
 router.put('/:id/status', async (req, res) => {
   try {
+    const requesterEmail = req.body.requesterEmail;
+    const isAdmin = await checkAdminPermission(requesterEmail);
+    
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can update review status' });
+    }
+
     const review = await Review.findById(req.params.id);
     if (!review) return res.status(404).json({ message: 'Review not found' });
     
+    const oldStatus = review.status;
     review.status = req.body.status;
     review.adminNotes = req.body.adminNotes || '';
     review.updatedAt = new Date();
     
     await review.save();
+    
+    // Log activity
+    await logActivity(requesterEmail, 'REVIEW_STATUS_UPDATE', `Changed review status from ${oldStatus} to ${req.body.status}`);
+    
     res.json(review);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -106,6 +127,13 @@ router.put('/:id/status', async (req, res) => {
 // Delete a review (admin only)
 router.delete('/:id', async (req, res) => {
   try {
+    const requesterEmail = req.body.requesterEmail;
+    const isAdmin = await checkAdminPermission(requesterEmail);
+    
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can delete reviews' });
+    }
+
     const review = await Review.findById(req.params.id);
     if (!review) return res.status(404).json({ message: 'Review not found' });
     
@@ -119,7 +147,12 @@ router.delete('/:id', async (req, res) => {
       }
     }
     
+    const reviewDetails = `Deleted review "${review.title}" by ${review.userEmail}`;
     await review.deleteOne();
+    
+    // Log activity
+    await logActivity(requesterEmail, 'REVIEW_DELETE', reviewDetails);
+    
     res.json({ message: 'Review deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
