@@ -3,6 +3,8 @@ import { NavLink } from 'react-router-dom';
 import { Star, ChevronRight, Clock, Users, Award, Zap } from 'lucide-react';
 import { fetchApprovedReviews, fetchMenu, fetchActivePromos, Promo } from '../services/api';
 import { Review, MenuItem } from '../types';
+import heroImage from '../assets/hero.jpg';
+import introductionImage from '../assets/Introduction.jpg';
 
 const Home: React.FC = () => {
   const [stats, setStats] = useState({ customers: 0, dishes: 0, awards: 0 });
@@ -82,7 +84,7 @@ const Home: React.FC = () => {
       <section className="relative h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800">
         <div className="absolute inset-0 z-0 opacity-30">
           <img 
-            src="/src/assets/hero.jpg" 
+            src={heroImage} 
             alt="Restaurant Interior" 
             className="w-full h-full object-cover"
           />
@@ -196,7 +198,7 @@ const Home: React.FC = () => {
           <div className="order-2 md:order-1 relative">
             <div className="absolute -top-4 -left-4 w-24 h-24 bg-orange-100 rounded-full -z-10" />
             <img 
-              src="/src/assets/Introduction.jpg" 
+              src={introductionImage} 
               alt="Chef Plating" 
               className="rounded-lg shadow-xl w-full object-cover h-[300px] sm:h-[400px] md:h-[500px]"
             />
