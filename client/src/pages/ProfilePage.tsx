@@ -71,24 +71,37 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
    useEffect(() => {
       // If user is passed as prop and already loaded, use it directly
       if (initialUser) {
-         setUser(initialUser);
+         const userWithDefaults = {
+            ...initialUser,
+            loyaltyPoints: initialUser.loyaltyPoints ?? 0,
+            tier: initialUser.tier || 'Bronze',
+            memberSince: initialUser.memberSince || new Date().getFullYear().toString(),
+            name: initialUser.name || 'User',
+            id: initialUser.id || initialUser._id,
+            phone: initialUser.phone || '',
+            email: initialUser.email || '',
+            address: initialUser.address || '',
+            birthday: initialUser.birthday || ''
+         };
+         setUser(userWithDefaults);
          setEditData({
-            name: initialUser.name,
-            email: initialUser.email,
-            phone: initialUser.phone,
-            address: initialUser.address,
-            birthday: initialUser.birthday,
-            favoriteCuisine: initialUser.favoriteCuisine,
-            dietaryRestrictions: initialUser.dietaryRestrictions,
-            preferredDiningTime: initialUser.preferredDiningTime,
-            specialRequests: initialUser.specialRequests,
+            name: userWithDefaults.name,
+            email: userWithDefaults.email,
+            phone: userWithDefaults.phone,
+            address: userWithDefaults.address,
+            birthday: userWithDefaults.birthday,
+            favoriteCuisine: userWithDefaults.favoriteCuisine,
+            dietaryRestrictions: userWithDefaults.dietaryRestrictions,
+            preferredDiningTime: userWithDefaults.preferredDiningTime,
+            specialRequests: userWithDefaults.specialRequests,
             password: '',
             confirmPassword: ''
          });
          setLoading(false);
          // Continue loading other data...
-         const userIdInitial = initialUser.id ? initialUser.id : (initialUser._id ? initialUser._id : '');
-         if (userIdInitial) {
+         const userIdInitial = initialUser.id || initialUser._id || initialUser.email;
+         console.log('User ID for initial user:', userIdInitial, initialUser);
+         if (userIdInitial && userIdInitial !== initialUser.email) {
            fetchUserOrders(userIdInitial)
              .then(setOrders)
              .catch(() => setOrders([]))
@@ -135,24 +148,37 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
       }
       fetchUserProfile(email)
          .then(profile => {
-            setUser(profile);
+            const userWithDefaults = {
+               ...profile,
+               loyaltyPoints: profile.loyaltyPoints ?? 0,
+               tier: profile.tier || 'Bronze',
+               memberSince: profile.memberSince || new Date().getFullYear().toString(),
+               name: profile.name || 'User',
+               id: profile.id || profile._id,
+               phone: profile.phone || '',
+               email: profile.email || '',
+               address: profile.address || '',
+               birthday: profile.birthday || ''
+            };
+            setUser(userWithDefaults);
                   setEditData({
-                     name: profile.name,
-                     email: profile.email,
-                     phone: profile.phone,
-                     address: profile.address,
-                     birthday: profile.birthday,
-                     favoriteCuisine: profile.favoriteCuisine,
-                     dietaryRestrictions: profile.dietaryRestrictions,
-                     preferredDiningTime: profile.preferredDiningTime,
-                     specialRequests: profile.specialRequests,
+                     name: userWithDefaults.name,
+                     email: userWithDefaults.email,
+                     phone: userWithDefaults.phone,
+                     address: userWithDefaults.address,
+                     birthday: userWithDefaults.birthday,
+                     favoriteCuisine: userWithDefaults.favoriteCuisine,
+                     dietaryRestrictions: userWithDefaults.dietaryRestrictions,
+                     preferredDiningTime: userWithDefaults.preferredDiningTime,
+                     specialRequests: userWithDefaults.specialRequests,
                      password: '',
                      confirmPassword: ''
                   });
             setLoading(false);
             // Fetch user's orders
-            const userIdProfile = profile.id ? profile.id : (profile._id ? profile._id : '');
-            if (userIdProfile) {
+            const userIdProfile = profile.id || profile._id || profile.email;
+            console.log('User ID for profile:', userIdProfile, profile);
+            if (userIdProfile && userIdProfile !== profile.email) {
               fetchUserOrders(userIdProfile)
                 .then(setOrders)
                 .catch(() => setOrders([]))
@@ -312,7 +338,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
     <div className="pt-24 pb-20 min-h-screen bg-stone-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-           <h1 className="text-4xl font-serif font-bold text-stone-900">Welcome, {user.name.split(' ')[0]}</h1>
+           <h1 className="text-4xl font-serif font-bold text-stone-900">Welcome, {user?.name?.split(' ')[0] || 'User'}</h1>
            <p className="text-stone-500">Manage your rewards and past orders.</p>
         </div>
 

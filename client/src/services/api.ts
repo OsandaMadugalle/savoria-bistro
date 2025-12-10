@@ -235,16 +235,42 @@ export const loginUser = async (email: string, password: string): Promise<User> 
   
   const data = await res.json();
   
-  // Store JWT tokens if provided
-  if (data.accessToken && data.refreshToken) {
-    setAuthTokens(data.accessToken, data.refreshToken);
-  } else {
-    // Fallback: store email for backward compatibility
-    localStorage.setItem('email', email);
+  console.log('Login response from backend:', data);
+  
+  // Store JWT tokens - backend returns 'token' not 'accessToken'
+  if (data.token && data.refreshToken) {
+    setAuthTokens(data.token, data.refreshToken);
+  } else if (data.token) {
+    // Store just the access token
+    localStorage.setItem('accessToken', data.token);
   }
   
-  // Remove sensitive fields before returning
-  const { accessToken, refreshToken, ...user } = data;
+  // Extract the user object - backend should return { user, token, refreshToken }
+  if (!data.user) {
+    console.error('Backend did not return a user object:', data);
+    throw new Error('Invalid login response - missing user data');
+  }
+  
+  const user = { ...data.user };
+  
+  // Ensure _id is converted to string if it's an object
+  if (user._id && typeof user._id === 'object') {
+    user._id = user._id.toString();
+  }
+  
+  // Add id field from _id
+  if (user._id && !user.id) {
+    user.id = String(user._id);
+  } else if (!user._id && !user.id) {
+    console.error('User object has no _id or id:', user);
+  }
+  
+  console.log('Normalized user object to return:', user);
+  
+  // Store the full user object
+  localStorage.setItem('user', JSON.stringify(user));
+  
+  // Return ONLY the user object, not the whole response
   return user;
 };
 

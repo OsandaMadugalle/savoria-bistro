@@ -430,8 +430,7 @@ router.post('/verify-email', async (req, res) => {
     }
 
     // Check if code is expired (24 hours)
-    const codeAge = Date.now() - user.verificationCodeExpires;
-    if (codeAge > 24 * 60 * 60 * 1000) {
+    if (Date.now() > user.verificationCodeExpires) {
       return res.status(400).json({ message: 'Verification code expired' });
     }
 
@@ -583,9 +582,21 @@ router.post('/login', async (req, res) => {
     delete userResponse.refreshTokens;
     delete userResponse.verificationCode;
     
+    const cleanedUser = cleanCustomerFields(userResponse);
+    
+    console.log('Login response - user object:', {
+      _id: cleanedUser._id,
+      id: cleanedUser.id,
+      email: cleanedUser.email,
+      name: cleanedUser.name,
+      role: cleanedUser.role,
+      tier: cleanedUser.tier,
+      loyaltyPoints: cleanedUser.loyaltyPoints
+    });
+    
     res.json({
-      ...cleanCustomerFields(userResponse),
-      accessToken,
+      user: cleanedUser,
+      token: accessToken,
       refreshToken,
       expiresIn: 3600
     });

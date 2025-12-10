@@ -138,8 +138,20 @@ const App: React.FC = () => {
     
     if (storedUser) {
       try {
-        const user = JSON.parse(storedUser);
-        setUser(user);
+        const parsedUser = JSON.parse(storedUser);
+        const userWithDefaults = {
+          ...parsedUser,
+          id: parsedUser.id || parsedUser._id || '',
+          loyaltyPoints: parsedUser.loyaltyPoints ?? 0,
+          tier: parsedUser.tier || 'Bronze',
+          memberSince: parsedUser.memberSince || new Date().getFullYear().toString(),
+          name: parsedUser.name || 'User',
+          phone: parsedUser.phone || '',
+          email: parsedUser.email || '',
+          address: parsedUser.address || '',
+          birthday: parsedUser.birthday || ''
+        };
+        setUser(userWithDefaults);
       } catch (err) {
         console.error('Failed to parse stored user:', err);
         localStorage.removeItem('user');

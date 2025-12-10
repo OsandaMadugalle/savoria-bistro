@@ -18,6 +18,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -45,11 +46,14 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
   useEffect(() => {
     const loadMenu = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const items = await fetchMenu();
+        console.log('Fetched menu items:', items);
         setMenuItems(items);
       } catch (e) {
         console.error("Failed to load menu", e);
+        setError(e instanceof Error ? e.message : 'Failed to load menu');
       } finally {
         setIsLoading(false);
       }
@@ -224,6 +228,19 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
         {isLoading ? (
           <div className="flex justify-center py-20">
              <Loader2 size={40} className="animate-spin text-orange-600" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4">
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-8 max-w-md text-center">
+              <h3 className="text-xl font-bold text-red-700 mb-2">Unable to Load Menu</h3>
+              <p className="text-red-600 mb-4">{error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         ) : filteredItems.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-12">

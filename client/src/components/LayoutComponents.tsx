@@ -67,6 +67,11 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
   const [signupError, setSignupError] = useState('');
   const [signupAddress, setSignupAddress] = useState('');
   const [signupBirthday, setSignupBirthday] = useState('');
+  
+  // Email verification state
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationEmail, setVerificationEmail] = useState('');
   // Field-specific error states
   const [signupFieldErrors, setSignupFieldErrors] = useState<{
     name?: string;
@@ -106,15 +111,49 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
     setIsLoggingIn(true);
     try {
       const loggedInUser = await loginUser(loginEmail, loginPassword);
-      const userWithId = { ...loggedInUser, id: String(loggedInUser._id || loggedInUser.id) };
-      onLogin(userWithId);
-      localStorage.setItem('userEmail', userWithId.email);
+      console.log('Logged in user from API:', loggedInUser);
+      
+      // Extract only user properties, not token/refreshToken/expiresIn
+      const cleanUser = {
+        _id: loggedInUser._id,
+        email: loggedInUser.email,
+        name: loggedInUser.name,
+        phone: loggedInUser.phone,
+        address: loggedInUser.address,
+        birthday: loggedInUser.birthday,
+        role: loggedInUser.role,
+        tier: loggedInUser.tier,
+        loyaltyPoints: loggedInUser.loyaltyPoints,
+        memberSince: loggedInUser.memberSince,
+        favoriteCuisine: loggedInUser.favoriteCuisine,
+        dietaryRestrictions: loggedInUser.dietaryRestrictions,
+        preferredDiningTime: loggedInUser.preferredDiningTime,
+        specialRequests: loggedInUser.specialRequests
+      };
+      
+      const userWithDefaults = { 
+        ...cleanUser,
+        id: String(cleanUser._id || cleanUser.id || ''),
+        loyaltyPoints: cleanUser.loyaltyPoints ?? 0,
+        tier: cleanUser.tier || 'Bronze',
+        memberSince: cleanUser.memberSince || new Date().getFullYear().toString(),
+        name: cleanUser.name || 'User',
+        phone: cleanUser.phone || '',
+        email: cleanUser.email || '',
+        address: cleanUser.address || '',
+        birthday: cleanUser.birthday || ''
+      };
+      
+      console.log('User with defaults:', userWithDefaults);
+      
+      onLogin(userWithDefaults);
+      localStorage.setItem('userEmail', userWithDefaults.email);
       setIsLoginModalOpen(false);
-      if (userWithId.role === 'masterAdmin') {
+      if (userWithDefaults.role === 'masterAdmin') {
         navigate('/admin');
-      } else if (userWithId.role === 'admin') {
+      } else if (userWithDefaults.role === 'admin') {
         navigate('/admin');
-      } else if (userWithId.role === 'staff') {
+      } else if (userWithDefaults.role === 'staff') {
         navigate('/staff');
       } else {
         navigate('/');
@@ -166,27 +205,96 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
     
     setSignupFieldErrors({});
     try {
-      await import('../services/api').then(mod => mod.registerUser({
-        name: signupName,
-        email: signupEmail,
-        phone: signupPhone,
-        password: signupPassword,
-        address: signupAddress,
-        birthday: signupBirthday
-      }));
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: signupName,
+          email: signupEmail,
+          phone: signupPhone,
+          password: signupPassword,
+          address: signupAddress,
+          birthday: signupBirthday,
+          role: 'customer'
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Signup failed');
+      }
+
+      // Show verification form
+      setVerificationEmail(signupEmail);
+      setNeedsVerification(true);
+      setSignupError('');
+    } catch (err: any) {
+      setSignupError(err.message || 'Signup failed. Please try again.');
+    }
+  };
+
+  const handleVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSignupError('');
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    try {
+      const response = await fetch(`${API_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: verificationEmail, 
+          code: verificationCode.toUpperCase() 
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Verification failed');
+      }
+
+      // Email verified - show login form
+      setNeedsVerification(false);
+      setAuthMode('signin');
+      setVerificationCode('');
+      setLoginEmail(verificationEmail);
       setSignupName('');
       setSignupEmail('');
       setSignupPhone('');
-      setSignupAddress('');
-      setSignupBirthday('');
       setSignupPassword('');
       setSignupConfirmPassword('');
-      setAuthMode('signin');
-      setLoginEmail(signupEmail);
-      setIsLoginModalOpen(true);
-      setSignupError('Account created! Please log in.');
-    } catch (err) {
-      setSignupError('Signup failed. Please try again.');
+      setSignupAddress('');
+      setSignupBirthday('');
+      setSignupError('');
+      setLoginError('Email verified! Please sign in with your credentials.');
+    } catch (err: any) {
+      setSignupError(err.message || 'Verification failed. Please try again.');
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setSignupError('');
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    try {
+      const response = await fetch(`${API_URL}/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verificationEmail })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to resend verification');
+      }
+
+      alert('Verification code sent! Please check your email.');
+    } catch (err: any) {
+      setSignupError(err.message || 'Failed to resend verification code.');
     }
   };
 
@@ -239,6 +347,14 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
           setLoginFieldErrors={setLoginFieldErrors}
           handleLoginSubmit={handleLoginSubmit}
           handleSignupSubmit={handleSignupSubmit}
+          needsVerification={needsVerification}
+          setNeedsVerification={setNeedsVerification}
+          verificationCode={verificationCode}
+          setVerificationCode={setVerificationCode}
+          verificationEmail={verificationEmail}
+          setVerificationEmail={setVerificationEmail}
+          handleVerification={handleVerification}
+          handleResendVerification={handleResendVerification}
         />
       )}
     </>
@@ -353,6 +469,14 @@ interface CustomerNavbarProps {
   setLoginFieldErrors: (errors: { email?: string; password?: string }) => void;
   handleLoginSubmit: (e: React.FormEvent) => Promise<void>;
   handleSignupSubmit: (e: React.FormEvent) => Promise<void>;
+  needsVerification: boolean;
+  setNeedsVerification: (value: boolean) => void;
+  verificationCode: string;
+  setVerificationCode: (value: string) => void;
+  verificationEmail: string;
+  setVerificationEmail: (value: string) => void;
+  handleVerification: (e: React.FormEvent) => Promise<void>;
+  handleResendVerification: () => Promise<void>;
 }
 
 const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
@@ -397,6 +521,14 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
   setLoginFieldErrors,
   handleLoginSubmit,
   handleSignupSubmit,
+  needsVerification,
+  setNeedsVerification,
+  verificationCode,
+  setVerificationCode,
+  verificationEmail,
+  setVerificationEmail,
+  handleVerification,
+  handleResendVerification,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -493,9 +625,9 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                     className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-stone-700 hover:bg-orange-50 transition-all duration-300 border border-stone-200 hover:border-orange-300"
                   >
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold shadow-md">
-                      {user.name.charAt(0)}
+                      {user.name?.charAt(0) || user.email?.charAt(0)?.toUpperCase() || 'U'}
                     </div>
-                    <span className="hidden lg:block text-stone-700">{user.name.split(' ')[0]}</span>
+                    <span className="hidden lg:block text-stone-700">{user.name?.split(' ')[0] || 'User'}</span>
                     <span className="text-orange-600">▼</span>
                   </button>
                   
@@ -503,9 +635,9 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-orange-200 py-3 animate-in fade-in slide-in-from-top-2 overflow-hidden">
                         {/* User Info Header */}
                         <div className="px-4 py-3 border-b border-orange-100 bg-gradient-to-r from-orange-50 to-orange-100">
-                           <p className="font-bold text-stone-900">{user.name}</p>
+                           <p className="font-bold text-stone-900">{user.name || 'User'}</p>
                            <p className="text-xs text-stone-600">{user.email}</p>
-                           <p className="text-xs mt-1 px-2 py-1 bg-orange-200 text-orange-900 rounded-full inline-block font-semibold">{user.tier} Member</p>
+                           <p className="text-xs mt-1 px-2 py-1 bg-orange-200 text-orange-900 rounded-full inline-block font-semibold">{user.tier || 'Bronze'} Member</p>
                         </div>
 
                         {/* Menu Items */}
@@ -634,14 +766,103 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
             <div className="p-8 max-h-[82vh] overflow-auto">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-serif font-bold text-stone-900">
-                  {authMode === 'signin' ? 'Welcome Back' : 'Join Savoria'}
+                  {needsVerification ? 'Verify Your Email' : authMode === 'signin' ? 'Welcome Back' : 'Join Savoria'}
                 </h2>
                 <p className="text-stone-500 text-sm mt-1">
-                  {authMode === 'signin' ? 'Sign in to access your rewards.' : 'Create an account to start earning points.'}
+                  {needsVerification 
+                    ? `We've sent a verification code to ${verificationEmail}` 
+                    : authMode === 'signin' 
+                    ? 'Sign in to access your rewards.' 
+                    : 'Create an account to start earning points.'}
                 </p>
               </div>
 
-              {authMode === 'signin' ? (
+              {needsVerification ? (
+                /* EMAIL VERIFICATION FORM */
+                <form onSubmit={handleVerification} className="space-y-4">
+                  {signupError && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium flex items-start gap-2">
+                    <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                    <div>{signupError}</div>
+                  </div>}
+                  
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-stone-500 mb-2 text-center">Verification Code</label>
+                    <div className="flex justify-center gap-2 mb-2">
+                      {[0, 1, 2, 3, 4, 5].map((index) => (
+                        <input
+                          key={index}
+                          type="text"
+                          maxLength={1}
+                          value={verificationCode[index] || ''}
+                          onChange={(e) => {
+                            const value = e.target.value.toUpperCase();
+                            if (value.match(/^[A-Z0-9]$/)) {
+                              const newCode = verificationCode.split('');
+                              newCode[index] = value;
+                              setVerificationCode(newCode.join(''));
+                              // Auto-focus next input
+                              if (index < 5) {
+                                const nextInput = e.target.parentElement?.children[index + 1] as HTMLInputElement;
+                                nextInput?.focus();
+                              }
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
+                              // Move to previous input on backspace if current is empty
+                              const prevInput = e.target.parentElement?.children[index - 1] as HTMLInputElement;
+                              prevInput?.focus();
+                            }
+                          }}
+                          onPaste={(e) => {
+                            e.preventDefault();
+                            const pastedData = e.clipboardData.getData('text').toUpperCase().slice(0, 6);
+                            setVerificationCode(pastedData);
+                            // Focus last filled input or first empty
+                            const focusIndex = Math.min(pastedData.length, 5);
+                            const targetInput = e.target.parentElement?.children[focusIndex] as HTMLInputElement;
+                            targetInput?.focus();
+                          }}
+                          className="w-12 h-14 border-2 border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-center font-mono text-xl font-bold uppercase"
+                          required
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-stone-500 mt-1 text-center">Check your email for the verification code</p>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={verificationCode.length !== 6}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Verify Email
+                  </button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      className="text-sm text-orange-600 hover:text-orange-700 font-semibold"
+                    >
+                      Resend verification code
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNeedsVerification(false);
+                      setAuthMode('signin');
+                      setVerificationCode('');
+                      setSignupError('');
+                    }}
+                    className="w-full bg-stone-100 hover:bg-stone-200 text-stone-900 font-semibold py-3 rounded-xl transition-colors"
+                  >
+                    Back to Sign In
+                  </button>
+                </form>
+              ) : authMode === 'signin' ? (
                 /* SIGN IN FORM */
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
                   {loginError && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center font-medium">{loginError}</div>}
@@ -824,13 +1045,15 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
               )}
             </div>
             
-            <div className="bg-stone-50 p-4 text-center text-sm text-stone-600 border-t border-stone-100">
-               {authMode === 'signin' ? (
-                  <>Don't have an account? <button onClick={() => setAuthMode('signup')} className="text-orange-600 font-bold hover:underline">Join Savoria Rewards</button></>
-               ) : (
-                  <>Already have an account? <button onClick={() => setAuthMode('signin')} className="text-orange-600 font-bold hover:underline">Sign In</button></>
-               )}
-            </div>
+            {!needsVerification && (
+              <div className="bg-stone-50 p-4 text-center text-sm text-stone-600 border-t border-stone-100">
+                 {authMode === 'signin' ? (
+                    <>Don't have an account? <button onClick={() => setAuthMode('signup')} className="text-orange-600 font-bold hover:underline">Join Savoria Rewards</button></>
+                 ) : (
+                    <>Already have an account? <button onClick={() => setAuthMode('signin')} className="text-orange-600 font-bold hover:underline">Sign In</button></>
+                 )}
+              </div>
+            )}
           </div>
         </div>
       )}
