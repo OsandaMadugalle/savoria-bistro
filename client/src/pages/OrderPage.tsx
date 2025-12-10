@@ -418,7 +418,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
               <div className="space-y-2">
                 <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg flex items-start gap-2 border border-yellow-200">
                   <Trophy size={14} className="mt-0.5 flex-shrink-0" />
-                  <span><span className="font-bold">{Math.floor(finalTotal * 10)}</span> reward points earned</span>
+                  <span><span className="font-bold">{Math.floor(finalTotal / 10)}</span> reward points earned</span>
                 </div>
                 {getTierDiscount() > 0 && (
                   <div className={`text-xs p-3 rounded-lg flex items-start gap-2 border ${getTierDiscount() === 20 ? 'bg-yellow-50 text-yellow-800 border-yellow-200' : 'bg-gray-50 text-gray-800 border-gray-200'}`}>

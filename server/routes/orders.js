@@ -77,9 +77,9 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Award loyalty points to user (10 points per $1 spent) and update tier
+    // Award loyalty points to user (1 point per Rs 10 spent) and update tier
     const User = require('../models/User');
-    const pointsEarned = Math.floor(newOrder.total * 10);
+    const pointsEarned = Math.floor(newOrder.total / 10);
     const user = await User.findByIdAndUpdate(
       newOrder.userId,
       { 
@@ -100,7 +100,7 @@ router.post('/', async (req, res) => {
       const { logActivity } = require('../routes/auth');
       const itemsList = newOrder.items.map(i => `${i.name}(x${i.quantity})`).join(', ');
       const pointsMsg = ` | Earned ${pointsEarned} loyalty points | Tier: ${calculateTier(user.loyaltyPoints + pointsEarned)}`;
-      await logActivity(requesterEmail, 'Create Order', `Order ${newOrder.orderId}: $${newOrder.total.toFixed(2)} [${itemsList}]${pointsMsg}`);
+      await logActivity(requesterEmail, 'Create Order', `Order ${newOrder.orderId}: Rs ${newOrder.total.toFixed(2)} [${itemsList}]${pointsMsg}`);
     }
     
     res.status(201).json({

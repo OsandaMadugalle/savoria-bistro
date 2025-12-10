@@ -121,12 +121,12 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ order, user, onClose, onSuc
             <div className="text-sm text-gray-600">
               {order.items.map((item, idx) => (
                 <div key={idx}>
-                  {item.name} x{item.quantity} - ${(item.price || 0).toFixed(2)}
+                  {item.name} x{item.quantity} - Rs {(item.price || 0).toFixed(2)}
                 </div>
               ))}
             </div>
             <div className="mt-2 font-semibold text-gray-900">
-              Total: ${order.total.toFixed(2)}
+              Total: Rs {order.total.toFixed(2)}
             </div>
           </div>
 
