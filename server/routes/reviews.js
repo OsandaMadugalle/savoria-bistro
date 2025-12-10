@@ -10,17 +10,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || 'demo_secret'
 });
 
-// Get all approved reviews (for customers)
-router.get('/approved', async (req, res) => {
-  try {
-    const reviews = await Review.find({ status: 'approved' }).sort({ createdAt: -1 });
-    res.json(reviews);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Get all reviews (for admin)
+// Get all reviews (for admin) - must come before /user/:userEmail
 router.get('/all', async (req, res) => {
   try {
     const reviews = await Review.find().sort({ createdAt: -1 });
@@ -30,10 +20,20 @@ router.get('/all', async (req, res) => {
   }
 });
 
-// Get pending reviews (for admin moderation)
+// Get pending reviews (for admin moderation) - must come before /user/:userEmail
 router.get('/pending', async (req, res) => {
   try {
     const reviews = await Review.find({ status: 'pending' }).sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get all approved reviews (for customers) - must come before /user/:userEmail
+router.get('/approved', async (req, res) => {
+  try {
+    const reviews = await Review.find({ status: 'approved' }).sort({ createdAt: -1 });
     res.json(reviews);
   } catch (err) {
     res.status(500).json({ message: err.message });
