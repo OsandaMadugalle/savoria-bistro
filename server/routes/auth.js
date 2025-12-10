@@ -313,11 +313,11 @@ const seedAccounts = async () => {
   if (!staffExists) {
     const staffPassword = 'Staff@1234';
     const hashed = await bcrypt.hash(staffPassword, 10);
-    await User.create({ name: 'Kitchen Staff', email: 'staff@savoria.com', password: hashed, role: 'staff', phone: '+94 11 000 0003' });
+    await User.create({ name: 'Savoria Bistro Team', email: 'staff@savoria.com', password: hashed, role: 'staff', phone: '+94 11 000 0003' });
     console.log(`👨‍🍳 Staff account created: staff@savoria.com / ${staffPassword}`);
   } else {
-    // Ensure existing staff has correct role
-    await User.updateOne({ email: 'staff@savoria.com' }, { role: 'staff' });
+    // Ensure existing staff has correct role and update name
+    await User.updateOne({ email: 'staff@savoria.com' }, { role: 'staff', name: 'Savoria Bistro Team' });
   }
 };
 seedAccounts();

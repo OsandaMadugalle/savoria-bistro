@@ -35,7 +35,7 @@ const sendConfirmationEmail = async (reservation) => {
         <p><strong>Party Size:</strong> ${reservation.guests} ${reservation.guests === 1 ? 'guest' : 'guests'}</p>
         <p><strong>Duration:</strong> ${reservation.duration} minutes</p>
       </div>
-      <p>Please arrive 5-10 minutes early. If you need to modify or cancel, please call us at (555) 123-4567 or reply to this email with your confirmation code.</p>
+      <p>Please arrive 5-10 minutes early. If you need to modify or cancel, please call us at +94 11 234 5678 or reply to this email with your confirmation code.</p>
       <p>Looking forward to serving you!</p>
       <p>Savoria Bistro Team</p>
     `
@@ -268,7 +268,7 @@ router.delete('/:confirmationCode', async (req, res) => {
         <h2>Your Reservation has been Cancelled</h2>
         <p>Dear ${reservation.name},</p>
         <p>Your reservation with confirmation code <strong>${reservation.confirmationCode}</strong> has been successfully cancelled.</p>
-        <p>If you didn't cancel this, please contact us immediately at (555) 123-4567.</p>
+        <p>If you didn't cancel this, please contact us immediately at +94 11 234 5678.</p>
         <p>We hope to see you soon at Savoria Bistro!</p>
       `
     };

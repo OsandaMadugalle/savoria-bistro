@@ -191,7 +191,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                   <Phone className="text-orange-500 mt-1 flex-shrink-0" size={20} />
                   <div>
                     <p className="font-semibold text-stone-900">Call Us</p>
-                    <p className="text-stone-600 text-sm">(555) 123-4567</p>
+                    <p className="text-stone-600 text-sm">+94 11 234 5678</p>
                   </div>
                 </div>
 
@@ -207,7 +207,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                   <MapPin className="text-orange-500 mt-1 flex-shrink-0" size={20} />
                   <div>
                     <p className="font-semibold text-stone-900">Location</p>
-                    <p className="text-stone-600 text-sm">123 Culinary Ave, New York</p>
+                    <p className="text-stone-600 text-sm">123 Galle Road, Colombo 03</p>
                   </div>
                 </div>
               </div>

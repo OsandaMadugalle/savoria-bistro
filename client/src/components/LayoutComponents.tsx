@@ -1151,15 +1151,15 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="mt-0.5 text-orange-600 flex-shrink-0" />
-                <span className="text-stone-400">123 Culinary Avenue,<br />Food District, NY 10012</span>
+                <span className="text-stone-400">123 Galle Road,<br />Colombo 03, Sri Lanka</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={18} className="text-orange-600" />
-                <a href="tel:(555)123-4567" className="text-stone-400 hover:text-orange-600 transition-colors">(555) 123-4567</a>
+                <a href="tel:+94112345678" className="text-stone-400 hover:text-orange-600 transition-colors">+94 11 234 5678</a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-orange-600" />
-                <a href="mailto:info@savoria.com" className="text-stone-400 hover:text-orange-600 transition-colors">info@savoria.com</a>
+                <a href="mailto:info@savoriabistro.com" className="text-stone-400 hover:text-orange-600 transition-colors">info@savoriabistro.com</a>
               </li>
             </ul>
           </div>

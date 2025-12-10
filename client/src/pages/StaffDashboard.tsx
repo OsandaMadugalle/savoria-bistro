@@ -134,7 +134,8 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user, onLogin, onLogout
   };
 
   const openReplyModal = (inquiry: PrivateEventInquiry) => {
-    const defaultMessage = `Hi ${inquiry.name},\n\nThanks for reaching out about your ${inquiry.eventType} event. We'll be happy to assist with seating ${inquiry.guestCount || 'your guests'} on ${inquiry.eventDate || 'your preferred date'}.`;
+    const formattedDate = inquiry.eventDate ? new Date(inquiry.eventDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'your preferred date';
+    const defaultMessage = `Hi ${inquiry.name},\n\nThanks for reaching out about your ${inquiry.eventType} event. We'll be happy to assist with seating ${inquiry.guestCount || 'your guests'} on ${formattedDate}.`;
     setReplySubject('Follow-up on your private event inquiry');
     setReplyBody(defaultMessage);
     setReplyModalInquiry(inquiry);

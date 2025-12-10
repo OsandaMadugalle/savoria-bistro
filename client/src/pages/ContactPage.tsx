@@ -205,8 +205,8 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                   </div>
                   <div>
                     <h4 className="font-bold text-stone-900 mb-1">📧 Email</h4>
-                    <p className="text-stone-700 font-medium">hello@savoria.com</p>
-                    <p className="text-stone-700 font-medium">events@savoria.com</p>
+                    <p className="text-stone-700 font-medium">info@savoriabistro.com</p>
+                    <p className="text-stone-700 font-medium">events@savoriabistro.com</p>
                   </div>
                 </div>
 
