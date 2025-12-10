@@ -532,10 +532,12 @@ export const submitReview = async (review: Omit<Review, '_id' | 'createdAt' | 'u
 
 // Update review status (approve/reject - admin)
 export const updateReviewStatus = async (reviewId: string, status: 'approved' | 'rejected', adminNotes: string = ''): Promise<Review> => {
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
   const res = await fetch(`${API_URL}/reviews/${reviewId}/status`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status, adminNotes })
+    body: JSON.stringify({ status, adminNotes, requesterEmail: user?.email })
   });
   if (!res.ok) throw new Error('Failed to update review status');
   return await res.json();

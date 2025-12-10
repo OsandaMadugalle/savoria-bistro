@@ -2830,7 +2830,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                       setAllReviews(allReviews.map((r: any) => r._id === review._id ? {...r, status: 'approved'} : r));
                                       showToast('Review approved successfully!', 'success');
                                     } catch (err: any) {
-                                      showToast('Failed to approve review', 'error');
+                                      console.error('Approve review error:', err);
+                                      showToast(err.message || 'Failed to approve review', 'error');
                                     }
                                   }}
                                   className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded font-medium text-sm transition-colors"
@@ -2844,7 +2845,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                       setAllReviews(allReviews.map((r: any) => r._id === review._id ? {...r, status: 'rejected'} : r));
                                       showToast('Review rejected successfully!', 'success');
                                     } catch (err: any) {
-                                      showToast('Failed to reject review', 'error');
+                                      console.error('Reject review error:', err);
+                                      showToast(err.message || 'Failed to reject review', 'error');
                                     }
                                   }}
                                   className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded font-medium text-sm transition-colors"
