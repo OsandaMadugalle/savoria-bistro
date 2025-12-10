@@ -71,17 +71,18 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
    useEffect(() => {
       // If user is passed as prop and already loaded, use it directly
       if (initialUser) {
-         const userWithDefaults = {
+         const userWithDefaults: User = {
             ...initialUser,
             loyaltyPoints: initialUser.loyaltyPoints ?? 0,
             tier: initialUser.tier || 'Bronze',
             memberSince: initialUser.memberSince || new Date().getFullYear().toString(),
             name: initialUser.name || 'User',
-            id: initialUser.id || initialUser._id,
+            id: initialUser.id || String(initialUser._id || ''),
             phone: initialUser.phone || '',
             email: initialUser.email || '',
             address: initialUser.address || '',
-            birthday: initialUser.birthday || ''
+            birthday: initialUser.birthday || '',
+            history: initialUser.history || []
          };
          setUser(userWithDefaults);
          setEditData({
@@ -148,17 +149,18 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
       }
       fetchUserProfile(email)
          .then(profile => {
-            const userWithDefaults = {
+            const userWithDefaults: User = {
                ...profile,
                loyaltyPoints: profile.loyaltyPoints ?? 0,
                tier: profile.tier || 'Bronze',
                memberSince: profile.memberSince || new Date().getFullYear().toString(),
                name: profile.name || 'User',
-               id: profile.id || profile._id,
+               id: String(profile.id || profile._id || ''),
                phone: profile.phone || '',
                email: profile.email || '',
                address: profile.address || '',
-               birthday: profile.birthday || ''
+               birthday: profile.birthday || '',
+               history: profile.history || []
             };
             setUser(userWithDefaults);
                   setEditData({

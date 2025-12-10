@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, ChefHat, Eye, EyeOff, Calendar } from 'lucide-react';
+import { Menu, X, ShoppingBag, Phone, MapPin, Instagram, Facebook, Twitter, User as UserIcon, LogIn, LogOut, Mail, Lock, ChefHat, Eye, EyeOff, Calendar, AlertCircle } from 'lucide-react';
 import { CartItem, User } from '../types';
 import { loginUser, subscribeNewsletter } from '../services/api';
 
@@ -131,9 +131,9 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
         specialRequests: loggedInUser.specialRequests
       };
       
-      const userWithDefaults = { 
+      const userWithDefaults: User = { 
         ...cleanUser,
-        id: String(cleanUser._id || cleanUser.id || ''),
+        id: String(cleanUser._id || ''),
         loyaltyPoints: cleanUser.loyaltyPoints ?? 0,
         tier: cleanUser.tier || 'Bronze',
         memberSince: cleanUser.memberSince || new Date().getFullYear().toString(),
@@ -141,7 +141,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
         phone: cleanUser.phone || '',
         email: cleanUser.email || '',
         address: cleanUser.address || '',
-        birthday: cleanUser.birthday || ''
+        birthday: cleanUser.birthday || '',
+        history: []
       };
       
       console.log('User with defaults:', userWithDefaults);
@@ -342,6 +343,7 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
           showSignupConfirmPassword={showSignupConfirmPassword}
           setShowSignupConfirmPassword={setShowSignupConfirmPassword}
           signupError={signupError}
+          setSignupError={setSignupError}
           signupFieldErrors={signupFieldErrors}
           setSignupFieldErrors={setSignupFieldErrors}
           loginFieldErrors={loginFieldErrors}
@@ -460,6 +462,7 @@ interface CustomerNavbarProps {
   showSignupConfirmPassword: boolean;
   setShowSignupConfirmPassword: (value: boolean) => void;
   signupError: string;
+  setSignupError: (value: string) => void;
   signupAddress: string;
   setSignupAddress: (value: string) => void;
   signupBirthday: string;
@@ -516,6 +519,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
   showSignupConfirmPassword,
   setShowSignupConfirmPassword,
   signupError,
+  setSignupError,
   signupFieldErrors,
   setSignupFieldErrors,
   loginFieldErrors,
@@ -527,7 +531,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
   verificationCode,
   setVerificationCode,
   verificationEmail,
-  setVerificationEmail,
+  // setVerificationEmail is intentionally not used in this component
   handleVerification,
   handleResendVerification,
 }) => {
@@ -803,7 +807,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                               setVerificationCode(newCode.join(''));
                               // Auto-focus next input
                               if (index < 5) {
-                                const nextInput = e.target.parentElement?.children[index + 1] as HTMLInputElement;
+                                const nextInput = (e.target.parentElement as HTMLElement)?.children[index + 1] as HTMLInputElement;
                                 nextInput?.focus();
                               }
                             }
@@ -811,7 +815,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                           onKeyDown={(e) => {
                             if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
                               // Move to previous input on backspace if current is empty
-                              const prevInput = e.target.parentElement?.children[index - 1] as HTMLInputElement;
+                              const prevInput = ((e.target as HTMLElement).parentElement as HTMLElement)?.children[index - 1] as HTMLInputElement;
                               prevInput?.focus();
                             }
                           }}
@@ -821,7 +825,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                             setVerificationCode(pastedData);
                             // Focus last filled input or first empty
                             const focusIndex = Math.min(pastedData.length, 5);
-                            const targetInput = e.target.parentElement?.children[focusIndex] as HTMLInputElement;
+                            const targetInput = ((e.target as HTMLElement).parentElement as HTMLElement)?.children[focusIndex] as HTMLInputElement;
                             targetInput?.focus();
                           }}
                           className="w-12 h-14 border-2 border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-center font-mono text-xl font-bold uppercase"
