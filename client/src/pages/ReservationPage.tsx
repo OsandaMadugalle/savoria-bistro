@@ -18,7 +18,7 @@ interface ReservationResponse {
   confirmationCode: string;
 }
 
-const DEPOSIT_AMOUNT = 2500; // $25.00 in cents
+const DEPOSIT_AMOUNT = 250000; // Rs 2500.00 in cents
 const publishableKey = (import.meta as any).env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
@@ -227,7 +227,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
             {status === 'payment_pending' && reservationResponse ? (
               <div className="space-y-6">
                 <h3 className="text-2xl font-serif font-bold text-stone-900 mb-4">Complete Payment</h3>
-                <p className="text-stone-600">Complete your reservation by paying the deposit amount of ${(DEPOSIT_AMOUNT / 100).toFixed(2)}.</p>
+                <p className="text-stone-600">Complete your reservation by paying the deposit amount of Rs {(DEPOSIT_AMOUNT / 100).toFixed(2)}.</p>
                 
                 <div className="bg-stone-50 rounded-xl p-4 space-y-3">
                   <p className="font-semibold text-stone-900">Reservation Details:</p>
@@ -246,7 +246,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                     </div>
                     <div className="flex justify-between pt-2 border-t border-stone-200">
                       <span className="text-stone-600 font-semibold">Deposit Amount:</span>
-                      <span className="font-bold text-orange-600">${(DEPOSIT_AMOUNT / 100).toFixed(2)}</span>
+                      <span className="font-bold text-orange-600">Rs {(DEPOSIT_AMOUNT / 100).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

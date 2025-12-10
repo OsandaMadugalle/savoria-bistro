@@ -2532,7 +2532,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                             <tr key={item.id || idx} className="hover:bg-stone-50">
                               <td className="p-4 font-bold text-stone-900">{item.name}</td>
                               <td className="p-4 text-stone-600">{item.category}</td>
-                              <td className="p-4 font-bold text-stone-900">${item.price}</td>
+                              <td className="p-4 font-bold text-stone-900">Rs {item.price}</td>
                               <td className="p-4">{item.featured ? '⭐ Yes' : 'No'}</td>
                               <td className="p-4 flex gap-2">
                                 <button onClick={() => handleEditMenu(item)} className="text-blue-600 hover:underline"><Edit2 size={16} /></button>

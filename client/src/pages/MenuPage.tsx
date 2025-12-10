@@ -14,7 +14,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'price-low' | 'price-high' | 'popular'>('name');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,8 +48,11 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
       setIsLoading(true);
       setError(null);
       try {
+        console.log('Fetching menu from API...');
         const items = await fetchMenu();
         console.log('Fetched menu items:', items);
+        console.log('Number of items:', items?.length);
+        console.log('First item:', items?.[0]);
         setMenuItems(items);
       } catch (e) {
         console.error("Failed to load menu", e);
@@ -88,8 +91,14 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
     const matchesFilters = activeFilters.length === 0 || activeFilters.every(filter => relevantTags.has(filter));
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPrice = item.price >= priceRange[0] && item.price <= priceRange[1];
+    console.log(`Filtering ${item.name}: category=${matchesCategory}, filters=${matchesFilters}, search=${matchesSearch}, price=${matchesPrice}`);
     return matchesCategory && matchesFilters && matchesSearch && matchesPrice;
   });
+
+  console.log('Total menu items:', menuItems.length);
+  console.log('Filtered items:', filteredItems.length);
+  console.log('Price range:', priceRange);
+  console.log('Active category:', activeCategory);
 
   // Apply sorting
   if (sortBy === 'price-low') {
@@ -198,12 +207,12 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
               <input 
                 type="range" 
                 min="0" 
-                max="100" 
+                max="1000" 
                 value={priceRange[1]}
                 onChange={(e) => setPriceRange([0, parseInt(e.target.value)])}
                 className="w-full cursor-pointer accent-orange-600"
               />
-              <span className="text-xs sm:text-sm font-bold text-orange-600 whitespace-nowrap">${priceRange[1]}</span>
+              <span className="text-xs sm:text-sm font-bold text-orange-600 whitespace-nowrap">Rs {priceRange[1]}</span>
             </div>
           </div>
 
@@ -220,6 +229,10 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
           <div className="text-center mb-8">
             <p className="text-stone-600 font-medium">
               Showing <span className="text-orange-600 font-bold">{filteredItems.length}</span> {filteredItems.length === 1 ? 'dish' : 'dishes'}
+            </p>
+            {/* DEBUG INFO */}
+            <p className="text-xs text-stone-400 mt-1">
+              Total items loaded: {menuItems.length} | Filtered: {filteredItems.length}
             </p>
           </div>
         </div>
@@ -307,7 +320,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
 
                   {/* Footer */}
                   <div className="flex justify-between items-center pt-4 mt-4 border-t-2 border-stone-100">
-                    <span className="text-2xl font-serif font-bold text-orange-600">${item.price.toFixed(2)}</span>
+                    <span className="text-2xl font-serif font-bold text-orange-600">Rs {item.price.toFixed(2)}</span>
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 font-semibold text-sm rounded-lg group-hover:bg-orange-100 transition-colors">
                       View <ChevronRight size={16} />
                     </div>
@@ -369,7 +382,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
                     <span className="text-orange-600 font-bold uppercase tracking-widest text-xs mb-1 block">{selectedItem.category}</span>
                     <h2 className="text-3xl font-serif font-bold text-stone-900 leading-tight">{selectedItem.name}</h2>
                  </div>
-                 <span className="text-2xl font-bold text-orange-600 pr-10">${selectedItem.price}</span>
+                 <span className="text-2xl font-bold text-orange-600 pr-10">Rs {selectedItem.price}</span>
                </div>
 
                <p className="text-stone-600 mb-6 text-lg leading-relaxed border-b border-stone-100 pb-6">

@@ -423,7 +423,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
              <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-2xl border border-orange-200">
                    <p className="text-xs text-orange-600 font-bold uppercase mb-1">Total Spent</p>
-                   <p className="text-2xl font-bold text-orange-900">${(orders.reduce((sum, o) => sum + o.total, 0)).toFixed(0)}</p>
+                   <p className="text-2xl font-bold text-orange-900">Rs {(orders.reduce((sum, o) => sum + o.total, 0)).toFixed(0)}</p>
                    <p className="text-xs text-orange-600 mt-1">on {orders.length} orders</p>
                 </div>
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-2xl border border-blue-200">
@@ -596,7 +596,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                                            </div>
                                        </div>
                                        <div className="text-right flex flex-col items-end gap-2">
-                                           <span className="font-bold text-stone-900">${order.total.toFixed(2)}</span>
+                                           <span className="font-bold text-stone-900">Rs {order.total.toFixed(2)}</span>
                                            <button className="flex items-center gap-1 text-xs font-bold text-orange-600 border border-orange-200 px-3 py-1.5 rounded-full hover:bg-orange-50 transition-colors"
                                               onClick={() => navigate(`/tracker?orderId=${order.orderId}`)}
                                            >

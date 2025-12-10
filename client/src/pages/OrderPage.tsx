@@ -63,7 +63,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
     try {
       const amountInCents = Math.round(finalTotal * 100);
       if (amountInCents < 50) {
-        setPaymentError('Minimum order amount is $0.50');
+        setPaymentError('Minimum order amount is Rs 50');
         setIntentLoading(false);
         return;
       }
@@ -273,7 +273,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
           disabled={!clientSecret || isSubmitting}
           className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-bold transition-colors disabled:opacity-70"
         >
-          {isSubmitting ? 'Processing payment...' : `Confirm & Pay $${finalTotal.toFixed(2)}`}
+          {isSubmitting ? 'Processing payment...' : `Confirm & Pay Rs ${finalTotal.toFixed(2)}`}
         </button>
       </div>
     );
@@ -313,9 +313,9 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
                 <div className="flex-1 w-full">
                   <div className="flex justify-between mb-1 sm:mb-2">
                     <h3 className="font-serif font-bold text-stone-900 text-base sm:text-lg group-hover:text-orange-600 transition-colors">{item.name}</h3>
-                    <span className="font-serif font-bold text-orange-600 text-base sm:text-lg">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-serif font-bold text-orange-600 text-base sm:text-lg">Rs {(item.price * item.quantity).toFixed(2)}</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-stone-600 mb-2 sm:mb-4">${item.price.toFixed(2)} × {item.quantity}</p>
+                  <p className="text-xs sm:text-sm text-stone-600 mb-2 sm:mb-4">Rs {item.price.toFixed(2)} × {item.quantity}</p>
                   <div className="flex items-center gap-2 sm:gap-4">
                     <div className="flex items-center gap-1 sm:gap-2 bg-stone-100 rounded-md sm:rounded-lg p-1 sm:p-2 border border-stone-200">
                       <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:bg-white rounded-md transition-all text-stone-600 hover:text-orange-600"><Minus size={16} /></button>
@@ -385,7 +385,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
             <div className="space-y-3 pt-3 border-t border-stone-100">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-stone-600">Subtotal</span>
-                <span className="font-semibold text-stone-900">${total.toFixed(2)}</span>
+                <span className="font-semibold text-stone-900">Rs {total.toFixed(2)}</span>
               </div>
               {discount > 0 && (
                 <div className={`flex justify-between items-center ${tierDiscount > promoDiscount ? 'text-blue-600' : 'text-green-600'}`}>
@@ -408,7 +408,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
                 <span className="text-2xl font-bold text-orange-600">${finalTotal.toFixed(2)}</span>
               </div>
               {discount > 0 && (
-                <p className="text-xs text-orange-700">You're saving ${discount.toFixed(2)}!</p>
+                <p className="text-xs text-orange-700">You're saving Rs {discount.toFixed(2)}!</p>
               )}
             </div>
 
