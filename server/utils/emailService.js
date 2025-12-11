@@ -5,6 +5,12 @@ const emailTemplates = {
   confirmSubscription: (email, unsubscribeLink) => ({
     subject: 'Reservation Confirmed',
     html: `<h2>Thank you for your reservation!</h2><p>Your reservation is confirmed for ${email}.</p><p>If you wish to unsubscribe, click <a href="${unsubscribeLink}">here</a>.</p>`
+  }),
+  privateEventFollowup: (name, staffName, body) => ({
+    subject: 'Private Event Follow-up',
+    html: `<h2>Dear ${name},</h2>
+      <p>${body}</p>
+      <p>Best regards,<br>${staffName} & the Savoria Bistro Team</p>`
   })
 };
 
