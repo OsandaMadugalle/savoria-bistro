@@ -230,11 +230,12 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
           paymentIntentId: result.paymentIntent.id,
           requesterEmail: user.email,
           deliveryAddress: user?.address ? {
-            street: user.address.street || '',
-            city: user.address.city || '',
-            postalCode: user.address.postalCode || '',
+            // If address is a string, parse it or assign to street, leave others blank
+            street: typeof user.address === 'string' ? user.address : '',
+            city: '',
+            postalCode: '',
             phone: user.phone || '',
-            notes: user.address.notes || ''
+            notes: ''
           } : {
             street: '',
             city: '',
