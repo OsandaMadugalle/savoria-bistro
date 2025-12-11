@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { showToast } from '../components/Footer';
 import FeedbackForm from '../components/FeedbackForm';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar, MapPin, X, Bell, Heart } from 'lucide-react';
@@ -10,11 +11,29 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
+         // Helper to refetch reservations
+         const refetchReservations = async () => {
+            let userId = user?.id || user?._id || user?.email;
+            if (!userId && initialUser) userId = initialUser.id || initialUser._id || initialUser.email;
+            if (userId) {
+               setReservationsLoading(true);
+               try {
+                  const data = await fetchUserReservations(userId);
+                  setReservations(data);
+               } catch {
+                  setReservations([]);
+               } finally {
+                  setReservationsLoading(false);
+               }
+            }
+         };
       const [showFeedbackModal, setShowFeedbackModal] = useState(false);
       const [feedbackOrder, setFeedbackOrder] = useState<Order | null>(null);
       // ...existing code...
       // Helper: Check if feedback exists for order
       const hasFeedbackForOrder = (orderId: string) => feedback.some(f => f.orderId === orderId);
+      // Track which reservation is being cancelled
+      const [cancellingId, setCancellingId] = useState<string | null>(null);
    const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
    // All hooks must be called unconditionally and at the top level
@@ -645,7 +664,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                            </div>
                         )}
                         {profileTab === 'reservations' && (
-                           <div>
+                           <div style={{ maxHeight: '420px', overflowY: 'auto' }} className="rounded-xl border border-stone-200 bg-white/80 shadow-inner">
                               {reservationsLoading ? (
                                  <div className="p-6 text-center text-stone-500">Loading reservations...</div>
                               ) : reservations.length === 0 ? (
@@ -693,21 +712,31 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                                               <button
                                                  onClick={async () => {
                                                     if (window.confirm('Are you sure you want to cancel this reservation?')) {
+                                                       setCancellingId(res._id);
                                                        try {
                                                           const response = await fetch(`${API_URL}/reservations/${res.confirmationCode}`, {
                                                              method: 'DELETE'
                                                           });
                                                           if (response.ok) {
-                                                             setReservations(prev => prev.filter(r => r._id !== res._id));
-                                                             alert('Reservation cancelled successfully');
+                                                             await refetchReservations();
+                                                             showToast('Reservation cancelled successfully', 'success');
                                                           }
                                                        } catch (err) {
-                                                          alert('Failed to cancel reservation');
+                                                          showToast('Failed to cancel reservation', 'error');
+                                                       } finally {
+                                                          setCancellingId(null);
                                                        }
                                                     }
                                                  }}
-                                                 className="mt-2 px-3 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                                 className="mt-2 px-3 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center justify-center min-w-[80px]"
+                                                 disabled={cancellingId === res._id}
                                               >
+                                                 {cancellingId === res._id ? (
+                                                    <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                                    </svg>
+                                                 ) : null}
                                                  Cancel
                                               </button>
                                            )}

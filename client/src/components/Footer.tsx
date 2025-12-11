@@ -4,9 +4,9 @@ import { Phone, MapPin, Instagram, Facebook, Twitter, Mail } from 'lucide-react'
 import { subscribeNewsletter } from '../services/api';
 
 // Toast notification helper
-const showToast = (message: string, type: 'success' | 'error') => {
+export const showToast = (message: string, type: 'success' | 'error') => {
   const toast = document.createElement('div');
-  toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 animate-fade-in ${
+  toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 animate-fade-in ${
     type === 'success' ? 'bg-green-600' : 'bg-red-600'
   }`;
   toast.textContent = message;

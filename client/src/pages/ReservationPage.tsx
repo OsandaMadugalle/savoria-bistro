@@ -29,6 +29,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'payment_pending' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [reservationResponse, setReservationResponse] = useState<ReservationResponse | null>(null);
+  const [pendingReservationData, setPendingReservationData] = useState<ReservationData | null>(null);
   const [availability, setAvailability] = useState<{ available: boolean; availableSlots: number; maxCapacity?: number } | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -63,18 +64,21 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
     }
   };
 
+
+  // Step 1: On submit, create a pending reservation first, then proceed to payment
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('submitting');
     setErrorMessage('');
-    
     try {
+      // Create reservation with status 'Pending' (not confirmed yet)
       const response = await createReservation({
         ...formData,
-        userId: user?.id || ''
+        userId: user?.id || '',
+        status: 'Pending',
+        paymentStatus: 'pending',
       });
-      
-      setReservationResponse(response as ReservationResponse);
+      setPendingReservationData(response.reservation);
       setStatus('payment_pending');
     } catch (err: any) {
       setStatus('error');
@@ -82,13 +86,34 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
     }
   };
 
-  const handlePaymentSuccess = () => {
-    setStatus('success');
-    setFormData({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '', date: '', time: '', guests: 2, notes: '' });
+  // Step 2: After payment, mark reservation as confirmed
+  const handlePaymentSuccess = async () => {
+    if (!pendingReservationData) return;
+    setStatus('submitting');
+    setErrorMessage('');
+    try {
+      // Fetch the updated reservation (should now be confirmed by backend after payment)
+      // Optionally, you could call an API to update status to 'Confirmed' if needed
+      // For now, just fetch the reservation by ID
+      const res = await fetch(`${(import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api'}/reservations/user/${user?.id}`);
+      const reservations = await res.json();
+      const updated = reservations.find((r: any) => r._id === pendingReservationData._id);
+      setReservationResponse({
+        message: 'Reservation confirmed',
+        reservation: updated || pendingReservationData,
+        confirmationCode: (updated || pendingReservationData).confirmationCode,
+      });
+      setStatus('success');
+      setFormData({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '', date: '', time: '', guests: 2, notes: '' });
+      setPendingReservationData(null);
+    } catch (err: any) {
+      setStatus('error');
+      setErrorMessage(err.message || 'Reservation confirmation failed. Please try again.');
+    }
   };
 
   const handlePaymentError = (error: string) => {
-    setStatus('error');
+    setStatus('payment_pending');
     setErrorMessage(error);
   };
 
@@ -224,25 +249,24 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
 
           {/* Form Side */}
           <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-xl p-10 border border-white/50">
-            {status === 'payment_pending' && reservationResponse ? (
+            {status === 'payment_pending' && pendingReservationData ? (
               <div className="space-y-6">
                 <h3 className="text-2xl font-serif font-bold text-stone-900 mb-4">Complete Payment</h3>
                 <p className="text-stone-600">Complete your reservation by paying the deposit amount of Rs {(DEPOSIT_AMOUNT / 100).toFixed(2)}.</p>
-                
                 <div className="bg-stone-50 rounded-xl p-4 space-y-3">
                   <p className="font-semibold text-stone-900">Reservation Details:</p>
                   <div className="text-sm space-y-2">
                     <div className="flex justify-between">
                       <span className="text-stone-600">Date:</span>
-                      <span className="font-semibold text-stone-900">{reservationResponse.reservation.date}</span>
+                      <span className="font-semibold text-stone-900">{pendingReservationData.date ?? ''}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-stone-600">Time:</span>
-                      <span className="font-semibold text-stone-900">{reservationResponse.reservation.time}</span>
+                      <span className="font-semibold text-stone-900">{pendingReservationData.time ?? ''}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-stone-600">Party Size:</span>
-                      <span className="font-semibold text-stone-900">{reservationResponse.reservation.guests} guests</span>
+                      <span className="font-semibold text-stone-900">{pendingReservationData.guests ?? ''} guests</span>
                     </div>
                     <div className="flex justify-between pt-2 border-t border-stone-200">
                       <span className="text-stone-600 font-semibold">Deposit Amount:</span>
@@ -253,11 +277,12 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
 
                 <Elements stripe={stripePromise}>
                   <ReservationPayment
-                    reservationId={reservationResponse.reservation._id}
-                    amount={DEPOSIT_AMOUNT / 100}
-                    email={reservationResponse.reservation.email}
+                    reservationId={pendingReservationData._id || ''}
+                    amount={DEPOSIT_AMOUNT}
+                    email={pendingReservationData.email}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
+                    errorMessage={errorMessage}
                   />
                 </Elements>
 
@@ -268,7 +293,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                   Cancel
                 </button>
               </div>
-            ) : status === 'success' && reservationResponse ? (
+            ) : status === 'success' && reservationResponse && reservationResponse.reservation ? (
               <div className="h-full min-h-96 flex flex-col items-center justify-center text-center p-8">
                 <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-50 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-lg">
                   <CheckCircle size={40} />
@@ -305,19 +330,19 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                 <div className="bg-stone-50 rounded-xl p-4 w-full text-left mb-6 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="font-semibold text-stone-700">Date:</span>
-                    <span className="text-stone-600">{reservationResponse.reservation.date}</span>
+                    <span className="text-stone-600">{reservationResponse.reservation?.date ?? ''}</span>
                   </div>
                   <div className="flex justify-between text-sm border-t border-stone-200 pt-2">
                     <span className="font-semibold text-stone-700">Time:</span>
-                    <span className="text-stone-600">{reservationResponse.reservation.time}</span>
+                    <span className="text-stone-600">{reservationResponse.reservation?.time ?? ''}</span>
                   </div>
                   <div className="flex justify-between text-sm border-t border-stone-200 pt-2">
                     <span className="font-semibold text-stone-700">Party Size:</span>
-                    <span className="text-stone-600">{reservationResponse.reservation.guests} {reservationResponse.reservation.guests === 1 ? 'guest' : 'guests'}</span>
+                    <span className="text-stone-600">{reservationResponse.reservation?.guests ?? ''} {reservationResponse.reservation?.guests === 1 ? 'guest' : 'guests'}</span>
                   </div>
                 </div>
 
-                <p className="text-sm text-stone-600 mb-6">A confirmation email has been sent to <strong>{reservationResponse.reservation.email}</strong></p>
+                <p className="text-sm text-stone-600 mb-6">A confirmation email has been sent to <strong>{reservationResponse.reservation?.email ?? ''}</strong></p>
                 
                 <button 
                   onClick={() => setStatus('idle')}

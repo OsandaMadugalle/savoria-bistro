@@ -50,6 +50,8 @@ const sendConfirmationEmail = async (reservation) => {
   }
 };
 
+module.exports = router;
+
 // Check restaurant capacity for a specific time slot
 const checkAvailability = async (date, time, excludeId = null) => {
   const Settings = require('../models/Settings');
@@ -149,20 +151,18 @@ router.post('/', async (req, res) => {
       codeExists = !!existing;
     }
 
+
     const reservation = new Reservation({
       ...otherData,
       date,
       time,
       guests,
       confirmationCode,
-      status: 'Confirmed',
+      status: 'Pending', // Only mark as confirmed after payment
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // Auto-expire in 24 hours if not marked complete
     });
 
     await reservation.save();
-
-    // Send confirmation email
-    await sendConfirmationEmail(reservation);
 
     // Log activity
     const { requesterEmail } = req.body;

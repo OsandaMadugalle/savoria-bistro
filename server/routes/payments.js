@@ -235,42 +235,26 @@ router.post('/reservation/confirm', async (req, res) => {
         payment.status = 'completed';
         payment.transactionId = paymentIntent.id;
         payment.paidAt = new Date();
-        
         if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data[0]) {
           const charge = paymentIntent.charges.data[0];
           payment.last4Digits = charge.payment_method_details?.card?.last4 || '';
           payment.cardBrand = charge.payment_method_details?.card?.brand?.toUpperCase() || '';
         }
-        
         await payment.save();
       }
 
+
+      // Mark reservation as confirmed and send confirmation email
+      const Reservation = require('../models/Reservation');
+      const { sendConfirmationEmail } = require('../utils/emailService');
       const reservation = await Reservation.findByIdAndUpdate(
         reservationId,
-        { paymentStatus: 'completed' },
+        { paymentStatus: 'completed', status: 'Confirmed' },
         { new: true }
       );
-
-      // Send confirmation email
       if (reservation) {
         try {
-          await sendEmail(
-            reservation.email,
-            'Payment Confirmed - Savoria Bistro Reservation',
-            `
-              <h2>Payment Confirmed</h2>
-              <p>Dear ${reservation.name},</p>
-              <p>Your deposit of $${(paymentIntent.amount / 100).toFixed(2)} has been successfully processed.</p>
-              <p><strong>Reservation Details:</strong></p>
-              <ul>
-                <li>Date: ${reservation.date}</li>
-                <li>Time: ${reservation.time}</li>
-                <li>Party Size: ${reservation.guests} guests</li>
-                <li>Confirmation Code: ${reservation.confirmationCode}</li>
-              </ul>
-              <p>We look forward to welcoming you at Savoria Bistro!</p>
-            `
-          );
+          await sendConfirmationEmail(reservation);
         } catch (emailErr) {
           console.error('Email send error:', emailErr);
         }
