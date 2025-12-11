@@ -3245,14 +3245,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
               {activeTab === 'stock' && (
                 <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                   <h2 className="text-xl font-bold mb-6">📦 Stock Management</h2>
-                  {user && <StockManagement userEmail={user.email} />}
+                  {user && <StockManagement userEmail={user.email} userRole={user.role} />}
                 </div>
               )}
 
               {activeTab === 'feedback' && (
                 <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                   <h2 className="text-xl font-bold mb-6">⭐ Feedback & Ratings Analytics</h2>
-                  {user && <FeedbackAnalytics userEmail={user.email} />}
+                  {user && <FeedbackAnalytics userEmail={user.email} userRole={user.role} />}
                 </div>
               )}
 

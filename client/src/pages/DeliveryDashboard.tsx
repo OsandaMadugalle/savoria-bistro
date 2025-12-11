@@ -55,9 +55,8 @@ export default function DeliveryDashboard({ user, onLogout }: DeliveryDashboardP
       
       setStats(statsData);
       setRiders(ridersData);
-      setOrders(ordersData.filter((o: any) => 
-        ['Packed & Ready', 'Assigned', 'Picked Up', 'Out for Delivery'].includes(o.status)
-      ));
+      // Only show orders that are not yet assigned (Packed & Ready)
+      setOrders(ordersData.filter((o: any) => o.status === 'Packed & Ready'));
     } catch (error) {
       console.error('Failed to load delivery data:', error);
       showToast('Failed to load data', 'error');

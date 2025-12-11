@@ -277,13 +277,14 @@ router.put('/pickup/:orderId', requireRole(['rider', 'admin', 'masterAdmin']), a
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    // Verify rider is the one assigned
+    // Only restrict pickup to assigned rider if role is 'rider'
     if (req.user.role === 'rider') {
-      const rider = await DeliveryRider.findById(req.user._id);
+      const rider = await DeliveryRider.findById(req.user.userId);
       if (!rider || !order.assignedRider || rider._id.toString() !== order.assignedRider._id.toString()) {
         return res.status(403).json({ error: 'This order is not assigned to you' });
       }
     }
+    // If role is admin or masterAdmin, allow pickup for any order
 
     order.pickedUpAt = new Date();
     order.status = 'Picked Up';
@@ -315,7 +316,7 @@ router.put('/out-for-delivery/:orderId', requireRole(['rider', 'admin', 'masterA
 
     // Verify rider is the one assigned
     if (req.user.role === 'rider') {
-      const rider = await DeliveryRider.findById(req.user._id);
+      const rider = await DeliveryRider.findById(req.user.userId);
       if (!rider || !order.assignedRider || rider._id.toString() !== order.assignedRider._id.toString()) {
         return res.status(403).json({ error: 'This order is not assigned to you' });
       }
@@ -356,7 +357,7 @@ router.put('/deliver/:orderId', requireRole(['rider', 'admin', 'masterAdmin']), 
 
     // Verify rider is the one assigned
     if (req.user.role === 'rider') {
-      const rider = await DeliveryRider.findById(req.user._id);
+      const rider = await DeliveryRider.findById(req.user.userId);
       if (!rider || !order.assignedRider || rider._id.toString() !== order.assignedRider._id.toString()) {
         return res.status(403).json({ error: 'This order is not assigned to you' });
       }

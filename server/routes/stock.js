@@ -5,11 +5,17 @@ const StockAlert = require('../models/StockAlert');
 const User = require('../models/User');
 const { logActivity } = require('./auth');
 
-// Helper: Check if user is admin
+// Helper: Check if user is admin (User or Admin collections)
+const Admin = require('../models/Admin');
 const checkAdminPermission = async (requesterEmail) => {
   if (!requesterEmail) return false;
-  const user = await User.findOne({ email: requesterEmail });
-  return user && (user.role === 'admin' || user.role === 'masterAdmin');
+  const admin = await Admin.findOne({ email: requesterEmail });
+  if (admin) {
+    console.log('[checkAdminPermission] requesterEmail:', requesterEmail, '| found admin:', { email: admin.email, role: admin.role });
+    return admin.role === 'admin' || admin.role === 'masterAdmin';
+  }
+  console.log('[checkAdminPermission] requesterEmail:', requesterEmail, '| found admin: null');
+  return false;
 };
 
 // Helper: Create or update stock alert

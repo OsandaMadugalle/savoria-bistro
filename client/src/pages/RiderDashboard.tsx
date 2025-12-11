@@ -54,7 +54,12 @@ export default function RiderDashboard({ user, onLogout }: RiderDashboardProps) 
       showToast('Order marked as picked up!', 'success');
       await loadOrders();
     } catch (error: any) {
-      showToast(error.message || 'Failed to update order', 'error');
+      let msg = error.message || 'Failed to update order';
+      if (error.response) {
+        msg += ` | Status: ${error.response.status} | ${JSON.stringify(error.response.data)}`;
+      }
+      console.error('Pickup error:', error);
+      showToast(msg, 'error');
     }
   };
 
@@ -64,7 +69,12 @@ export default function RiderDashboard({ user, onLogout }: RiderDashboardProps) 
       showToast('Order marked as out for delivery!', 'success');
       await loadOrders();
     } catch (error: any) {
-      showToast(error.message || 'Failed to update order', 'error');
+      let msg = error.message || 'Failed to update order';
+      if (error.response) {
+        msg += ` | Status: ${error.response.status} | ${JSON.stringify(error.response.data)}`;
+      }
+      console.error('Out for delivery error:', error);
+      showToast(msg, 'error');
     }
   };
 
@@ -91,7 +101,12 @@ export default function RiderDashboard({ user, onLogout }: RiderDashboardProps) 
         return updated;
       });
     } catch (error: any) {
-      showToast(error.message || 'Failed to complete delivery', 'error');
+      let msg = error.message || 'Failed to complete delivery';
+      if (error.response) {
+        msg += ` | Status: ${error.response.status} | ${JSON.stringify(error.response.data)}`;
+      }
+      console.error('Delivery error:', error);
+      showToast(msg, 'error');
     }
   };
 
@@ -299,20 +314,24 @@ export default function RiderDashboard({ user, onLogout }: RiderDashboardProps) 
                           <div className="space-y-1 text-sm text-stone-600">
                             <div className="flex items-center gap-2">
                               <MapPin size={16} />
-                              <span><strong>Address:</strong> {order.deliveryAddress || 'N/A'}</span>
+                              <span><strong>Address:</strong> {
+                                order.deliveryAddress
+                                  ? [order.deliveryAddress.street, order.deliveryAddress.city, order.deliveryAddress.postalCode, order.deliveryAddress.notes].filter(Boolean).join(', ')
+                                  : 'N/A'
+                              }</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Phone size={16} />
-                              <span><strong>Customer:</strong> {order.customerName} - {order.customerPhone}</span>
+                              <span><strong>Customer:</strong> {order.userId?.name || 'N/A'} - {order.userId?.phone || 'N/A'}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Package size={16} />
                               <span><strong>Items:</strong> {order.items?.length || 0} item(s)</span>
                             </div>
-                            {order.pickupTime && (
+                            {order.pickedUpAt && (
                               <div className="flex items-center gap-2">
                                 <Clock size={16} />
-                                <span><strong>Picked up:</strong> {new Date(order.pickupTime).toLocaleString()}</span>
+                                <span><strong>Picked up:</strong> {new Date(order.pickedUpAt).toLocaleString()}</span>
                               </div>
                             )}
                           </div>

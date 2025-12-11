@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import FeedbackForm from '../components/FeedbackForm';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar, MapPin, X, Bell, Heart } from 'lucide-react';
 import { User, Order, ReservationData, PrivateEventInquiry } from '../types';
@@ -9,6 +10,11 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
+      const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+      const [feedbackOrder, setFeedbackOrder] = useState<Order | null>(null);
+      // ...existing code...
+      // Helper: Check if feedback exists for order
+      const hasFeedbackForOrder = (orderId: string) => feedback.some(f => f.orderId === orderId);
    const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
    // All hooks must be called unconditionally and at the top level
@@ -582,31 +588,59 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                               ) : orders.length === 0 ? (
                                  <div className="p-6 text-center text-stone-500">No orders found.</div>
                               ) : (
-                                 orders.map(order => (
-                                    <div key={order._id || order.orderId} className="p-6 hover:bg-stone-50 transition-colors flex flex-col sm:flex-row gap-4 justify-between items-center">
-                                       <div className="flex items-start gap-4 flex-1">
-                                           <div className="bg-orange-50 p-3 rounded-full text-orange-600">
-                                                <Package size={20} />
-                                           </div>
-                                           <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-bold text-stone-900">Order {order.orderId}</span>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{order.status}</span>
-                                                </div>
-                                                <p className="text-xs text-stone-500 mb-1">{new Date(order.createdAt).toLocaleString()}</p>
-                                                <p className="text-sm text-stone-600">{order.items.map(i => i.name).join(', ')}</p>
-                                           </div>
-                                       </div>
-                                       <div className="text-right flex flex-col items-end gap-2">
-                                           <span className="font-bold text-stone-900">Rs {order.total.toFixed(2)}</span>
-                                           <button className="flex items-center gap-1 text-xs font-bold text-orange-600 border border-orange-200 px-3 py-1.5 rounded-full hover:bg-orange-50 transition-colors"
-                                              onClick={() => navigate(`/tracker?orderId=${order.orderId}`)}
-                                           >
-                                                <RefreshCcw size={12} /> Track
-                                           </button>
-                                       </div>
-                                    </div>
-                                 ))
+                                                 <>
+                                                    {orders.map(order => (
+                                                         <div key={order._id || order.orderId} className="p-6 hover:bg-stone-50 transition-colors flex flex-col sm:flex-row gap-4 justify-between items-center">
+                                                             <div className="flex items-start gap-4 flex-1">
+                                                                   <div className="bg-orange-50 p-3 rounded-full text-orange-600">
+                                                                           <Package size={20} />
+                                                                   </div>
+                                                                   <div>
+                                                                           <div className="flex items-center gap-2 mb-1">
+                                                                                 <span className="font-bold text-stone-900">Order {order.orderId}</span>
+                                                                                 <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{order.status}</span>
+                                                                           </div>
+                                                                           <p className="text-xs text-stone-500 mb-1">{new Date(order.createdAt).toLocaleString()}</p>
+                                                                           <p className="text-sm text-stone-600">{order.items.map(i => i.name).join(', ')}</p>
+                                                                   </div>
+                                                             </div>
+                                                             <div className="text-right flex flex-col items-end gap-2">
+                                                                   <span className="font-bold text-stone-900">Rs {order.total.toFixed(2)}</span>
+                                                                   <button className="flex items-center gap-1 text-xs font-bold text-orange-600 border border-orange-200 px-3 py-1.5 rounded-full hover:bg-orange-50 transition-colors"
+                                                                        onClick={() => navigate(`/tracker?orderId=${order.orderId}`)}
+                                                                   >
+                                                                           <RefreshCcw size={12} /> Track
+                                                                   </button>
+                                                                   {order.status === 'Delivered' && !hasFeedbackForOrder(order.orderId) && (
+                                                                      <button
+                                                                         className="flex items-center gap-1 text-xs font-bold text-green-700 border border-green-200 px-3 py-1.5 rounded-full hover:bg-green-50 transition-colors mt-2"
+                                                                         onClick={() => {
+                                                                            setFeedbackOrder(order);
+                                                                            setShowFeedbackModal(true);
+                                                                         }}
+                                                                      >
+                                                                         <MessageSquare size={12} /> Leave Feedback
+                                                                      </button>
+                                                                   )}
+                                                             </div>
+                                                         </div>
+                                                    ))}
+                                                    {/* Feedback Modal */}
+                                                    {showFeedbackModal && feedbackOrder && (
+                                                       <FeedbackForm
+                                                          order={feedbackOrder}
+                                                          user={user}
+                                                          onClose={() => { setShowFeedbackModal(false); setFeedbackOrder(null); }}
+                                                          onSuccess={async () => {
+                                                             // Refresh feedback list after submit
+                                                             const userId = user?.id || user?._id || user?.email;
+                                                             if (userId) {
+                                                                await import('../services/api').then(api => api.getUserFeedbackHistory(userId).then(setFeedback));
+                                                             }
+                                                          }}
+                                                       />
+                                                    )}
+                                                 </>
                               )}
                            </div>
                         )}

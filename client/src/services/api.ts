@@ -363,11 +363,17 @@ export const fetchAllOrders = async (): Promise<Order[]> => {
 };
 
 export const updateOrderStatus = async (orderId: string, status: string): Promise<void> => {
-  await fetch(`${API_URL}/orders/${orderId}/status`, {
+  // Always send orderId as string, not _id
+  const id = typeof orderId === 'string' ? orderId : String(orderId);
+  const res = await fetch(`${API_URL}/orders/${id}/status`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
   });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to update order status');
+  }
 };
 
 export const fetchUserLoyalty = async (userId: string): Promise<{ loyaltyPoints: number; tier: string; pointsToNextTier: number; nextTier: string }> => {
@@ -762,8 +768,10 @@ export const getUserFeedbackHistory = async (userId: string) => {
   return res.json();
 };
 
-export const getFeedbackStats = async (requesterEmail: string) => {
-  const res = await fetch(`${API_URL}/feedback/stats/summary?requesterEmail=${encodeURIComponent(requesterEmail)}`);
+export const getFeedbackStats = async (requesterEmail: string, requesterRole?: string) => {
+  const params = new URLSearchParams({ requesterEmail });
+  if (requesterRole) params.append('requesterRole', requesterRole);
+  const res = await fetch(`${API_URL}/feedback/stats/summary?${params.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch feedback stats');
   return res.json();
 };

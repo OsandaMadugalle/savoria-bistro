@@ -19,6 +19,7 @@ import {
 
 interface StockManagementProps {
   userEmail: string;
+  userRole: string;
 }
 
 interface StockUpdateForm {
@@ -29,7 +30,9 @@ interface StockUpdateForm {
   reason: string;
 }
 
-const StockManagement: React.FC<StockManagementProps> = ({ userEmail }) => {
+const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }) => {
+  // DEBUG: Log userRole to console for troubleshooting
+  console.log('StockManagement userRole:', userRole);
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   const [outOfStockItems, setOutOfStockItems] = useState<any[]>([]);
@@ -46,6 +49,7 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail }) => {
   const [updateError, setUpdateError] = useState('');
   const [updating, setUpdating] = useState(false);
   const [updatingAlertId, setUpdatingAlertId] = useState<string | null>(null);
+  const [permissionError, setPermissionError] = useState('');
 
   const loadData = async () => {
     try {
@@ -99,6 +103,7 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail }) => {
       reason: 'Restock'
     });
     setUpdateError('');
+    setPermissionError(''); // Clear permission error when opening modal
     setShowUpdateModal(true);
   };
 
@@ -112,9 +117,19 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail }) => {
       reason: ''
     });
     setUpdateError('');
+    setPermissionError(''); // Clear permission error when closing modal
   };
 
   const handleUpdateStock = async () => {
+    // DEBUG: Log userRole at permission check (value and type)
+    const trimmedRole = (userRole || '').trim();
+    console.log('handleUpdateStock userRole (trimmed):', trimmedRole, 'type:', typeof trimmedRole);
+    // Check admin permission by role (trimmed)
+    if (trimmedRole !== 'admin' && trimmedRole !== 'masterAdmin') {
+      setPermissionError('Admin permission required to restock.');
+      return;
+    }
+    setPermissionError('');
     if (!validateStockUpdate()) {
       return;
     }
@@ -128,6 +143,7 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail }) => {
         userEmail
       );
       closeUpdateModal();
+      setPermissionError(''); // Clear permission error after successful update
       loadData();
     } catch (error) {
       setUpdateError(error instanceof Error ? error.message : 'Failed to update stock');
@@ -183,7 +199,8 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail }) => {
                 ×
               </button>
             </div>
-
+            {/* DEBUG: Show userRole for troubleshooting */}
+            <div className="mb-2 text-xs text-stone-400">User Role: {userRole}</div>
             <form onSubmit={(e) => { e.preventDefault(); handleUpdateStock(); }} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-stone-700 mb-1">Item Name</label>
@@ -236,6 +253,12 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail }) => {
               {updateError && (
                 <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
                   {updateError}
+                </div>
+              )}
+
+              {permissionError && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium mb-2">
+                  {permissionError}
                 </div>
               )}
 

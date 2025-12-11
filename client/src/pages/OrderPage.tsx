@@ -229,6 +229,19 @@ const OrderPage: React.FC<OrderPageProps> = ({ cart, updateQuantity, removeFromC
           originalTotal: total,
           paymentIntentId: result.paymentIntent.id,
           requesterEmail: user.email,
+          deliveryAddress: user?.address ? {
+            street: user.address.street || '',
+            city: user.address.city || '',
+            postalCode: user.address.postalCode || '',
+            phone: user.phone || '',
+            notes: user.address.notes || ''
+          } : {
+            street: '',
+            city: '',
+            postalCode: '',
+            phone: user.phone || '',
+            notes: ''
+          }
         };
         const response = await createOrder(orderData);
         const { orderId, pointsEarned, userTier } = response;

@@ -180,9 +180,13 @@ router.get('/', async (req, res) => {
 // Get feedback statistics (admin only)
 router.get('/stats/summary', async (req, res) => {
   try {
-    const { requesterEmail } = req.query;
-    const isAdmin = await checkAdminPermission(requesterEmail);
-
+    const { requesterEmail, requesterRole } = req.query;
+    let isAdmin = false;
+    if (requesterRole === 'admin' || requesterRole === 'masterAdmin') {
+      isAdmin = true;
+    } else {
+      isAdmin = await checkAdminPermission(requesterEmail);
+    }
     if (!isAdmin) {
       return res.status(403).json({ message: 'Admin permission required' });
     }

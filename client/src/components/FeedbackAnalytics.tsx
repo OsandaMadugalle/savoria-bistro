@@ -4,17 +4,23 @@ import { getFeedbackStats } from '../services/api';
 
 interface FeedbackAnalyticsProps {
   userEmail: string;
+  userRole?: string;
 }
 
-const FeedbackAnalytics: React.FC<FeedbackAnalyticsProps> = ({ userEmail }) => {
+const FeedbackAnalytics: React.FC<FeedbackAnalyticsProps> = ({ userEmail, userRole }) => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const loadStats = async () => {
     try {
       setLoading(true);
-      const data = await getFeedbackStats(userEmail);
-      setStats(data);
+      // Only fetch if user is admin or masterAdmin
+      if (userRole === 'admin' || userRole === 'masterAdmin') {
+        const data = await getFeedbackStats(userEmail, userRole);
+        setStats(data);
+      } else {
+        setStats(null);
+      }
     } catch (error) {
       console.error('Failed to load feedback statistics:', error);
     } finally {
@@ -24,7 +30,7 @@ const FeedbackAnalytics: React.FC<FeedbackAnalyticsProps> = ({ userEmail }) => {
 
   useEffect(() => {
     loadStats();
-  }, [userEmail]);
+  }, [userEmail, userRole]);
 
   if (loading) {
     return (
