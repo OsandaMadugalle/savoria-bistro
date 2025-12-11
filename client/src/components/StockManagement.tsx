@@ -31,6 +31,7 @@ interface StockUpdateForm {
 }
 
 const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }) => {
+    const [activeTab, setActiveTab] = useState<'alerts' | 'low' | 'out'>('alerts');
   // DEBUG: Log userRole to console for troubleshooting
   console.log('StockManagement userRole:', userRole);
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
@@ -144,7 +145,7 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }
       );
       closeUpdateModal();
       setPermissionError(''); // Clear permission error after successful update
-      loadData();
+      loadData(); // Restore real-time update after stock change
     } catch (error) {
       setUpdateError(error instanceof Error ? error.message : 'Failed to update stock');
     } finally {
@@ -186,6 +187,37 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }
 
   return (
     <div className="space-y-6">
+      {/* Stats Overview - moved back to top */}
+      {/* Removed duplicate stats overview grid after refresh button */}
+
+      {/* ...existing code... */}
+
+      {/* Tabs for Alerts, Low Stock, Out of Stock - moved after stats overview */}
+      <div className="flex gap-2 mb-4 mt-6">
+        <button
+          className={`px-4 py-2 rounded-lg font-bold transition-colors ${activeTab === 'alerts' ? 'bg-orange-600 text-white' : 'bg-white text-orange-600 border border-orange-200'}`}
+          onClick={() => setActiveTab('alerts')}
+        >🚨 Active Alerts</button>
+        <button
+          className={`px-4 py-2 rounded-lg font-bold transition-colors ${activeTab === 'low' ? 'bg-yellow-500 text-white' : 'bg-white text-yellow-700 border border-yellow-200'}`}
+          onClick={() => setActiveTab('low')}
+        >⚠️ Low Stock Items</button>
+        <button
+          className={`px-4 py-2 rounded-lg font-bold transition-colors ${activeTab === 'out' ? 'bg-red-600 text-white' : 'bg-white text-red-700 border border-red-200'}`}
+          onClick={() => setActiveTab('out')}
+        >🛑 Out of Stock Items</button>
+      </div>
+
+      {/* Manual Refresh Button */}
+      <div className="flex justify-end mb-2">
+        <button
+          onClick={loadData}
+          className="px-4 py-2 bg-orange-500 text-white rounded-lg font-bold hover:bg-orange-600 transition-colors flex items-center gap-2"
+          disabled={loading}
+        >
+          <RefreshCw size={16} /> {loading ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </div>
       {/* Update Stock Modal */}
       {showUpdateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -234,21 +266,7 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-1">Reason *</label>
-                <select 
-                  value={updateForm.reason}
-                  onChange={(e) => setUpdateForm({...updateForm, reason: e.target.value})}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                >
-                  <option value="Restock">Restock</option>
-                  <option value="Restock from vendor">Restock from vendor</option>
-                  <option value="New delivery">New delivery</option>
-                  <option value="Inventory correction">Inventory correction</option>
-                  <option value="Return from waste">Return from waste</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
+        {/* ...existing code... */}
 
               {updateError && (
                 <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
@@ -328,8 +346,8 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }
         </div>
       )}
 
-      {/* Active Alerts */}
-      {alerts.length > 0 && (
+      {/* Tab Content */}
+      {activeTab === 'alerts' && alerts.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">🚨 Active Alerts ({alerts.length})</h3>
           <div className="space-y-3">
@@ -359,8 +377,7 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }
         </div>
       )}
 
-      {/* Low Stock Items */}
-      {lowStockItems.length > 0 && (
+      {activeTab === 'low' && lowStockItems.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">⚠️ Low Stock Items ({lowStockItems.length})</h3>
           <div className="overflow-x-auto">
@@ -401,8 +418,7 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }
         </div>
       )}
 
-      {/* Out of Stock Items */}
-      {outOfStockItems.length > 0 && (
+      {activeTab === 'out' && outOfStockItems.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-bold text-red-900 mb-4">🛑 Out of Stock Items ({outOfStockItems.length})</h3>
           <div className="overflow-x-auto">
@@ -420,7 +436,7 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }
                   <tr key={item.id} className="border-b border-gray-200 hover:bg-red-50">
                     <td className="px-4 py-3 font-semibold text-gray-900">{item.name}</td>
                     <td className="px-4 py-3 text-gray-600">{item.category}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900">${item.price?.toFixed(2)}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900">Rs {item.price?.toFixed(2)}</td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => openUpdateModal(item)}

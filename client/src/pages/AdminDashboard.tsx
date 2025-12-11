@@ -312,16 +312,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     setEditingMenuId(null);
   };
 
-  const toggleDietaryOption = (option: string) => {
-    setMenuForm(prev => {
-      const existing = prev.dietary || [];
-      const next = existing.includes(option)
-        ? existing.filter(tag => tag !== option)
-        : [...existing, option];
-      return { ...prev, dietary: next };
-    });
-  };
-
   // ===== STATE: GALLERY =====
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [showGalleryUpload, setShowGalleryUpload] = useState(false);
