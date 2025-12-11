@@ -601,7 +601,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                      </div>
                      <div className="divide-y divide-stone-100 min-h-96">
                         {profileTab === 'orders' && (
-                           <div>
+                           <div style={{ maxHeight: '420px', overflowY: 'auto' }} className="rounded-xl border border-stone-200 bg-white/80 shadow-inner">
                               {ordersLoading ? (
                                  <div className="p-6 text-center text-stone-500">Loading orders...</div>
                               ) : orders.length === 0 ? (
@@ -747,7 +747,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                            </div>
                         )}
                         {profileTab === 'reviews' && (
-                           <div>
+                           <div style={{ maxHeight: '420px', overflowY: 'auto' }} className="rounded-xl border border-stone-200 bg-white/80 shadow-inner">
                               {reviewsLoading ? (
                                  <div className="p-6 text-center text-stone-500">Loading reviews...</div>
                               ) : reviews.length === 0 ? (
@@ -809,7 +809,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                            </div>
                         )}
                         {profileTab === 'events' && (
-                           <div>
+                           <div style={{ maxHeight: '420px', overflowY: 'auto' }} className="rounded-xl border border-stone-200 bg-white/80 shadow-inner">
                               {eventsLoading ? (
                                  <div className="p-6 text-center text-stone-500">Loading events...</div>
                               ) : eventInquiries.length === 0 ? (
