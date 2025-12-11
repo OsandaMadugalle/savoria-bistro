@@ -712,7 +712,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                                               <button
                                                  onClick={async () => {
                                                     if (window.confirm('Are you sure you want to cancel this reservation?')) {
-                                                       setCancellingId(res._id);
+                                                       setCancellingId(res._id || null);
                                                        try {
                                                           const response = await fetch(`${API_URL}/reservations/${res.confirmationCode}`, {
                                                              method: 'DELETE'
