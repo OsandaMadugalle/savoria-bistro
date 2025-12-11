@@ -47,10 +47,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
       phone: string;
       address?: string;
       birthday?: string;
-      favoriteCuisine?: string;
-      dietaryRestrictions?: string;
-      preferredDiningTime?: string;
-      specialRequests?: string;
       password: string;
       confirmPassword: string;
    }>({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
@@ -68,7 +64,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
    const [eventInquiries, setEventInquiries] = useState<PrivateEventInquiry[]>([]);
    const [eventsLoading, setEventsLoading] = useState(true);
    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews' | 'events' | 'loyalty' | 'feedback' | 'preferences'>('orders');
+   const [profileTab, setProfileTab] = useState<'orders' | 'reservations' | 'reviews' | 'events' | 'loyalty' | 'feedback'>('orders');
    const [feedback, setFeedback] = useState<any[]>([]);
    const [feedbackLoading, setFeedbackLoading] = useState(true);
    const navigate = useNavigate();
@@ -77,7 +73,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
    useEffect(() => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam && ['orders', 'reservations', 'reviews', 'events', 'loyalty', 'feedback', 'preferences'].includes(tabParam)) {
+      if (tabParam && ['orders', 'reservations', 'reviews', 'events', 'loyalty', 'feedback'].includes(tabParam)) {
          setProfileTab(tabParam as any);
       }
    }, []);
@@ -116,10 +112,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
             phone: userWithDefaults.phone,
             address: userWithDefaults.address,
             birthday: userWithDefaults.birthday,
-            favoriteCuisine: userWithDefaults.favoriteCuisine,
-            dietaryRestrictions: userWithDefaults.dietaryRestrictions,
-            preferredDiningTime: userWithDefaults.preferredDiningTime,
-            specialRequests: userWithDefaults.specialRequests,
             password: '',
             confirmPassword: ''
          });
@@ -194,10 +186,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                      phone: userWithDefaults.phone,
                      address: userWithDefaults.address,
                      birthday: userWithDefaults.birthday,
-                     favoriteCuisine: userWithDefaults.favoriteCuisine,
-                     dietaryRestrictions: userWithDefaults.dietaryRestrictions,
-                     preferredDiningTime: userWithDefaults.preferredDiningTime,
-                     specialRequests: userWithDefaults.specialRequests,
                      password: '',
                      confirmPassword: ''
                   });
@@ -302,10 +290,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
          phone: user.phone,
          address: user.address,
          birthday: user.birthday,
-         favoriteCuisine: user.favoriteCuisine,
-         dietaryRestrictions: user.dietaryRestrictions,
-         preferredDiningTime: user.preferredDiningTime,
-         specialRequests: user.specialRequests,
          password: '',
          confirmPassword: ''
       });
@@ -588,13 +572,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                   <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
                      <div className="p-4 border-b border-stone-100">
                         <div className="flex items-center justify-center gap-2 flex-wrap">
-                           {['loyalty', 'orders', 'reservations', 'reviews', 'events', 'feedback', 'preferences'].map(tab => (
+                           {['loyalty', 'orders', 'reservations', 'reviews', 'events', 'feedback'].map(tab => (
                               <button
                                  key={tab}
                                  onClick={() => setProfileTab(tab as any)}
                                  className={`px-3 py-2 rounded-lg font-semibold text-xs transition-all whitespace-nowrap ${profileTab === tab ? 'bg-orange-600 text-white shadow-md' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
                               >
-                                 {tab === 'loyalty' ? '🏅 Loyalty' : tab === 'orders' ? '📦 Orders' : tab === 'reservations' ? '📅 Reservations' : tab === 'reviews' ? '⭐ Reviews' : tab === 'events' ? '🎉 Events' : tab === 'feedback' ? '💬 Feedback' : '❤️ Preferences'}
+                                 {tab === 'loyalty' ? '🏅 Loyalty' : tab === 'orders' ? '📦 Orders' : tab === 'reservations' ? '📅 Reservations' : tab === 'reviews' ? '⭐ Reviews' : tab === 'events' ? '🎉 Events' : '💬 Feedback'}
                               </button>
                            ))}
                         </div>
@@ -1043,151 +1027,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                               )}
                            </div>
                         )}
-                        {profileTab === 'preferences' && (
-                           <div className="p-6 space-y-6">
-                              {/* Dining Preferences */}
-                              <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-2xl border-2 border-orange-300">
-                                 <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-                                    <Heart size={20} className="text-orange-600" />
-                                    Dining Preferences
-                                 </h4>
-                                 <div className="grid md:grid-cols-3 gap-4">
-                                    <div className="bg-white p-4 rounded-xl shadow-sm">
-                                       <p className="text-xs font-bold text-orange-600 uppercase mb-2">Favorite Cuisine</p>
-                                       <p className="text-sm font-semibold text-stone-900">{user.favoriteCuisine || '—'}</p>
-                                    </div>
-                                    <div className="bg-white p-4 rounded-xl shadow-sm">
-                                       <p className="text-xs font-bold text-orange-600 uppercase mb-2">Dietary Restrictions</p>
-                                       <p className="text-sm font-semibold text-stone-900">{user.dietaryRestrictions || 'None'}</p>
-                                    </div>
-                                    <div className="bg-white p-4 rounded-xl shadow-sm">
-                                       <p className="text-xs font-bold text-orange-600 uppercase mb-2">Dining Time</p>
-                                       <p className="text-sm font-semibold text-stone-900">{user.preferredDiningTime || 'Anytime'}</p>
-                                    </div>
-                                 </div>
-                              </div>
-
-                              {/* Special Requests */}
-                              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border-2 border-blue-300">
-                                 <h4 className="font-bold text-lg mb-4">📝 Special Requests</h4>
-                                 <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
-                                    <p className="text-stone-700 text-sm leading-relaxed">{user.specialRequests || 'No special requests on file'}</p>
-                                 </div>
-                                 <button
-                                    onClick={handleEditClick}
-                                    className="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-700 transition-colors"
-                                 >
-                                    Update Preferences
-                                 </button>
-                              </div>
-
-                              {/* Notification Settings */}
-                              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border-2 border-purple-300">
-                                 <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-                                    <Bell size={20} className="text-purple-600" />
-                                    Notification Settings
-                                 </h4>
-                                 <div className="space-y-3">
-                                    <label className="flex items-center gap-3 p-4 bg-white rounded-xl cursor-pointer hover:shadow-md transition-all border border-purple-200">
-                                       <input type="checkbox" defaultChecked className="w-5 h-5 accent-purple-600" />
-                                       <div>
-                                          <p className="text-sm font-semibold text-stone-900">📦 Order Updates</p>
-                                          <p className="text-xs text-stone-600">Get notified about order status changes</p>
-                                       </div>
-                                    </label>
-                                    <label className="flex items-center gap-3 p-4 bg-white rounded-xl cursor-pointer hover:shadow-md transition-all border border-purple-200">
-                                       <input type="checkbox" defaultChecked className="w-5 h-5 accent-purple-600" />
-                                       <div>
-                                          <p className="text-sm font-semibold text-stone-900">🔔 Reservation Reminders</p>
-                                          <p className="text-xs text-stone-600">Receive reminders before your reservations</p>
-                                       </div>
-                                    </label>
-                                    <label className="flex items-center gap-3 p-4 bg-white rounded-xl cursor-pointer hover:shadow-md transition-all border border-purple-200">
-                                       <input type="checkbox" defaultChecked className="w-5 h-5 accent-purple-600" />
-                                       <div>
-                                          <p className="text-sm font-semibold text-stone-900">🎉 Special Offers</p>
-                                          <p className="text-xs text-stone-600">Promotional deals and member-only offers</p>
-                                       </div>
-                                    </label>
-                                    <label className="flex items-center gap-3 p-4 bg-white rounded-xl cursor-pointer hover:shadow-md transition-all border border-purple-200">
-                                       <input type="checkbox" className="w-5 h-5 accent-purple-600" />
-                                       <div>
-                                          <p className="text-sm font-semibold text-stone-900">✨ New Dishes</p>
-                                          <p className="text-xs text-stone-600">News about new menu items and specials</p>
-                                       </div>
-                                    </label>
-                                 </div>
-                              </div>
-
-                              {/* Membership Perks */}
-                              <div>
-                                 <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-                                    <Gift size={20} className="text-orange-600" />
-                                    Your Membership Perks ({user.tier})
-                                 </h4>
-                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {user.tier === 'Gold' ? (
-                                       <>
-                                          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                                             <p className="font-semibold text-yellow-900 mb-1">20% Discount</p>
-                                             <p className="text-xs text-yellow-700">All orders and reservations</p>
-                                          </div>
-                                          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                                             <p className="font-semibold text-yellow-900 mb-1">Priority Support</p>
-                                             <p className="text-xs text-yellow-700">Fast-tracked customer service</p>
-                                          </div>
-                                          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                                             <p className="font-semibold text-yellow-900 mb-1">Free Dessert</p>
-                                             <p className="text-xs text-yellow-700">On your birthday month</p>
-                                          </div>
-                                          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                                             <p className="font-semibold text-yellow-900 mb-1">Early Access</p>
-                                             <p className="text-xs text-yellow-700">VIP events & new menu launches</p>
-                                          </div>
-                                       </>
-                                    ) : user.tier === 'Silver' ? (
-                                       <>
-                                          <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                                             <p className="font-semibold text-gray-900 mb-1">10% Discount</p>
-                                             <p className="text-xs text-gray-700">All orders and reservations</p>
-                                          </div>
-                                          <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                                             <p className="font-semibold text-gray-900 mb-1">Birthday Bonus</p>
-                                             <p className="text-xs text-gray-700">50 extra loyalty points</p>
-                                          </div>
-                                          <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                                             <p className="font-semibold text-gray-900 mb-1">Event Access</p>
-                                             <p className="text-xs text-gray-700">Invitation to special events</p>
-                                          </div>
-                                          <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                                             <p className="font-semibold text-gray-900 mb-1">Exclusive Menu</p>
-                                             <p className="text-xs text-gray-700">Limited items for members only</p>
-                                          </div>
-                                       </>
-                                    ) : (
-                                       <>
-                                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                             <p className="font-semibold text-amber-900 mb-1">Earn Points</p>
-                                             <p className="text-xs text-amber-700">1 point per $1 spent</p>
-                                          </div>
-                                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                             <p className="font-semibold text-amber-900 mb-1">Special Offers</p>
-                                             <p className="text-xs text-amber-700">Exclusive deals via email</p>
-                                          </div>
-                                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                             <p className="font-semibold text-amber-900 mb-1">Fast Checkout</p>
-                                             <p className="text-xs text-amber-700">Saved preferences & address</p>
-                                          </div>
-                                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                             <p className="font-semibold text-amber-900 mb-1">Unlock Rewards</p>
-                                             <p className="text-xs text-amber-700">Free items at 1000 points</p>
-                                          </div>
-                                       </>
-                                    )}
-                                 </div>
-                              </div>
-                           </div>
-                        )}
+                        {/* preferences tab removed */}
                      </div>
                   </div>
                </div>
