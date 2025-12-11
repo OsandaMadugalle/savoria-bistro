@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+// ...existing code...
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
   AreaChart, Area, PieChart, Pie, Cell
@@ -196,6 +197,8 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
+    // ===== STATE: MENU CATEGORY FILTER =====
+    const [activeMenuCategory, setActiveMenuCategory] = useState<string>('All');
   const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
   // ===== STATE: EDIT/DELETE =====
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -292,6 +295,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const [menuError, setMenuError] = useState('');
   const [menuTagsInput, setMenuTagsInput] = useState('');
   const [menuIngredientsInput, setMenuIngredientsInput] = useState('');
+  const [menuLoading, setMenuLoading] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState('');
 
@@ -537,8 +541,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     e.preventDefault();
     setMenuError('');
     setMenuMessage('');
+    setMenuLoading(true);
 
     if (!validateMenuForm()) {
+      setMenuLoading(false);
       return;
     }
 
@@ -567,6 +573,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       closeMenuForm();
     } catch (err: any) {
       showToast(err.message || 'Failed to save dish', 'error');
+    } finally {
+      setMenuLoading(false);
     }
   };
 
@@ -1213,7 +1221,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   }, [user?.email]);
 
   return (
-    <div>
+    <div className="w-full min-h-screen bg-stone-100">
       <ToastContainer toasts={toasts} onClose={removeToast} />
       <AdminNavigation user={user} onLogout={onLogout} />
       
@@ -1253,8 +1261,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       ) : null}
       {/* Admin Panel - for both masterAdmin and admin */}
       {user && (user.role === 'masterAdmin' || user.role === 'admin') ? (
-        <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-4 relative z-0">
-          <div className="max-w-6xl mx-auto">
+        <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-2 sm:px-4 relative z-0">
+          <div className="max-w-6xl mx-auto w-full">
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-4xl font-serif font-bold text-stone-900 flex items-center gap-3 mb-2">
@@ -1264,7 +1272,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
             </div>
 
             {/* Quick Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-white rounded-lg p-4 border border-stone-200 shadow-sm">
                 <div className="text-2xl font-bold text-stone-900">{users.length}</div>
                 <div className="text-xs text-stone-600 mt-1">👥 Total Users</div>
@@ -1284,9 +1292,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
             </div>
 
             {/* Main Layout with Vertical Sidebar */}
-            <div className="flex gap-6">
+            <div className="flex flex-col lg:flex-row gap-6">
               {/* Left Vertical Sidebar */}
-              <div className="w-56 flex-shrink-0 relative z-10">
+              <div className="w-full lg:w-56 flex-shrink-0 relative z-10 mb-4 lg:mb-0">
                 <div className="sticky top-28">
                   <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
                     <div className="max-h-[calc(100vh-8rem)] overflow-y-auto">
@@ -1492,9 +1500,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
               {/* Main Content Area */}
               <div className="flex-1 min-w-0 relative z-0">
-            <div className="bg-gradient-to-r from-orange-600 to-orange-500 rounded-xl shadow-lg p-4 mb-8 text-white">
-              <div className="flex flex-wrap gap-3 items-center justify-between">
+            <div className="bg-gradient-to-r from-orange-600 to-orange-500 rounded-xl shadow-lg p-3 sm:p-4 mb-8 text-white">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-center justify-between">
                 <div>
+                                          {/* Dietary Tags Selection UI removed as requested */}
                   <h3 className="font-bold text-lg">Bistro Operations</h3>
                   <p className="text-orange-100 text-sm">Manage staff, orders, menu, and business reports</p>
                 </div>
@@ -1653,7 +1662,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     {users.filter(u => u.role === 'customer').length > 0 && (
                     <div className="bg-stone-50 p-4 rounded-lg mb-8 border border-stone-200">
                       <h3 className="text-lg font-bold mb-4">Customer Demographics</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
                           <div className="text-sm font-semibold text-stone-700 mb-3">Tier Distribution</div>
                           <div className="space-y-2">
@@ -1713,7 +1722,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     )}
 
                     {/* Revenue Trend */}
-                    <div className="mb-8">
+                    <div className="mb-8 overflow-x-auto">
                       <h3 className="text-lg font-bold mb-2">Revenue Trend (Last 30 Days)</h3>
                       <ResponsiveContainer width="100%" height={250}>
                         <AreaChart data={getRevenueTrend(orders)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -1728,7 +1737,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     </div>
 
                     {/* Popular Items */}
-                    <div className="mb-8">
+                    <div className="mb-8 overflow-x-auto">
                       <h3 className="text-lg font-bold mb-2">Top 10 Popular Items</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={getPopularItems(orders)} margin={{ top: 10, right: 30, left: 0, bottom: 50 }}>
@@ -1745,7 +1754,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     </div>
 
                     {/* Revenue by Category */}
-                    <div className="mb-8">
+                    <div className="mb-8 overflow-x-auto">
                       <h3 className="text-lg font-bold mb-2">Revenue by Category</h3>
                       <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
@@ -1769,7 +1778,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     </div>
 
                     {/* Booking Patterns */}
-                    <div className="mb-8">
+                    <div className="mb-8 overflow-x-auto">
                       <h3 className="text-lg font-bold mb-2">Reservation Booking Patterns</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -1800,7 +1809,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     </div>
 
                     {/* Order Status Distribution */}
-                    <div className="mb-8">
+                    <div className="mb-8 overflow-x-auto">
                       <h3 className="text-lg font-bold mb-2">Order Status Distribution</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -1840,7 +1849,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     </div>
 
                     {/* Sales/Revenue by Day Chart */}
-                    <div className="mb-8">
+                    <div className="mb-8 overflow-x-auto">
                       <h3 className="text-lg font-bold mb-2">Sales (Revenue) by Day</h3>
                       <ResponsiveContainer width="100%" height={250}>
                         <BarChart data={getRevenueByDay(orders)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -1855,7 +1864,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     </div>
 
                     {/* Orders by Day Chart */}
-                    <div className="mb-8">
+                    <div className="mb-8 overflow-x-auto">
                       <h3 className="text-lg font-bold mb-2">Orders by Day</h3>
                       <ResponsiveContainer width="100%" height={250}>
                         <LineChart data={getOrdersByDay(orders)} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -2674,7 +2683,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                         </div>
                         {menuError && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{menuError}</div>}
                         {menuMessage && <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg text-sm">{menuMessage}</div>}
-                        <form onSubmit={handleMenuSubmit} className="space-y-4">
+                        <form onSubmit={handleMenuSubmit} className="space-y-4 relative">
+                          {menuLoading && (
+                            <div className="absolute inset-0 bg-black/10 flex items-center justify-center z-50">
+                              <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center">
+                                <span className="animate-spin text-orange-600 mb-2">
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-8 h-8">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                  </svg>
+                                </span>
+                                <span className="text-stone-700 font-bold">Saving...</span>
+                              </div>
+                            </div>
+                          )}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <input
@@ -2781,6 +2803,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           <p className="text-xs text-stone-400 mt-1">Select a file to have Cloudinary host the image; the Image URL stays in sync after upload.</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                          <div>
+                                                                            <div className="flex items-center justify-between">
+                                                                              <label className="block text-sm font-medium">Dietary Tags</label>
+                                                                              <span className="text-xs text-stone-400">Tap to toggle</span>
+                                                                            </div>
+                                                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                                              {['vegetarian', 'vegan', 'gf'].map(option => (
+                                                                                <button
+                                                                                  type="button"
+                                                                                  key={option}
+                                                                                  onClick={() => {
+                                                                                    setMenuForm(form => ({
+                                                                                      ...form,
+                                                                                      dietary: form.dietary?.includes(option)
+                                                                                        ? form.dietary.filter(tag => tag !== option)
+                                                                                        : [...(form.dietary || []), option]
+                                                                                    }));
+                                                                                  }}
+                                                                                  className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ${
+                                                                                    menuForm.dietary?.includes(option)
+                                                                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                                                      : 'bg-stone-50 border-transparent text-stone-500 hover:bg-stone-100'
+                                                                                  }`}
+                                                                                >
+                                                                                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                                                                                </button>
+                                                                              ))}
+                                                                            </div>
+                                                                          </div>
+                                                  {/* Image Preview */}
+                                                  <div className="mb-4">
+                                                    <label className="block text-sm font-medium mb-1">Image Preview</label>
+                                                    {menuForm.image ? (
+                                                      <img src={menuForm.image} alt="Preview" className="w-32 h-32 object-cover rounded shadow border" />
+                                                    ) : menuImageFile ? (
+                                                      <img src={URL.createObjectURL(menuImageFile)} alt="Preview" className="w-32 h-32 object-cover rounded shadow border" />
+                                                    ) : (
+                                                      <span className="inline-block w-32 h-32 bg-stone-100 text-stone-400 flex items-center justify-center rounded border">No Image</span>
+                                                    )}
+                                                  </div>
+                          {/* Dietary Tags Selection - Only show button toggle UI, checkbox UI removed */}
                           <div>
                             <label className="block text-sm font-medium mb-1">Tags (comma separated)</label>
                             <input
@@ -2805,26 +2868,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           </div>
                         </div>
                         <div>
-                          <div className="flex items-center justify-between">
-                            <label className="block text-sm font-medium">Dietary Tags</label>
-                            <span className="text-xs text-stone-400">Tap to toggle</span>
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {DIETARY_TAGS.map(option => (
-                              <button
-                                type="button"
-                                key={option}
-                                onClick={() => toggleDietaryOption(option)}
-                                className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ${
-                                  menuForm.dietary?.includes(option)
-                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                    : 'bg-stone-50 border-transparent text-stone-500 hover:bg-stone-100'
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
+                          {/* Dietary tags UI removed as requested */}
                         </div>
                         <div className="flex items-center gap-2">
                           <input
@@ -2868,6 +2912,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                       </button>
                     </div>
                     <div className="flex gap-2 mb-4 px-6 pt-4 flex-wrap">
+                      {/* Menu Item Count & Category Filter */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between w-full mb-2 gap-2">
+                        <div className="text-xs font-semibold text-stone-600">
+                          Total items: <span className="font-bold text-orange-600">{menuItems.length}</span>
+                          {activeMenuCategory !== 'All' ? (
+                            <span> | Showing: <span className="font-bold text-orange-600">{menuItems.filter(item => item.category === activeMenuCategory).length}</span></span>
+                          ) : null}
+                        </div>
+                        <div className="flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-orange-300 scrollbar-track-transparent max-w-full">
+                          {['All', 'Starter', 'Main', 'Dessert', 'Drink'].map(cat => (
+                            <button
+                              key={cat}
+                              onClick={() => setActiveMenuCategory(cat)}
+                              className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
+                                activeMenuCategory === cat 
+                                  ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg' 
+                                  : 'bg-stone-100 text-stone-700 hover:bg-orange-100'
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                       <input
                         type="text"
                         className="p-2 border rounded min-w-[160px]"
@@ -2880,6 +2948,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                       <table className="min-w-full divide-y divide-stone-200">
                         <thead className="bg-stone-50">
                           <tr>
+                            <th className="p-4 text-left font-bold text-stone-700">Image</th>
                             <th className="p-4 text-left font-bold text-stone-700">Dish</th>
                             <th className="p-4 text-left font-bold text-stone-700">Category</th>
                             <th className="p-4 text-left font-bold text-stone-700">Price</th>
@@ -2888,11 +2957,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-100 text-sm">
-                          {menuItems.filter(item =>
-                            item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
-                            item.category.toLowerCase().includes(menuSearch.toLowerCase())
-                          ).map((item, idx) => (
+                          {menuItems.filter(item => {
+                            const matchesCategory = activeMenuCategory === 'All' || item.category === activeMenuCategory;
+                            const matchesSearch = item.name.toLowerCase().includes(menuSearch.toLowerCase()) || item.category.toLowerCase().includes(menuSearch.toLowerCase());
+                            return matchesCategory && matchesSearch;
+                          }).map((item, idx) => (
                             <tr key={item.id || idx} className="hover:bg-stone-50">
+                              <td className="p-4">
+                                {item.image ? (
+                                  <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded shadow border" />
+                                ) : (
+                                  <span className="inline-block w-16 h-16 bg-stone-100 text-stone-400 flex items-center justify-center rounded border">No Image</span>
+                                )}
+                              </td>
                               <td className="p-4 font-bold text-stone-900">{item.name}</td>
                               <td className="p-4 text-stone-600">{item.category}</td>
                               <td className="p-4 font-bold text-stone-900">Rs {item.price}</td>
@@ -3259,7 +3336,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
               {activeTab === 'profile' && (
                 <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                   <h2 className="text-xl font-bold mb-6">My Profile</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                       <label className="text-sm font-bold text-stone-600">Name</label>
                       <p className="text-lg text-stone-900 mt-1">{user?.name}</p>

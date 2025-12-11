@@ -87,8 +87,9 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
 
   let filteredItems = menuItems.filter(item => {
     const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
-    const relevantTags = new Set([...(item.tags || []), ...(item.dietary || [])]);
-    const matchesFilters = activeFilters.length === 0 || activeFilters.every(filter => relevantTags.has(filter));
+    // Only use dietary tags for filtering
+    const dietaryTags = new Set((item.dietary || []).map(tag => tag.toLowerCase()));
+    const matchesFilters = activeFilters.length === 0 || activeFilters.every(filter => dietaryTags.has(filter.toLowerCase()));
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPrice = item.price >= priceRange[0] && item.price <= priceRange[1];
     console.log(`Filtering ${item.name}: category=${matchesCategory}, filters=${matchesFilters}, search=${matchesSearch}, price=${matchesPrice}`);
@@ -137,20 +138,14 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
 
         {/* Controls Section */}
         <div className="py-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 sm:p-3 -mx-4 sm:mx-0 sticky top-20 z-30 shadow-sm border border-white/50">
-          {/* Search Bar */}
-          <div className="relative w-full max-w-sm mx-auto mb-1.5 sm:mb-2">
-            <Search className="absolute left-3 top-2 text-stone-400" size={14} />
-            <input 
-              type="text" 
-              placeholder="Search dishes..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-full border border-stone-200 focus:ring-1 focus:ring-orange-500 outline-none text-stone-800 placeholder-stone-400 text-xs"
-            />
-          </div>
-
-          {/* Category Tabs */}
-          <div className="flex justify-center mb-1.5 sm:mb-2">
+          {/* Menu Item Count & Category Filter */}
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-2 gap-2">
+            <div className="text-xs font-semibold text-stone-600">
+              Total items: <span className="font-bold text-orange-600">{menuItems.length}</span>
+              {activeCategory !== 'All' || activeFilters.length > 0 || searchTerm ? (
+                <span> | Showing: <span className="font-bold text-orange-600">{filteredItems.length}</span></span>
+              ) : null}
+            </div>
             <div className="flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-orange-300 scrollbar-track-transparent max-w-full">
               {categories.map(cat => (
                 <button
@@ -166,6 +161,18 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative w-full max-w-sm mx-auto mb-1.5 sm:mb-2">
+            <Search className="absolute left-3 top-2 text-stone-400" size={14} />
+            <input 
+              type="text" 
+              placeholder="Search dishes..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-full border border-stone-200 focus:ring-1 focus:ring-orange-500 outline-none text-stone-800 placeholder-stone-400 text-xs"
+            />
           </div>
 
           {/* Filters Row */}
