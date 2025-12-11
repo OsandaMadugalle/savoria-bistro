@@ -326,7 +326,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ user }) => {
                       onChange={handleChange}
                       required
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-orange-500 outline-none transition-all text-sm ${fieldErrors.phone ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
-                      placeholder="(555) 000-0000"
+                      placeholder="07X XXX XXXX or +94 XX XXX XXXX"
                     />
                     {fieldErrors.phone && <p className="text-red-600 text-xs mt-1 font-medium">{fieldErrors.phone}</p>}
                   </div>

@@ -144,7 +144,7 @@ const TrackerPage: React.FC<TrackerPageProps> = ({ user }) => {
                 id="track-input"
                 type="text"
                 className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 mb-4"
-                placeholder="e.g. 12345"
+                placeholder="e.g. ORD-XXXXXXXXXXXXX-XXXX"
                 value={inputOrderId}
                 onChange={e => setInputOrderId(e.target.value)}
                 required

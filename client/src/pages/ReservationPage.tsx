@@ -137,7 +137,6 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
   if (!user) {
     return (
       <div className="min-h-screen bg-stone-50">
-        <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-stone-900 via-orange-900 to-stone-800 text-white py-12 sm:py-16 px-4 pt-24 relative overflow-hidden">
           <div className="absolute -right-20 -top-20 w-40 h-40 bg-orange-400/10 rounded-full blur-3xl" />
@@ -165,13 +164,6 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
               <p className="text-stone-500 text-xs mb-6">
                 🔐 Your account helps us personalize your experience and manage your reservations.
               </p>
-              <button
-                onClick={() => setShowLoginModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-semibold rounded-lg transition-all shadow-md text-sm"
-              >
-                <LogIn size={16} />
-                Sign In or Create Account
-              </button>
             </div>
           </div>
         </div>
@@ -444,7 +436,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                     name="name" 
                     value={formData.name} 
                     onChange={handleChange} 
-                    placeholder="John Doe" 
+                    placeholder="Your name" 
                     className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
                   />
                 </div>
@@ -458,7 +450,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                       name="email" 
                       value={formData.email} 
                       onChange={handleChange} 
-                      placeholder="john@example.com" 
+                      placeholder="your@email.com" 
                       className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
                     />
                   </div>
@@ -470,7 +462,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                       name="phone" 
                       value={formData.phone} 
                       onChange={handleChange} 
-                      placeholder="(555) 000-0000" 
+                      placeholder="07X XXX XXXX or +94 XX XXX XXXX"
                       className="w-full px-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
                     />
                   </div>

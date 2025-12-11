@@ -503,19 +503,19 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                                  <form onSubmit={handleEditSave} className="space-y-4">
                                     <div>
                                        <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Name</label>
-                                       <input name="name" value={editData.name} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" required />
+                                       <input name="name" value={editData.name} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" required placeholder="Your name" />
                                     </div>
                                     <div>
                                        <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Email</label>
-                                       <input name="email" value={editData.email} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" required />
+                                       <input name="email" value={editData.email} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" required placeholder="your@email.com" />
                                     </div>
                                     <div>
                                        <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Phone</label>
-                                       <input name="phone" value={editData.phone} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" required />
+                                       <input name="phone" value={editData.phone} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" required placeholder="07X XXX XXXX or +94 XX XXX XXXX" />
                                     </div>
                                        <div>
                                           <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Address</label>
-                                          <input name="address" value={editData.address || ''} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" placeholder="Street, city, etc." />
+                                          <input name="address" value={editData.address || ''} onChange={handleEditChange} className="w-full border rounded-xl px-3 py-2" placeholder="Apartment, Street, City, District" />
                                        </div>
                                        <div>
                                           <label className="block text-xs font-bold uppercase text-stone-500 mb-1">Birthday</label>

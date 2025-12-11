@@ -875,7 +875,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         value={loginEmail}
                         onChange={(e) => { setLoginEmail(e.target.value); if (loginFieldErrors.email) setLoginFieldErrors({ ...loginFieldErrors, email: undefined }); }}
                         className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${loginFieldErrors.email ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
-                        placeholder="you@example.com"
+                        placeholder="your@email.com"
                       />
                     </div>
                     {loginFieldErrors.email && <p className="text-red-600 text-xs mt-1 font-medium">{loginFieldErrors.email}</p>}
@@ -889,7 +889,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         value={loginPassword}
                         onChange={(e) => { setLoginPassword(e.target.value); if (loginFieldErrors.password) setLoginFieldErrors({ ...loginFieldErrors, password: undefined }); }}
                         className={`w-full pl-10 pr-10 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${loginFieldErrors.password ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
-                        placeholder="••••••••"
+                        placeholder="Your password"
                       />
                       <button
                         type="button"
@@ -925,7 +925,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         value={signupName}
                         onChange={(e) => setSignupName(e.target.value)}
                         className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${(signupFieldErrors as any).name ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
-                        placeholder="John Doe"
+                        placeholder="Your name"
                       />
                     </div>
                     {(signupFieldErrors as any).name && <p className="text-red-600 text-xs mt-1 font-medium">{(signupFieldErrors as any).name}</p>}
@@ -940,7 +940,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         value={signupEmail}
                         onChange={(e) => setSignupEmail(e.target.value)}
                         className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${(signupFieldErrors as any).email ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
-                        placeholder="john@example.com"
+                        placeholder="your@email.com"
                       />
                     </div>
                     {(signupFieldErrors as any).email && <p className="text-red-600 text-xs mt-1 font-medium">{(signupFieldErrors as any).email}</p>}
@@ -955,7 +955,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         value={signupPhone}
                         onChange={(e) => { const phoneValue = e.target.value.replace(/[^0-9()\s\-]/g, ''); setSignupPhone(phoneValue); if (signupFieldErrors.phone) setSignupFieldErrors({ ...signupFieldErrors, phone: undefined }); }}
                         className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all outline-none focus:ring-2 ${signupFieldErrors.phone ? 'border-red-400 focus:ring-red-500' : 'border-stone-200 focus:ring-orange-500'}`}
-                        placeholder="(555) 000-0000"
+                        placeholder="07X XXX XXXX or +94 XX XXX XXXX"
                       />
                     </div>
                     {signupFieldErrors.phone && <p className="text-red-600 text-xs mt-1 font-medium">{signupFieldErrors.phone}</p>}
@@ -969,7 +969,7 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                         value={signupAddress}
                         onChange={(e) => setSignupAddress(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                        placeholder="Street, city, neighborhood"
+                        placeholder="Apartment, Street, City, District"
                       />
                     </div>
                   </div>
