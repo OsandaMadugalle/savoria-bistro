@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { showToast } from '../components/Footer';
 import FeedbackForm from '../components/FeedbackForm';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar, MapPin, X, Bell, Heart } from 'lucide-react';
+import { Trophy, ChefHat, Gift, Phone, MessageSquare, Package, RefreshCcw, Calendar, MapPin, X } from 'lucide-react';
 import { User, Order, ReservationData, PrivateEventInquiry } from '../types';
 import { fetchUserProfile, updateUserProfile, fetchUserOrders, fetchUserReservations, fetchUserReviews, fetchPrivateEventInquiries, getUserFeedbackHistory } from '../services/api';
 

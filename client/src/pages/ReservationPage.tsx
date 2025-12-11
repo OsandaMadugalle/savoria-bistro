@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Phone, Clock, MapPin, Calendar, Users, User as UserIcon, AlertCircle, Copy, Check, LogIn } from 'lucide-react';
+import { CheckCircle, Phone, Clock, MapPin, Calendar, Users, User as UserIcon, AlertCircle, Copy, Check } from 'lucide-react';
 import { Zap } from 'lucide-react';
 import { User, ReservationData } from '../types';
 import { createReservation } from '../services/api';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import LoginModal from '../components/LoginModal';
 import ReservationPayment from '../components/ReservationPayment';
 
 interface ReservationPageProps {
@@ -32,7 +31,6 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
   const [pendingReservationData, setPendingReservationData] = useState<ReservationData | null>(null);
   const [availability, setAvailability] = useState<{ available: boolean; availableSlots: number; maxCapacity?: number } | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (user) {
