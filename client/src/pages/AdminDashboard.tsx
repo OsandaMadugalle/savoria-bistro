@@ -4,7 +4,7 @@ import {
   AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
 import { fetchMenu, fetchAllOrders, addAdmin, addStaff, fetchAllReviews, updateReviewStatus, deleteReview, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage, getNewsletterStats, getNewsletterSubscribers, sendNewsletterCampaign, addMenuItem, updateMenuItem, deleteMenuItem, fetchAllAdmins, updateAdmin, deleteAdmin, fetchPrivateEventInquiries, fetchReservations, fetchAllPromos, createPromo, updatePromo, deletePromo } from '../services/api';
-import { createRider, getAllRiders } from '../services/deliveryApi';
+import { createRider, getAllRiders, updateRider, deleteRider } from '../services/deliveryApi';
 import type { MenuItemPayload, Promo } from '../services/api';
 import { MenuItem, User, Order, PrivateEventInquiry } from '../types';
 import { LayoutDashboard, Plus, Trash2, Edit2, Upload, Send, Calendar } from 'lucide-react';
@@ -247,9 +247,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const [riderForm, setRiderForm] = useState<{ name: string; email: string; password: string; phone: string; vehicleType: string; vehicleNumber: string }>({ 
     name: '', email: '', password: '', phone: '', vehicleType: 'Bike', vehicleNumber: '' 
   });
-  const [adminMsg, setAdminMsg] = useState('');
-  const [staffMsg, setStaffMsg] = useState('');
-  const [riderMsg, setRiderMsg] = useState('');
+  
+  // Validation Error States
+  const [adminErrors, setAdminErrors] = useState<{ [key: string]: string }>({});
+  const [staffErrors, setStaffErrors] = useState<{ [key: string]: string }>({});
+  const [riderErrors, setRiderErrors] = useState<{ [key: string]: string }>({});
+  const [adminEditErrors, setAdminEditErrors] = useState<{ [key: string]: string }>({});
+  const [riderEditErrors, setRiderEditErrors] = useState<{ [key: string]: string }>({});
+  const [menuErrors, setMenuErrors] = useState<{ [key: string]: string }>({});
+
   const [showAddAdminForm, setShowAddAdminForm] = useState(false);
   const [showAddStaffForm, setShowAddStaffForm] = useState(false);
   const [showAddRiderForm, setShowAddRiderForm] = useState(false);
@@ -259,6 +265,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const [editingAdminId, setEditingAdminId] = useState<string | null>(null);
   const [adminEditForm, setAdminEditForm] = useState<{ name: string; email: string; phone?: string; password?: string }>({ name: '', email: '', phone: '' });
   
+  // ===== STATE: RIDER MANAGEMENT =====
+  const [editingRiderId, setEditingRiderId] = useState<string | null>(null);
+  const [riderEditForm, setRiderEditForm] = useState<{ name: string; email: string; phone: string; vehicleType: 'Bike' | 'Scooter' | 'Car' | 'Bicycle'; vehicleNumber: string }>({ name: '', email: '', phone: '', vehicleType: 'Bike', vehicleNumber: '' });
+
   // ===== STATE: FILTERS & LOADING =====
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
@@ -290,6 +300,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     setMenuTagsInput('');
     setMenuIngredientsInput('');
     setMenuImageFile(null);
+    setMenuErrors({});
   };
 
   const closeMenuForm = () => {
@@ -324,14 +335,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   // ===== STATE: TOASTS =====
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = (message: string, type: ToastType = 'success', duration: number = 3000) => {
+  const showToast = useCallback((message: string, type: ToastType = 'success', duration: number = 3000) => {
     const id = Date.now().toString();
     setToasts(prev => [...prev, { id, message, type, duration }]);
-  };
+  }, []);
 
-  const removeToast = (id: string) => {
+  const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  }, []);
 
   // ===== VALIDATION FUNCTIONS =====
   const validateEmail = (email: string): boolean => {
@@ -350,91 +361,102 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   };
 
   const validateMenuForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
     if (!menuForm.name?.trim()) {
-      showToast('Dish name is required', 'error');
-      return false;
+      errors.name = 'Dish name is required';
+    } else if (menuForm.name.trim().length < 3) {
+      errors.name = 'Dish name must be at least 3 characters';
     }
-    if (menuForm.name.trim().length < 3) {
-      showToast('Dish name must be at least 3 characters', 'error');
-      return false;
-    }
+    
     if (!menuForm.price || menuForm.price <= 0) {
-      showToast('Valid price is required (must be greater than 0)', 'error');
-      return false;
+      errors.price = 'Valid price is required (must be greater than 0)';
     }
+    
     if (!menuForm.description?.trim()) {
-      showToast('Description is required', 'error');
-      return false;
+      errors.description = 'Description is required';
+    } else if (menuForm.description.trim().length < 10) {
+      errors.description = 'Description must be at least 10 characters';
     }
-    if (menuForm.description.trim().length < 10) {
-      showToast('Description must be at least 10 characters', 'error');
-      return false;
-    }
-    return true;
+    
+    setMenuErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const validateAdminForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
     if (!adminForm.name?.trim()) {
-      showToast('Admin name is required', 'error');
-      return false;
+      errors.name = 'Admin name is required';
+    } else if (adminForm.name.trim().length < 3) {
+      errors.name = 'Admin name must be at least 3 characters';
     }
-    if (adminForm.name.trim().length < 3) {
-      showToast('Admin name must be at least 3 characters', 'error');
-      return false;
-    }
+    
     if (!adminForm.email?.trim()) {
-      showToast('Admin email is required', 'error');
-      return false;
+      errors.email = 'Admin email is required';
+    } else if (!validateEmail(adminForm.email)) {
+      errors.email = 'Please enter a valid email address';
     }
-    if (!validateEmail(adminForm.email)) {
-      showToast('Please enter a valid email address', 'error');
-      return false;
-    }
+    
     if (!adminForm.password?.trim()) {
-      showToast('Admin password is required', 'error');
-      return false;
+      errors.password = 'Admin password is required';
+    } else if (!validatePassword(adminForm.password)) {
+      errors.password = 'Password must be at least 6 characters';
     }
-    if (!validatePassword(adminForm.password)) {
-      showToast('Password must be at least 6 characters', 'error');
-      return false;
-    }
+    
     if (adminForm.phone && !validatePhoneNumber(adminForm.phone)) {
-      showToast('Please enter a valid phone number', 'error');
-      return false;
+      errors.phone = 'Please enter a valid phone number';
     }
-    return true;
+    
+    setAdminErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const validateStaffForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
     if (!staffForm.name?.trim()) {
-      showToast('Staff name is required', 'error');
-      return false;
+      errors.name = 'Staff name is required';
+    } else if (staffForm.name.trim().length < 3) {
+      errors.name = 'Staff name must be at least 3 characters';
     }
-    if (staffForm.name.trim().length < 3) {
-      showToast('Staff name must be at least 3 characters', 'error');
-      return false;
-    }
+    
     if (!staffForm.email?.trim()) {
-      showToast('Staff email is required', 'error');
-      return false;
+      errors.email = 'Staff email is required';
+    } else if (!validateEmail(staffForm.email)) {
+      errors.email = 'Please enter a valid email address';
     }
-    if (!validateEmail(staffForm.email)) {
-      showToast('Please enter a valid email address', 'error');
-      return false;
-    }
+    
     if (!staffForm.password?.trim()) {
-      showToast('Staff password is required', 'error');
-      return false;
+      errors.password = 'Staff password is required';
+    } else if (!validatePassword(staffForm.password)) {
+      errors.password = 'Password must be at least 6 characters';
     }
-    if (!validatePassword(staffForm.password)) {
-      showToast('Password must be at least 6 characters', 'error');
-      return false;
-    }
+    
     if (staffForm.phone && !validatePhoneNumber(staffForm.phone)) {
-      showToast('Please enter a valid phone number', 'error');
-      return false;
+      errors.phone = 'Please enter a valid phone number';
     }
-    return true;
+    
+    setStaffErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateRiderForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+    if (!riderForm.name?.trim()) errors.name = 'Name is required';
+    if (!riderForm.email?.trim()) {
+      errors.email = 'Email is required';
+    } else if (!validateEmail(riderForm.email)) {
+      errors.email = 'Invalid email address';
+    }
+    if (!riderForm.password?.trim()) errors.password = 'Password is required';
+    if (!riderForm.phone?.trim()) {
+      errors.phone = 'Phone is required';
+    } else if (!validatePhoneNumber(riderForm.phone)) {
+      errors.phone = 'Invalid phone number';
+    }
+    if (!riderForm.vehicleType) errors.vehicleType = 'Vehicle type is required';
+    if (!riderForm.vehicleNumber?.trim()) errors.vehicleNumber = 'Vehicle number is required';
+
+    setRiderErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const validatePromoForm = (): boolean => {
@@ -458,31 +480,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   };
 
   const validateAdminEditForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
     if (!adminEditForm.name?.trim()) {
-      showToast('Admin name is required', 'error');
-      return false;
+      errors.name = 'Admin name is required';
+    } else if (adminEditForm.name.trim().length < 3) {
+      errors.name = 'Admin name must be at least 3 characters';
     }
-    if (adminEditForm.name.trim().length < 3) {
-      showToast('Admin name must be at least 3 characters', 'error');
-      return false;
-    }
+    
     if (!adminEditForm.email?.trim()) {
-      showToast('Admin email is required', 'error');
-      return false;
+      errors.email = 'Admin email is required';
+    } else if (!validateEmail(adminEditForm.email)) {
+      errors.email = 'Please enter a valid email address';
     }
-    if (!validateEmail(adminEditForm.email)) {
-      showToast('Please enter a valid email address', 'error');
-      return false;
-    }
+    
     if (adminEditForm.password && !validatePassword(adminEditForm.password)) {
-      showToast('Password must be at least 6 characters', 'error');
-      return false;
+      errors.password = 'Password must be at least 6 characters';
     }
+    
     if (adminEditForm.phone && !validatePhoneNumber(adminEditForm.phone)) {
-      showToast('Please enter a valid phone number', 'error');
-      return false;
+      errors.phone = 'Please enter a valid phone number';
     }
-    return true;
+    
+    setAdminEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateRiderEditForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+    if (!riderEditForm.name?.trim()) errors.name = 'Name is required';
+    if (!riderEditForm.email?.trim()) {
+      errors.email = 'Email is required';
+    } else if (!validateEmail(riderEditForm.email)) {
+      errors.email = 'Invalid email address';
+    }
+    if (!riderEditForm.phone?.trim()) {
+      errors.phone = 'Phone is required';
+    } else if (!validatePhoneNumber(riderEditForm.phone)) {
+      errors.phone = 'Invalid phone number';
+    }
+    if (!riderEditForm.vehicleType) errors.vehicleType = 'Vehicle type is required';
+    if (!riderEditForm.vehicleNumber?.trim()) errors.vehicleNumber = 'Vehicle number is required';
+
+    setRiderEditErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   // ===== HANDLERS: MENU MANAGEMENT =====
@@ -524,7 +564,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         setMenuItems(updatedMenu);
       }
       resetMenuFormState();
-      setTimeout(() => closeMenuForm(), 1500);
+      closeMenuForm();
     } catch (err: any) {
       showToast(err.message || 'Failed to save dish', 'error');
     }
@@ -535,6 +575,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     try {
       await deleteMenuItem(id, user?.email);
       showToast('Dish deleted successfully!', 'success');
+      setMenuItems(prev => prev.filter(item => item.id !== id));
       const updatedMenu = await fetchMenu();
       setMenuItems(updatedMenu);
     } catch (err: any) {
@@ -591,10 +632,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       setPromos(updated);
       
       setPromoForm({ code: '', discount: 20, expiryDate: '', active: true });
-      setTimeout(() => {
-        setShowPromoForm(false);
-        setPromoMessage('');
-      }, 1500);
+      setShowPromoForm(false);
+      setPromoMessage('');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save promo';
       showToast(message, 'error');
@@ -952,8 +991,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
   const handleAddRider = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!riderForm.name || !riderForm.email || !riderForm.password || !riderForm.phone || !riderForm.vehicleType || !riderForm.vehicleNumber) {
-      setRiderMsg('Please fill in all required fields');
+    if (!validateRiderForm()) {
       return;
     }
     try {
@@ -967,13 +1005,52 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       });
       showToast('Delivery person added successfully!', 'success');
       setRiderForm({ name: '', email: '', password: '', phone: '', vehicleType: 'Bike', vehicleNumber: '' });
-      setRiderMsg('');
+      setRiderErrors({});
       await loadRiders();
     } catch (err: any) {
-      setRiderMsg(err.message || 'Failed to add delivery person');
       showToast(err.message || 'Failed to add delivery person', 'error');
     }
-  }, [riderForm, loadRiders, showToast]);
+  }, [riderForm, loadRiders, showToast, validateRiderForm]);
+
+  const handleEditRiderStart = (rider: any) => {
+    if (rider._id) {
+      setEditingRiderId(rider._id);
+      setRiderEditForm({
+        name: rider.name,
+        email: rider.email,
+        phone: rider.phone,
+        vehicleType: rider.vehicleType,
+        vehicleNumber: rider.vehicleNumber
+      });
+    }
+  };
+
+  const handleSaveRider = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRiderId) return;
+    if (!validateRiderEditForm()) return;
+    try {
+      await updateRider(editingRiderId, riderEditForm);
+      showToast('Delivery person updated successfully!', 'success');
+      setEditingRiderId(null);
+      setRiderEditForm({ name: '', email: '', phone: '', vehicleType: 'Bike', vehicleNumber: '' });
+      setRiderEditErrors({});
+      await loadRiders();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update delivery person', 'error');
+    }
+  }, [editingRiderId, riderEditForm, loadRiders, showToast, validateRiderEditForm]);
+
+  const handleDeleteRider = useCallback(async (riderId: string) => {
+    if (!window.confirm('Are you sure you want to delete this delivery person?')) return;
+    try {
+      await deleteRider(riderId);
+      await loadRiders();
+      showToast('Delivery person deleted successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete delivery person', 'error');
+    }
+  }, [loadRiders, showToast]);
 
   // ===== HANDLERS: MASTER ADMIN OPERATIONS =====
   const handleRefreshData = useCallback(async () => {
@@ -1099,6 +1176,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     }
   }, [activeTab, loadEventInquiries]);
 
+  useEffect(() => {
+    if (activeTab === 'promos') {
+      loadSettings();
+    }
+  }, [activeTab, loadSettings]);
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (showAddAdminForm || showAddStaffForm || showMenuForm || showGalleryUpload || showCampaignForm || showPromoForm) {
@@ -1170,7 +1253,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       ) : null}
       {/* Admin Panel - for both masterAdmin and admin */}
       {user && (user.role === 'masterAdmin' || user.role === 'admin') ? (
-        <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-4">
+        <div className="pt-24 pb-20 min-h-screen bg-stone-100 px-4 relative z-0">
           <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="mb-8">
@@ -1203,7 +1286,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
             {/* Main Layout with Vertical Sidebar */}
             <div className="flex gap-6">
               {/* Left Vertical Sidebar */}
-              <div className="w-56 flex-shrink-0">
+              <div className="w-56 flex-shrink-0 relative z-10">
                 <div className="sticky top-28">
                   <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
                     <div className="max-h-[calc(100vh-8rem)] overflow-y-auto">
@@ -1408,7 +1491,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
               </div>
 
               {/* Main Content Area */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 relative z-0">
             <div className="bg-gradient-to-r from-orange-600 to-orange-500 rounded-xl shadow-lg p-4 mb-8 text-white">
               <div className="flex flex-wrap gap-3 items-center justify-between">
                 <div>
@@ -2147,7 +2230,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           setShowAddAdminForm(!showAddAdminForm);
                           if (!showAddAdminForm) {
                             setAdminForm({ name: '', email: '', password: '', phone: '' });
-                            setAdminMsg('');
+                            setAdminErrors({});
                           }
                         }}
                         className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
@@ -2171,29 +2254,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           </div>
                           <form onSubmit={e => {
                             handleAddAdmin(e);
-                            setShowAddAdminForm(false);
+                            // setShowAddAdminForm(false); // Don't close immediately to show errors if any
                           }} className="space-y-4">
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Name *</label>
-                              <input required placeholder="Admin Name" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={adminForm.name} onChange={e => setAdminForm(f => ({...f, name: e.target.value}))} />
+                              <input required placeholder="Admin Name" className={`w-full p-3 rounded border ${adminErrors.name ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={adminForm.name} onChange={e => setAdminForm(f => ({...f, name: e.target.value}))} />
+                              {adminErrors.name && <p className="text-red-500 text-xs mt-1">{adminErrors.name}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Email *</label>
-                              <input required type="email" placeholder="admin@example.com" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={adminForm.email} onChange={e => setAdminForm(f => ({...f, email: e.target.value}))} />
+                              <input required type="email" placeholder="admin@example.com" className={`w-full p-3 rounded border ${adminErrors.email ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={adminForm.email} onChange={e => setAdminForm(f => ({...f, email: e.target.value}))} />
+                              {adminErrors.email && <p className="text-red-500 text-xs mt-1">{adminErrors.email}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Password *</label>
-                              <input required type="password" placeholder="••••••••" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={adminForm.password} onChange={e => setAdminForm(f => ({...f, password: e.target.value}))} />
+                              <input required type="password" placeholder="••••••••" className={`w-full p-3 rounded border ${adminErrors.password ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={adminForm.password} onChange={e => setAdminForm(f => ({...f, password: e.target.value}))} />
+                              {adminErrors.password && <p className="text-red-500 text-xs mt-1">{adminErrors.password}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Phone</label>
-                              <input placeholder="(optional)" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={adminForm.phone} onChange={e => setAdminForm(f => ({...f, phone: e.target.value}))} />
+                              <input placeholder="(optional)" className={`w-full p-3 rounded border ${adminErrors.phone ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={adminForm.phone} onChange={e => setAdminForm(f => ({...f, phone: e.target.value}))} />
+                              {adminErrors.phone && <p className="text-red-500 text-xs mt-1">{adminErrors.phone}</p>}
                             </div>
-                            {adminMsg && (
-                              <div className="p-3 rounded-lg font-bold text-center bg-green-50 text-green-600 border border-green-300">
-                                {adminMsg}
-                              </div>
-                            )}
                             <div className="flex gap-2 pt-4">
                               <button type="submit" className="flex-1 px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Admin</button>
                               <button type="button" onClick={() => setShowAddAdminForm(false)} className="flex-1 px-6 py-2 bg-stone-200 text-stone-900 rounded-lg font-bold hover:bg-stone-300 transition-colors">Cancel</button>
@@ -2210,12 +2292,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                       <h2 className="text-xl font-bold mb-4">Edit Admin</h2>
                       <form onSubmit={e => handleSaveAdmin(e)} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                          <input required placeholder="Name" className="p-3 rounded border border-stone-200" value={adminEditForm.name} onChange={e => setAdminEditForm(f => ({...f, name: e.target.value}))} />
-                          <input required type="email" placeholder="Email" className="p-3 rounded border border-stone-200" value={adminEditForm.email} onChange={e => setAdminEditForm(f => ({...f, email: e.target.value}))} />
+                          <div>
+                            <input required placeholder="Name" className={`w-full p-3 rounded border ${adminEditErrors.name ? 'border-red-500' : 'border-stone-200'}`} value={adminEditForm.name} onChange={e => setAdminEditForm(f => ({...f, name: e.target.value}))} />
+                            {adminEditErrors.name && <p className="text-red-500 text-xs mt-1">{adminEditErrors.name}</p>}
+                          </div>
+                          <div>
+                            <input required type="email" placeholder="Email" className={`w-full p-3 rounded border ${adminEditErrors.email ? 'border-red-500' : 'border-stone-200'}`} value={adminEditForm.email} onChange={e => setAdminEditForm(f => ({...f, email: e.target.value}))} />
+                            {adminEditErrors.email && <p className="text-red-500 text-xs mt-1">{adminEditErrors.email}</p>}
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                          <input type="password" placeholder="New Password (optional)" className="p-3 rounded border border-stone-200" value={adminEditForm.password || ''} onChange={e => setAdminEditForm(f => ({...f, password: e.target.value}))} />
-                          <input placeholder="Phone" className="p-3 rounded border border-stone-200" value={adminEditForm.phone} onChange={e => setAdminEditForm(f => ({...f, phone: e.target.value}))} />
+                          <div>
+                            <input type="password" placeholder="New Password (optional)" className={`w-full p-3 rounded border ${adminEditErrors.password ? 'border-red-500' : 'border-stone-200'}`} value={adminEditForm.password || ''} onChange={e => setAdminEditForm(f => ({...f, password: e.target.value}))} />
+                            {adminEditErrors.password && <p className="text-red-500 text-xs mt-1">{adminEditErrors.password}</p>}
+                          </div>
+                          <div>
+                            <input placeholder="Phone" className={`w-full p-3 rounded border ${adminEditErrors.phone ? 'border-red-500' : 'border-stone-200'}`} value={adminEditForm.phone} onChange={e => setAdminEditForm(f => ({...f, phone: e.target.value}))} />
+                            {adminEditErrors.phone && <p className="text-red-500 text-xs mt-1">{adminEditErrors.phone}</p>}
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <button type="submit" className="flex-1 px-6 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700">Save Changes</button>
@@ -2273,7 +2367,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           setShowAddStaffForm(!showAddStaffForm);
                           if (!showAddStaffForm) {
                             setStaffForm({ name: '', email: '', password: '', phone: '' });
-                            setStaffMsg('');
+                            setStaffErrors({});
                           }
                         }}
                         className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
@@ -2297,29 +2391,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           </div>
                           <form onSubmit={e => {
                             handleAddStaff(e);
-                            setShowAddStaffForm(false);
+                            // setShowAddStaffForm(false);
                           }} className="space-y-4">
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Name *</label>
-                              <input required placeholder="Staff Name" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={staffForm.name} onChange={e => setStaffForm(f => ({...f, name: e.target.value}))} />
+                              <input required placeholder="Staff Name" className={`w-full p-3 rounded border ${staffErrors.name ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={staffForm.name} onChange={e => setStaffForm(f => ({...f, name: e.target.value}))} />
+                              {staffErrors.name && <p className="text-red-500 text-xs mt-1">{staffErrors.name}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Email *</label>
-                              <input required type="email" placeholder="staff@example.com" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={staffForm.email} onChange={e => setStaffForm(f => ({...f, email: e.target.value}))} />
+                              <input required type="email" placeholder="staff@example.com" className={`w-full p-3 rounded border ${staffErrors.email ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={staffForm.email} onChange={e => setStaffForm(f => ({...f, email: e.target.value}))} />
+                              {staffErrors.email && <p className="text-red-500 text-xs mt-1">{staffErrors.email}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Password *</label>
-                              <input required type="password" placeholder="••••••••" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={staffForm.password} onChange={e => setStaffForm(f => ({...f, password: e.target.value}))} />
+                              <input required type="password" placeholder="••••••••" className={`w-full p-3 rounded border ${staffErrors.password ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={staffForm.password} onChange={e => setStaffForm(f => ({...f, password: e.target.value}))} />
+                              {staffErrors.password && <p className="text-red-500 text-xs mt-1">{staffErrors.password}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Phone</label>
-                              <input placeholder="(optional)" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={staffForm.phone} onChange={e => setStaffForm(f => ({...f, phone: e.target.value}))} />
+                              <input placeholder="(optional)" className={`w-full p-3 rounded border ${staffErrors.phone ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={staffForm.phone} onChange={e => setStaffForm(f => ({...f, phone: e.target.value}))} />
+                              {staffErrors.phone && <p className="text-red-500 text-xs mt-1">{staffErrors.phone}</p>}
                             </div>
-                            {staffMsg && (
-                              <div className="p-3 rounded-lg font-bold text-center bg-red-50 text-red-600 border border-red-300">
-                                {staffMsg}
-                              </div>
-                            )}
                             <div className="flex gap-2 pt-4">
                               <button type="submit" className="flex-1 px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Staff</button>
                               <button type="button" onClick={() => setShowAddStaffForm(false)} className="flex-1 px-6 py-2 bg-stone-200 text-stone-900 rounded-lg font-bold hover:bg-stone-300 transition-colors">Cancel</button>
@@ -2387,7 +2480,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           setShowAddRiderForm(!showAddRiderForm);
                           if (!showAddRiderForm) {
                             setRiderForm({ name: '', email: '', password: '', phone: '', vehicleType: 'Bike', vehicleNumber: '' });
-                            setRiderMsg('');
+                            setRiderErrors({});
                           }
                         }}
                         className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
@@ -2411,42 +2504,43 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           </div>
                           <form onSubmit={e => {
                             handleAddRider(e);
-                            setShowAddRiderForm(false);
+                            // setShowAddRiderForm(false);
                           }} className="space-y-4">
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Name *</label>
-                              <input required placeholder="Rider Name" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.name} onChange={e => setRiderForm(f => ({...f, name: e.target.value}))} />
+                              <input required placeholder="Rider Name" className={`w-full p-3 rounded border ${riderErrors.name ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={riderForm.name} onChange={e => setRiderForm(f => ({...f, name: e.target.value}))} />
+                              {riderErrors.name && <p className="text-red-500 text-xs mt-1">{riderErrors.name}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Email *</label>
-                              <input required type="email" placeholder="rider@example.com" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.email} onChange={e => setRiderForm(f => ({...f, email: e.target.value}))} />
+                              <input required type="email" placeholder="rider@example.com" className={`w-full p-3 rounded border ${riderErrors.email ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={riderForm.email} onChange={e => setRiderForm(f => ({...f, email: e.target.value}))} />
+                              {riderErrors.email && <p className="text-red-500 text-xs mt-1">{riderErrors.email}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Password *</label>
-                              <input required type="password" placeholder="••••••••" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.password} onChange={e => setRiderForm(f => ({...f, password: e.target.value}))} />
+                              <input required type="password" placeholder="••••••••" className={`w-full p-3 rounded border ${riderErrors.password ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={riderForm.password} onChange={e => setRiderForm(f => ({...f, password: e.target.value}))} />
+                              {riderErrors.password && <p className="text-red-500 text-xs mt-1">{riderErrors.password}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Phone *</label>
-                              <input required placeholder="+94 77 123 4567" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.phone} onChange={e => setRiderForm(f => ({...f, phone: e.target.value}))} />
+                              <input required placeholder="+94 77 123 4567" className={`w-full p-3 rounded border ${riderErrors.phone ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={riderForm.phone} onChange={e => setRiderForm(f => ({...f, phone: e.target.value}))} />
+                              {riderErrors.phone && <p className="text-red-500 text-xs mt-1">{riderErrors.phone}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Vehicle Type *</label>
-                              <select required className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.vehicleType} onChange={e => setRiderForm(f => ({...f, vehicleType: e.target.value}))}>
+                              <select required className={`w-full p-3 rounded border ${riderErrors.vehicleType ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={riderForm.vehicleType} onChange={e => setRiderForm(f => ({...f, vehicleType: e.target.value}))}>
                                 <option value="Bike">Bike</option>
                                 <option value="Scooter">Scooter</option>
                                 <option value="Car">Car</option>
                                 <option value="Bicycle">Bicycle</option>
                               </select>
+                              {riderErrors.vehicleType && <p className="text-red-500 text-xs mt-1">{riderErrors.vehicleType}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-stone-700 mb-1">Vehicle Number *</label>
-                              <input required placeholder="ABC-1234" className="w-full p-3 rounded border border-stone-200 focus:ring-2 focus:ring-orange-500 focus:outline-none" value={riderForm.vehicleNumber} onChange={e => setRiderForm(f => ({...f, vehicleNumber: e.target.value}))} />
+                              <input required placeholder="ABC-1234" className={`w-full p-3 rounded border ${riderErrors.vehicleNumber ? 'border-red-500' : 'border-stone-200'} focus:ring-2 focus:ring-orange-500 focus:outline-none`} value={riderForm.vehicleNumber} onChange={e => setRiderForm(f => ({...f, vehicleNumber: e.target.value}))} />
+                              {riderErrors.vehicleNumber && <p className="text-red-500 text-xs mt-1">{riderErrors.vehicleNumber}</p>}
                             </div>
-                            {riderMsg && (
-                              <div className="p-3 rounded-lg font-bold text-center bg-red-50 text-red-600 border border-red-300">
-                                {riderMsg}
-                              </div>
-                            )}
                             <div className="flex gap-2 pt-4">
                               <button type="submit" className="flex-1 px-6 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors">Add Rider</button>
                               <button type="button" onClick={() => setShowAddRiderForm(false)} className="flex-1 px-6 py-2 bg-stone-200 text-stone-900 rounded-lg font-bold hover:bg-stone-300 transition-colors">Cancel</button>
@@ -2456,7 +2550,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                       </div>
                     )}
                   </div>
-                  <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                    {/* Edit Rider Form */}
+                    {editingRiderId && (
+                      <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mb-4">
+                        <h2 className="text-xl font-bold mb-4">Edit Delivery Person</h2>
+                        <form onSubmit={e => handleSaveRider(e)} className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <input required placeholder="Name" className={`w-full p-3 rounded border ${riderEditErrors.name ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.name} onChange={e => setRiderEditForm(f => ({...f, name: e.target.value}))} />
+                              {riderEditErrors.name && <p className="text-red-500 text-xs mt-1">{riderEditErrors.name}</p>}
+                            </div>
+                            <div>
+                              <input required type="email" placeholder="Email" className={`w-full p-3 rounded border ${riderEditErrors.email ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.email} onChange={e => setRiderEditForm(f => ({...f, email: e.target.value}))} />
+                              {riderEditErrors.email && <p className="text-red-500 text-xs mt-1">{riderEditErrors.email}</p>}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <input required placeholder="Phone" className={`w-full p-3 rounded border ${riderEditErrors.phone ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.phone} onChange={e => setRiderEditForm(f => ({...f, phone: e.target.value}))} />
+                              {riderEditErrors.phone && <p className="text-red-500 text-xs mt-1">{riderEditErrors.phone}</p>}
+                            </div>
+                            <div>
+                              <select required className={`w-full p-3 rounded border ${riderEditErrors.vehicleType ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.vehicleType} onChange={e => setRiderEditForm(f => ({...f, vehicleType: e.target.value as 'Bike' | 'Scooter' | 'Car' | 'Bicycle'}))}>
+                                <option value="Bike">Bike</option>
+                                <option value="Scooter">Scooter</option>
+                                <option value="Car">Car</option>
+                                <option value="Bicycle">Bicycle</option>
+                              </select>
+                              {riderEditErrors.vehicleType && <p className="text-red-500 text-xs mt-1">{riderEditErrors.vehicleType}</p>}
+                            </div>
+                            <div>
+                              <input required placeholder="Vehicle Number" className={`w-full p-3 rounded border ${riderEditErrors.vehicleNumber ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.vehicleNumber} onChange={e => setRiderEditForm(f => ({...f, vehicleNumber: e.target.value}))} />
+                              {riderEditErrors.vehicleNumber && <p className="text-red-500 text-xs mt-1">{riderEditErrors.vehicleNumber}</p>}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button type="submit" className="flex-1 px-6 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700">Save Changes</button>
+                            <button type="button" onClick={() => setEditingRiderId(null)} className="flex-1 px-6 py-2 bg-stone-300 text-stone-900 rounded-lg font-bold hover:bg-stone-400">Cancel</button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+
+                    <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
                     <h2 className="text-xl font-bold mb-2 flex items-center justify-between">
                       <span>Delivery Persons ({allRiders.length})</span>
                     </h2>
@@ -2478,12 +2614,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           <th className="p-2">Vehicle</th>
                           <th className="p-2">Status</th>
                           <th className="p-2">Rating</th>
+                          <th className="p-2">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {allRiders.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="p-6 text-center text-stone-500">
+                            <td colSpan={7} className="p-6 text-center text-stone-500">
                               No delivery persons found. Click "Add Delivery Person" to create one.
                             </td>
                           </tr>
@@ -2506,6 +2643,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                                 </span>
                               </td>
                               <td className="p-2">⭐ {r.rating?.toFixed(1) || '0.0'} ({r.totalDeliveries || 0} deliveries)</td>
+                              <td className="p-2 flex gap-2">
+                                <button onClick={() => handleEditRiderStart(r)} className="text-blue-600 hover:text-blue-800 font-medium text-sm">Edit</button>
+                                <button onClick={() => handleDeleteRider(r._id)} className="text-red-600 hover:text-red-800 font-medium text-sm">Delete</button>
+                              </td>
                             </tr>
                           ))
                         )}
@@ -2535,15 +2676,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                         {menuMessage && <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg text-sm">{menuMessage}</div>}
                         <form onSubmit={handleMenuSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                          <input
-                            name="dishName"
-                            type="text"
-                            placeholder="Dish Name"
-                            value={menuForm.name || ''}
-                            onChange={e => setMenuForm({ ...menuForm, name: e.target.value })}
-                            className="p-2 border rounded"
-                            required
-                          />
+                          <div>
+                            <input
+                              name="dishName"
+                              type="text"
+                              placeholder="Dish Name"
+                              value={menuForm.name || ''}
+                              onChange={e => setMenuForm({ ...menuForm, name: e.target.value })}
+                              className={`w-full p-2 border rounded ${menuErrors.name ? 'border-red-500' : 'border-stone-200'}`}
+                              required
+                            />
+                            {menuErrors.name && <p className="text-red-500 text-xs mt-1">{menuErrors.name}</p>}
+                          </div>
                           <select
                             name="category"
                             value={menuForm.category || 'Main'}
@@ -2556,14 +2700,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                             <option value="Drink">Drink</option>
                           </select>
                         </div>
-                        <textarea
-                          name="description"
-                          placeholder="Description"
-                          value={menuForm.description || ''}
-                          onChange={e => setMenuForm({ ...menuForm, description: e.target.value })}
-                          className="w-full p-2 border rounded text-sm"
-                          rows={3}
-                        />
+                        <div>
+                          <textarea
+                            name="description"
+                            placeholder="Description"
+                            value={menuForm.description || ''}
+                            onChange={e => setMenuForm({ ...menuForm, description: e.target.value })}
+                            className={`w-full p-2 border rounded text-sm ${menuErrors.description ? 'border-red-500' : 'border-stone-200'}`}
+                            rows={3}
+                          />
+                          {menuErrors.description && <p className="text-red-500 text-xs mt-1">{menuErrors.description}</p>}
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                           <label className="flex flex-col text-sm font-semibold text-stone-700">
                             Price
@@ -2575,9 +2722,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                               step="0.01"
                               value={menuForm.price || 0}
                               onChange={e => setMenuForm({ ...menuForm, price: parseFloat(e.target.value) })}
-                              className="mt-2 p-2 border rounded"
+                              className={`mt-2 p-2 border rounded ${menuErrors.price ? 'border-red-500' : 'border-stone-200'}`}
                               required
                             />
+                            {menuErrors.price && <p className="text-red-500 text-xs mt-1 font-normal">{menuErrors.price}</p>}
                           </label>
                           <label className="flex flex-col text-sm font-semibold text-stone-700">
                             Image URL
@@ -3571,6 +3719,41 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
                   {/* Offer Section Enable/Disable */}
                   <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-blue-900">Show Promo Section on Home Page</h3>
+                      <p className="text-sm text-blue-700">Toggle this to show or hide the "Special Offers" section on the main website.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={settings?.showPromoSection ?? true}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          if (!settings) return;
+                          const newSettings = { ...settings, showPromoSection: checked };
+                          setSettings(newSettings);
+                          
+                          fetch(`${API_URL}/settings`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              ...newSettings,
+                              adminEmail: user?.email
+                            })
+                          })
+                          .then(res => {
+                            if (!res.ok) throw new Error('Failed');
+                            showToast(`Promo section ${checked ? 'enabled' : 'disabled'}`, 'success');
+                          })
+                          .catch(() => {
+                            showToast('Failed to update settings', 'error');
+                            setSettings(settings);
+                          });
+                        }}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
                   </div>
 
                   {showPromoForm && (

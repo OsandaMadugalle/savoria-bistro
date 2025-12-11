@@ -2,12 +2,19 @@ const express = require('express');
 const router = express.Router();
 const Gallery = require('../models/Gallery');
 const User = require('../models/User');
+const Admin = require('../models/Admin');
 const cloudinary = require('cloudinary').v2;
 const { logActivity } = require('./auth');
 
 // Helper: Check if user is admin or masterAdmin
 const checkAdminPermission = async (requesterEmail) => {
   if (!requesterEmail) return false;
+
+  // Check Admin collection first
+  const admin = await Admin.findOne({ email: requesterEmail });
+  if (admin && (admin.role === 'admin' || admin.role === 'masterAdmin')) return true;
+
+  // Fallback to User collection
   const user = await User.findOne({ email: requesterEmail });
   return user && (user.role === 'admin' || user.role === 'masterAdmin');
 };

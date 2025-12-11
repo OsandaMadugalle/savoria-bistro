@@ -8,6 +8,7 @@ const settingsSchema = new mongoose.Schema({
   operatingHoursOpen: { type: String, default: '11:00' },
   operatingHoursClose: { type: String, default: '22:00' },
   restDaysOpen: { type: Boolean, default: true },
+  showPromoSection: { type: Boolean, default: true },
   updatedAt: { type: Date, default: Date.now },
   updatedBy: String
 });

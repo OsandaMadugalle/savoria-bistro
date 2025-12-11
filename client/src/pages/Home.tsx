@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Star, ChevronRight, Clock, Users, Award, Zap } from 'lucide-react';
-import { fetchApprovedReviews, fetchMenu, fetchActivePromos, Promo } from '../services/api';
+import { fetchApprovedReviews, fetchMenu, fetchActivePromos, fetchSettings, Promo } from '../services/api';
 import { Review, MenuItem } from '../types';
 import heroImage from '../assets/hero.jpg';
 import introductionImage from '../assets/Introduction.jpg';
@@ -11,9 +11,17 @@ const Home: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [featuredDishes, setFeaturedDishes] = useState<MenuItem[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
+  const [showPromoSection, setShowPromoSection] = useState(true);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
 
   useEffect(() => {
+    // Fetch settings
+    fetchSettings().then(settings => {
+      if (settings && typeof settings.showPromoSection !== 'undefined') {
+        setShowPromoSection(settings.showPromoSection);
+      }
+    }).catch(err => console.error('Failed to fetch settings:', err));
+
     // Animate stats on load
     const animateStats = () => {
       let customers = 0, dishes = 0, awards = 0;
@@ -148,7 +156,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Special Offers Section */}
-      {promos.length > 0 && (
+      {showPromoSection && promos.length > 0 && (
         <section className="py-12 sm:py-16 px-4 bg-gradient-to-r from-orange-50 to-red-50 border-b border-stone-200">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">

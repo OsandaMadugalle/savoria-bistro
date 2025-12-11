@@ -97,6 +97,18 @@ export const getAllRiders = async (filters?: { status?: string; isActive?: boole
   return response.data;
 };
 
+// Update rider
+export const updateRider = async (id: string, updates: Partial<DeliveryRider>) => {
+  const response = await api.put<DeliveryRider>(`/delivery/riders/${id}`, updates);
+  return response.data;
+};
+
+// Delete rider
+export const deleteRider = async (id: string) => {
+  const response = await api.delete(`/delivery/riders/${id}`);
+  return response.data;
+};
+
 // Get available riders
 export const getAvailableRiders = async () => {
   const response = await api.get<DeliveryRider[]>('/delivery/riders/available');
@@ -106,18 +118,6 @@ export const getAvailableRiders = async () => {
 // Get rider by ID
 export const getRiderById = async (riderId: string) => {
   const response = await api.get<DeliveryRider>(`/delivery/riders/${riderId}`);
-  return response.data;
-};
-
-// Update rider details
-export const updateRider = async (riderId: string, updates: Partial<DeliveryRider>) => {
-  const response = await api.put(`/delivery/riders/${riderId}`, updates);
-  return response.data;
-};
-
-// Delete/deactivate rider
-export const deleteRider = async (riderId: string) => {
-  const response = await api.delete(`/delivery/riders/${riderId}`);
   return response.data;
 };
 

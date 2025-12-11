@@ -1,5 +1,6 @@
 // API for editing and deleting users
 import { User } from '../types';
+import { getAuthHeaders } from './api';
 const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const updateUser = async (email: string, updates: Partial<User>): Promise<User> => {
@@ -26,7 +27,7 @@ export const deleteUser = async (email: string): Promise<void> => {
 export const fetchActivityLogs = async (requesterEmail: string) => {
   const res = await fetch(`${API_URL}/auth/activity-logs?requesterEmail=${encodeURIComponent(requesterEmail)}`, {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' }
+    headers: getAuthHeaders()
   });
   if (!res.ok) throw new Error('Failed to fetch activity logs');
   return await res.json();

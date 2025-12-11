@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
 // Update settings (admin only)
 router.put('/', async (req, res) => {
   try {
-    const { maxTableCapacity, depositAmount, reservationDuration, cancellationHours, operatingHoursOpen, operatingHoursClose, restDaysOpen, adminEmail } = req.body;
+    const { maxTableCapacity, depositAmount, reservationDuration, cancellationHours, operatingHoursOpen, operatingHoursClose, restDaysOpen, showPromoSection, adminEmail } = req.body;
 
     let settings = await Settings.findOne();
     
@@ -39,6 +39,7 @@ router.put('/', async (req, res) => {
     if (operatingHoursOpen !== undefined) settings.operatingHoursOpen = operatingHoursOpen;
     if (operatingHoursClose !== undefined) settings.operatingHoursClose = operatingHoursClose;
     if (restDaysOpen !== undefined) settings.restDaysOpen = restDaysOpen;
+    if (showPromoSection !== undefined) settings.showPromoSection = showPromoSection;
     
     settings.updatedBy = adminEmail || 'admin';
     
