@@ -6,22 +6,23 @@ const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/
 // JWT Token Management
 export const getAuthToken = (): { accessToken: string | null; refreshToken: string | null } => {
   return {
-    accessToken: localStorage.getItem('accessToken') || localStorage.getItem('token'),
+     accessToken: sessionStorage.getItem('accessToken') || sessionStorage.getItem('token'),
     refreshToken: localStorage.getItem('refreshToken')
   };
 };
 
 export const setAuthTokens = (accessToken: string, refreshToken: string): void => {
-  localStorage.setItem('accessToken', accessToken);
-  localStorage.setItem('refreshToken', refreshToken);
+  sessionStorage.setItem('accessToken', accessToken);
+  sessionStorage.setItem('refreshToken', refreshToken);
+  sessionStorage.setItem('tokenExpiry', new Date(Date.now() + 3600000).toISOString());
   localStorage.setItem('tokenExpiry', new Date(Date.now() + 3600000).toISOString());
 };
 
 export const clearAuthTokens = (): void => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('tokenExpiry');
+  sessionStorage.removeItem('accessToken');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('refreshToken');
+  sessionStorage.removeItem('tokenExpiry');
 };
 
 export const getAuthHeaders = (includeAuth = true): HeadersInit => {

@@ -166,7 +166,7 @@ const AppContent: React.FC<{
 
 const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const storedCart = localStorage.getItem('cart');
+    const storedCart = sessionStorage.getItem('cart');
     if (storedCart) {
       try {
         const parsed = JSON.parse(storedCart);
@@ -177,7 +177,7 @@ const App: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to parse stored cart:', err);
-        localStorage.removeItem('cart');
+        sessionStorage.removeItem('cart');
       }
     }
     return [];
@@ -185,7 +185,7 @@ const App: React.FC = () => {
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
+    sessionStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
   const [user, setUser] = useState<User | null>(null);
@@ -220,21 +220,21 @@ const App: React.FC = () => {
 
   const handleLogin = (user: User) => {
     setUser(user);
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('userEmail', user.email);
+    sessionStorage.setItem('user', JSON.stringify(user));
+    sessionStorage.setItem('userEmail', user.email);
   };
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('token');
-    localStorage.removeItem('accessToken');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('userEmail');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('accessToken');
   };
 
   // Initialize user from localStorage on app load
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = sessionStorage.getItem('user');
     
     if (storedUser) {
       try {
@@ -254,8 +254,8 @@ const App: React.FC = () => {
         setUser(userWithDefaults);
       } catch (err) {
         console.error('Failed to parse stored user:', err);
-        localStorage.removeItem('user');
-        localStorage.removeItem('userEmail');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('userEmail');
       }
     }
   }, []);
