@@ -666,6 +666,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ initialUser }) => {
                                                     <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${res.status === 'Completed' ? 'bg-green-100 text-green-700' : res.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{res.status || 'Pending'}</span>
                                                 </div>
                                                 <p className="text-xs text-stone-500 mb-2">{res.name} • {res.guests} guests</p>
+                                                {res.tableNumber && (
+                                                  <div className="mb-2 p-2 bg-green-50 rounded-lg border border-green-200">
+                                                    <p className="text-xs font-bold text-green-700 mb-1">Assigned Table</p>
+                                                    <span className="font-mono font-bold text-sm text-stone-900">{res.tableNumber}</span>
+                                                  </div>
+                                                )}
                                                 {res.confirmationCode && (
                                                    <div className="mb-2 p-2 bg-orange-50 rounded-lg border border-orange-200">
                                                       <p className="text-xs font-bold text-orange-700 mb-1">Confirmation Code</p>

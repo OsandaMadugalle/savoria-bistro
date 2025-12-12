@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { generateTimeSlots } from '../utils/timeSlots';
 import { CheckCircle, Phone, Clock, MapPin, Calendar, Users, User as UserIcon, AlertCircle, Copy, Check } from 'lucide-react';
 import { Zap } from 'lucide-react';
 import { User, ReservationData } from '../types';
@@ -25,6 +28,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
   const [formData, setFormData] = useState<ReservationData>({
     name: '', email: '', phone: '', date: '', time: '', guests: 2, notes: ''
   });
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'payment_pending' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [reservationResponse, setReservationResponse] = useState<ReservationResponse | null>(null);
@@ -51,14 +55,17 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
     }
   };
 
-  const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    
-    if (name === 'date' || name === 'time') {
-      const newDate = name === 'date' ? value : formData.date;
-      const newTime = name === 'time' ? value : formData.time;
-      checkAvailability(newDate, newTime);
+  const handleDateChange = (date: Date | null) => {
+    setSelectedDate(date);
+    const dateString = date ? date.toISOString().split('T')[0] : '';
+    setFormData({ ...formData, date: dateString });
+    checkAvailability(dateString, formData.time);
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormData({ ...formData, time: e.target.value });
+    if (selectedDate) {
+      checkAvailability(selectedDate.toISOString().split('T')[0], e.target.value);
     }
   };
 
@@ -362,30 +369,34 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
                   <div>
                     <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Date *</label>
                     <div className="relative">
-                       <Calendar className="absolute left-3 top-3.5 text-orange-500" size={18} />
-                       <input 
-                         required 
-                         type="date" 
-                         name="date" 
-                         min={getTodayDateString()}
-                         value={formData.date} 
-                         onChange={handleDateTimeChange} 
-                         className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
-                       />
+                      <Calendar className="absolute left-3 top-3.5 text-orange-500" size={18} />
+                      <DatePicker
+                        selected={selectedDate}
+                        onChange={handleDateChange}
+                        minDate={new Date()}
+                        dateFormat="yyyy-MM-dd"
+                        className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors"
+                        placeholderText="Select a date"
+                        required
+                      />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase text-stone-600 mb-2">Time *</label>
                     <div className="relative">
-                       <Clock className="absolute left-3 top-3.5 text-orange-500" size={18} />
-                       <input 
-                         required 
-                         type="time" 
-                         name="time" 
-                         value={formData.time} 
-                         onChange={handleDateTimeChange} 
-                         className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors" 
-                       />
+                      <Clock className="absolute left-3 top-3.5 text-orange-500" size={18} />
+                      <select
+                        required
+                        name="time"
+                        value={formData.time}
+                        onChange={handleTimeChange}
+                        className="w-full pl-11 pr-3 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm hover:border-stone-300 transition-colors"
+                      >
+                        <option value="">Select a time</option>
+                        {generateTimeSlots('10:00', '22:00', 30).map(slot => (
+                          <option key={slot} value={slot}>{slot}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
