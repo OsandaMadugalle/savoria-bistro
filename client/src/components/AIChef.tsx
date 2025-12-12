@@ -104,94 +104,72 @@ const AIChef: React.FC<AIChefProps> = ({ cart, setCart }) => {
     msg.text.includes('[Menu](#/menu)') &&
     msg.text.match(/Menu[\s\S]*\[Menu\]\(#\/menu\)/i);
 
-  // Helper to render menu sample with add-to-cart buttons
-  const renderMenuSample = (msg: Message) => {
-    const [before, after] = msg.text.split('[Menu](#/menu)');
-    const menuLines = before.split('\n');
+    // Helper to render menu sample without add-to-cart, and with a working View Full Menu button
+    const renderMenuSample = (msg: Message) => {
+      const [before, after] = msg.text.split('[Menu](#/menu)');
+      const menuLines = before.split('\n');
 
-    // Group menu item lines
-    const groupedMenuItems: { nameLine: string; descLine?: string; itemName: string }[] = [];
-    let i = 0;
-    while (i < menuLines.length) {
-      const line = menuLines[i];
-      const nameMatch = line.match(/^\s*([\w\s'-]+?)(?:\s*\[.*?\])?\s*\$[\d.]+/);
-      if (nameMatch) {
-        const itemName = nameMatch[1].trim();
-        const nextLine = menuLines[i + 1] || '';
-        if (/^\s{2,}\S/.test(nextLine)) {
-          groupedMenuItems.push({ nameLine: line, descLine: nextLine, itemName });
-          i += 2;
-          continue;
-        } else {
-          groupedMenuItems.push({ nameLine: line, itemName });
-          i++;
-          continue;
-        }
-      }
-      i++;
-    }
-
-    const handleAddToCart = (itemName: string) => {
-      const item = menu.find(m => m.name === itemName);
-      if (item) {
-        window.dispatchEvent(new CustomEvent('add-to-cart', { detail: item }));
-        setMessages(prev => [
-          ...prev,
-          {
-            id: Date.now().toString() + Math.random().toString(36).slice(2),
-            role: 'assistant',
-            text: `Added ${item.name} to your cart!`
+      // Group menu item lines
+      const groupedMenuItems: { nameLine: string; descLine?: string; itemName: string }[] = [];
+      let i = 0;
+      while (i < menuLines.length) {
+        const line = menuLines[i];
+        const nameMatch = line.match(/^\s*([\w\s'-]+?)(?:\s*\[.*?\])?\s*\$[\d.]+/);
+        if (nameMatch) {
+          const itemName = nameMatch[1].trim();
+          const nextLine = menuLines[i + 1] || '';
+          if (/^\s{2,}\S/.test(nextLine)) {
+            groupedMenuItems.push({ nameLine: line, descLine: nextLine, itemName });
+            i += 2;
+            continue;
+          } else {
+            groupedMenuItems.push({ nameLine: line, itemName });
+            i++;
+            continue;
           }
-        ]);
+        }
+        i++;
       }
-    };
 
-    return (
-      <div key={msg.id} className="flex justify-start">
-        <div className="max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed bg-white border border-stone-200 text-stone-800 rounded-tl-sm shadow-sm">
-          {menuLines.map((line, idx) => {
-            const group = groupedMenuItems.find(g => g.nameLine === line);
-            if (group) {
-              return (
-                <div key={idx} className="flex items-center gap-2 mb-1">
-                  <span>{group.nameLine}</span>
-                  <button
-                    className="ml-2 px-2 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600 transition-colors"
-                    onClick={() => handleAddToCart(group.itemName)}
-                    aria-label={`Add ${group.itemName} to cart`}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              );
-            }
-            const isDesc = groupedMenuItems.some(g => g.descLine === line);
-            if (isDesc) {
-              return <div key={idx} className="ml-6 text-stone-600">{line}<br /></div>;
-            }
-            return <div key={idx}>{line}<br /></div>;
-          })}
-          <a
-            href="#/menu"
-            className="inline-block mt-2 px-4 py-2 bg-orange-600 text-white rounded-full font-semibold shadow hover:bg-orange-700 transition-colors"
-            aria-label="View the full menu page"
-          >
-            View Full Menu
-          </a>
-          {after && (
-            <span>
-              {after.split('\n').map((line, i) => (
-                <React.Fragment key={i}>
-                  {line}
-                  <br />
-                </React.Fragment>
-              ))}
-            </span>
-          )}
+      return (
+        <div key={msg.id} className="flex justify-start">
+          <div className="max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed bg-white border border-stone-200 text-stone-800 rounded-tl-sm shadow-sm">
+            {menuLines.map((line, idx) => {
+              const group = groupedMenuItems.find(g => g.nameLine === line);
+              if (group) {
+                return (
+                  <div key={idx} className="mb-1">
+                    <span>{group.nameLine}</span>
+                  </div>
+                );
+              }
+              const isDesc = groupedMenuItems.some(g => g.descLine === line);
+              if (isDesc) {
+                return <div key={idx} className="ml-6 text-stone-600">{line}<br /></div>;
+              }
+              return <div key={idx}>{line}<br /></div>;
+            })}
+            <button
+              onClick={() => window.location.assign('/menu')}
+              className="inline-block mt-2 px-4 py-2 bg-orange-600 text-white rounded-full font-semibold shadow hover:bg-orange-700 transition-colors"
+              aria-label="View the full menu page"
+            >
+              View Full Menu
+            </button>
+            {after && (
+              <span>
+                {after.split('\n').map((line, i) => (
+                  <React.Fragment key={i}>
+                    {line}
+                    <br />
+                  </React.Fragment>
+                ))}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
