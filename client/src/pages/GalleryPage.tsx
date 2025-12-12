@@ -142,18 +142,18 @@ const GalleryPage: React.FC<GalleryPageProps> = ({ user }) => {
             <Loader2 size={40} className="animate-spin text-orange-600" />
           </div>
         ) : galleryImages.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-12 mt-8">
+          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-12 mt-8 [column-fill:_balance]">
             {galleryImages.map((img) => (
               <div 
                 key={img._id || img.id} 
-                className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all group aspect-square"
+                className="mb-4 break-inside-avoid relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all group bg-stone-100"
               >
                 <img 
                   src={img.src} 
                   alt={img.caption} 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="w-full object-cover transition-transform duration-500 group-hover:scale-105 bg-stone-100"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                 {isAdmin && (
                   <button 
                     onClick={(e) => {

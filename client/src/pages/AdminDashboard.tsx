@@ -3516,35 +3516,57 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           </button>
                         </div>
                         <form onSubmit={async (e) => {
-                        e.preventDefault();
-                        if (!galleryUploadForm.caption || !galleryUploadForm.category || !galleryUploadForm.file) {
-                          showToast('All fields required', 'error');
-                          return;
-                        }
-                        try {
-                          setGalleryUploading(true);
-                          const reader = new FileReader();
-                          reader.onload = async (event) => {
-                            const base64 = event.target?.result as string;
-                            await uploadGalleryImage({
-                              caption: galleryUploadForm.caption,
-                              category: galleryUploadForm.category,
-                              imageBase64: base64,
-                              uploadedBy: user?.email || '',
-                              uploadedByName: user?.name || ''
-                            });
-                            setGalleryUploadForm({ caption: '', category: '', file: null });
-                            setShowGalleryUpload(false);
-                            showToast('Image uploaded successfully!', 'success');
-                            loadGalleryImages();
-                          };
-                          reader.readAsDataURL(galleryUploadForm.file);
-                        } catch (error) {
-                          showToast('Failed to upload image', 'error');
-                        } finally {
-                          setGalleryUploading(false);
-                        }
-                      }} className="space-y-4">
+                          e.preventDefault();
+                          if (!galleryUploadForm.caption || !galleryUploadForm.category || !galleryUploadForm.file) {
+                            showToast('All fields required', 'error');
+                            return;
+                          }
+                          try {
+                            setGalleryUploading(true);
+                            const reader = new FileReader();
+                            reader.onload = async (event) => {
+                              const base64 = event.target?.result as string;
+                              await uploadGalleryImage({
+                                caption: galleryUploadForm.caption,
+                                category: galleryUploadForm.category,
+                                imageBase64: base64,
+                                uploadedBy: user?.email || '',
+                                uploadedByName: user?.name || ''
+                              });
+                              setGalleryUploadForm({ caption: '', category: '', file: null });
+                              showToast('Image uploaded successfully!', 'success');
+                              loadGalleryImages();
+                              setTimeout(() => {
+                                setShowGalleryUpload(false);
+                              }, 1000);
+                            };
+                            reader.readAsDataURL(galleryUploadForm.file);
+                          } catch (error) {
+                            if (
+                              error instanceof Error &&
+                              (error.message.includes('PayloadTooLargeError') || error.message.includes('entity too large'))
+                            ) {
+                              showToast('Image is too large. Please upload a smaller file (max 50MB).', 'error');
+                            } else {
+                              showToast('Failed to upload image', 'error');
+                            }
+                          } finally {
+                            setGalleryUploading(false);
+                          }
+                        }} className="space-y-4 relative">
+                          {galleryUploading && (
+                            <div className="absolute inset-0 bg-black/10 flex items-center justify-center z-50">
+                              <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center">
+                                <span className="animate-spin text-orange-600 mb-2">
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-8 h-8">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                  </svg>
+                                </span>
+                                <span className="text-stone-700 font-bold">Uploading...</span>
+                              </div>
+                            </div>
+                          )}
                         <div>
                           <label className="block text-sm font-bold mb-1">Caption</label>
                           <input 
@@ -3585,9 +3607,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           <button 
                             type="submit"
                             disabled={galleryUploading}
-                            className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-stone-400 text-white rounded-lg font-bold"
+                            className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-stone-400 text-white rounded-lg font-bold flex items-center justify-center gap-2"
                           >
-                            {galleryUploading ? 'Uploading...' : 'Upload'}
+                            {galleryUploading ? (
+                              <>
+                                <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                </svg>
+                                Loading...
+                              </>
+                            ) : 'Upload'}
                           </button>
                         </div>
                       </form>
@@ -3599,26 +3629,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {Array.isArray(galleryImages) && galleryImages.map((img: any) => (
-                      <div key={img._id} className="border border-stone-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div key={img._id} className="border border-stone-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
                         <img src={img.src} alt={img.caption} className="w-full h-32 object-cover" />
-                        <div className="p-3">
+                        <div className="flex-1 flex flex-col p-3">
                           <p className="font-bold text-stone-900">{img.caption}</p>
                           <p className="text-xs text-stone-600">{img.category}</p>
-                          <button 
-                            onClick={() => {
-                              if (window.confirm('Delete this image?')) {
-                                deleteGalleryImage(img._id).then(() => {
-                                  loadGalleryImages();
-                                  showToast('Image deleted successfully!', 'success');
-                                }).catch(() => {
-                                  showToast('Failed to delete image', 'error');
-                                });
-                              }
-                            }}
-                            className="mt-3 w-full px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded font-bold flex items-center justify-center gap-1"
-                          >
-                            <Trash2 size={14} /> Delete
-                          </button>
+                          <div className="mt-auto">
+                            <button 
+                              onClick={() => {
+                                if (window.confirm('Delete this image?')) {
+                                  deleteGalleryImage(img._id).then(() => {
+                                    loadGalleryImages();
+                                    showToast('Image deleted successfully!', 'success');
+                                  }).catch(() => {
+                                    showToast('Failed to delete image', 'error');
+                                  });
+                                }
+                              }}
+                              className="mt-3 w-full px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded font-bold flex items-center justify-center gap-1"
+                            >
+                              <Trash2 size={14} /> Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
