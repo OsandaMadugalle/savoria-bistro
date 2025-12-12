@@ -10,7 +10,7 @@ const emailTemplates = {
     subject: 'Private Event Follow-up',
     html: `<h2>Dear ${name},</h2>
       <p>${body}</p>
-      <p>Best regards,<br>${staffName} & the Savoria Bistro Team</p>`
+      <p>Best regards,<br>Savoria Bistro Team</p>`
   })
 };
 
