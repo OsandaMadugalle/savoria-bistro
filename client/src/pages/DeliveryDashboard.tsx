@@ -20,8 +20,7 @@ import {
   CheckCircle,
   Star,
   Phone,
-  Mail,
-  AlertCircle
+  Mail
 } from 'lucide-react';
 
 interface DeliveryDashboardProps {

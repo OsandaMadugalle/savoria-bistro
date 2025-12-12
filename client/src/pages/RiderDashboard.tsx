@@ -3,7 +3,7 @@ import ToastContainer, { Toast, ToastType } from '../components/Toast';
 import { User } from '../types';
 import { fetchAllOrders } from '../services/api';
 import { markOrderPickedUp, markOrderOutForDelivery, markOrderDelivered, getMyDeliveries } from '../services/deliveryApi';
-import { Package, MapPin, Clock, CheckCircle, AlertCircle, Phone, DollarSign } from 'lucide-react';
+import { Package, MapPin, Clock, CheckCircle, Phone, DollarSign } from 'lucide-react';
 
 interface RiderDashboardProps {
   user: User | null;
