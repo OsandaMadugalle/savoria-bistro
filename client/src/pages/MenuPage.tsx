@@ -237,10 +237,6 @@ const MenuPage: React.FC<MenuPageProps> = ({ addToCart }) => {
             <p className="text-stone-600 font-medium">
               Showing <span className="text-orange-600 font-bold">{filteredItems.length}</span> {filteredItems.length === 1 ? 'dish' : 'dishes'}
             </p>
-            {/* DEBUG INFO */}
-            <p className="text-xs text-stone-400 mt-1">
-              Total items loaded: {menuItems.length} | Filtered: {filteredItems.length}
-            </p>
           </div>
         </div>
 

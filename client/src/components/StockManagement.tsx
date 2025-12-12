@@ -32,8 +32,6 @@ interface StockUpdateForm {
 
 const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }) => {
     const [activeTab, setActiveTab] = useState<'alerts' | 'low' | 'out'>('alerts');
-  // DEBUG: Log userRole to console for troubleshooting
-  console.log('StockManagement userRole:', userRole);
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   const [outOfStockItems, setOutOfStockItems] = useState<any[]>([]);
@@ -122,9 +120,7 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }
   };
 
   const handleUpdateStock = async () => {
-    // DEBUG: Log userRole at permission check (value and type)
     const trimmedRole = (userRole || '').trim();
-    console.log('handleUpdateStock userRole (trimmed):', trimmedRole, 'type:', typeof trimmedRole);
     // Check admin permission by role (trimmed)
     if (trimmedRole !== 'admin' && trimmedRole !== 'masterAdmin') {
       setPermissionError('Admin permission required to restock.');
@@ -231,8 +227,6 @@ const StockManagement: React.FC<StockManagementProps> = ({ userEmail, userRole }
                 ×
               </button>
             </div>
-            {/* DEBUG: Show userRole for troubleshooting */}
-            <div className="mb-2 text-xs text-stone-400">User Role: {userRole}</div>
             <form onSubmit={(e) => { e.preventDefault(); handleUpdateStock(); }} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-stone-700 mb-1">Item Name</label>
