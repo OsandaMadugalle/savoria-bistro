@@ -262,6 +262,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const [showAddAdminForm, setShowAddAdminForm] = useState(false);
   const [showAddStaffForm, setShowAddStaffForm] = useState(false);
   const [showAddRiderForm, setShowAddRiderForm] = useState(false);
+
+    // Prevent background scroll when Add Rider form is open
+    useEffect(() => {
+      if (showAddRiderForm) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }, [showAddRiderForm]);
   
   // ===== STATE: ADMIN MANAGEMENT =====
   const [allAdmins, setAllAdmins] = useState<User[]>([]);
@@ -270,6 +282,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   
   // ===== STATE: RIDER MANAGEMENT =====
   const [editingRiderId, setEditingRiderId] = useState<string | null>(null);
+
+    // Prevent background scroll when Edit Rider form is open
+    useEffect(() => {
+      if (editingRiderId) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }, [editingRiderId]);
   const [riderEditForm, setRiderEditForm] = useState<{ name: string; email: string; phone: string; vehicleType: 'Bike' | 'Scooter' | 'Car' | 'Bicycle'; vehicleNumber: string }>({ name: '', email: '', phone: '', vehicleType: 'Bike', vehicleNumber: '' });
 
   // ===== STATE: FILTERS & LOADING =====
@@ -2552,43 +2576,45 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                   </div>
                     {/* Edit Rider Form */}
                     {editingRiderId && (
-                      <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mb-4">
-                        <h2 className="text-xl font-bold mb-4">Edit Delivery Person</h2>
-                        <form onSubmit={e => handleSaveRider(e)} className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <input required placeholder="Name" className={`w-full p-3 rounded border ${riderEditErrors.name ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.name} onChange={e => setRiderEditForm(f => ({...f, name: e.target.value}))} />
-                              {riderEditErrors.name && <p className="text-red-500 text-xs mt-1">{riderEditErrors.name}</p>}
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-2xl max-w-md w-full mx-4 animate-in fade-in scale-in-95">
+                          <h2 className="text-xl font-bold mb-4">Edit Delivery Person</h2>
+                          <form onSubmit={e => handleSaveRider(e)} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <input required placeholder="Name" className={`w-full p-3 rounded border ${riderEditErrors.name ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.name} onChange={e => setRiderEditForm(f => ({...f, name: e.target.value}))} />
+                                {riderEditErrors.name && <p className="text-red-500 text-xs mt-1">{riderEditErrors.name}</p>}
+                              </div>
+                              <div>
+                                <input required type="email" placeholder="Email" className={`w-full p-3 rounded border ${riderEditErrors.email ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.email} onChange={e => setRiderEditForm(f => ({...f, email: e.target.value}))} />
+                                {riderEditErrors.email && <p className="text-red-500 text-xs mt-1">{riderEditErrors.email}</p>}
+                              </div>
                             </div>
-                            <div>
-                              <input required type="email" placeholder="Email" className={`w-full p-3 rounded border ${riderEditErrors.email ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.email} onChange={e => setRiderEditForm(f => ({...f, email: e.target.value}))} />
-                              {riderEditErrors.email && <p className="text-red-500 text-xs mt-1">{riderEditErrors.email}</p>}
+                            <div className="grid grid-cols-3 gap-4">
+                              <div>
+                                <input required placeholder="Phone" className={`w-full p-3 rounded border ${riderEditErrors.phone ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.phone} onChange={e => setRiderEditForm(f => ({...f, phone: e.target.value}))} />
+                                {riderEditErrors.phone && <p className="text-red-500 text-xs mt-1">{riderEditErrors.phone}</p>}
+                              </div>
+                              <div>
+                                <select required className={`w-full p-3 rounded border ${riderEditErrors.vehicleType ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.vehicleType} onChange={e => setRiderEditForm(f => ({...f, vehicleType: e.target.value as 'Bike' | 'Scooter' | 'Car' | 'Bicycle'}))}>
+                                  <option value="Bike">Bike</option>
+                                  <option value="Scooter">Scooter</option>
+                                  <option value="Car">Car</option>
+                                  <option value="Bicycle">Bicycle</option>
+                                </select>
+                                {riderEditErrors.vehicleType && <p className="text-red-500 text-xs mt-1">{riderEditErrors.vehicleType}</p>}
+                              </div>
+                              <div>
+                                <input required placeholder="Vehicle Number" className={`w-full p-3 rounded border ${riderEditErrors.vehicleNumber ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.vehicleNumber} onChange={e => setRiderEditForm(f => ({...f, vehicleNumber: e.target.value}))} />
+                                {riderEditErrors.vehicleNumber && <p className="text-red-500 text-xs mt-1">{riderEditErrors.vehicleNumber}</p>}
+                              </div>
                             </div>
-                          </div>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <input required placeholder="Phone" className={`w-full p-3 rounded border ${riderEditErrors.phone ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.phone} onChange={e => setRiderEditForm(f => ({...f, phone: e.target.value}))} />
-                              {riderEditErrors.phone && <p className="text-red-500 text-xs mt-1">{riderEditErrors.phone}</p>}
+                            <div className="flex gap-2 pt-4">
+                              <button type="submit" className="flex-1 px-6 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700">Save Changes</button>
+                              <button type="button" onClick={() => setEditingRiderId(null)} className="flex-1 px-6 py-2 bg-stone-300 text-stone-900 rounded-lg font-bold hover:bg-stone-400">Cancel</button>
                             </div>
-                            <div>
-                              <select required className={`w-full p-3 rounded border ${riderEditErrors.vehicleType ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.vehicleType} onChange={e => setRiderEditForm(f => ({...f, vehicleType: e.target.value as 'Bike' | 'Scooter' | 'Car' | 'Bicycle'}))}>
-                                <option value="Bike">Bike</option>
-                                <option value="Scooter">Scooter</option>
-                                <option value="Car">Car</option>
-                                <option value="Bicycle">Bicycle</option>
-                              </select>
-                              {riderEditErrors.vehicleType && <p className="text-red-500 text-xs mt-1">{riderEditErrors.vehicleType}</p>}
-                            </div>
-                            <div>
-                              <input required placeholder="Vehicle Number" className={`w-full p-3 rounded border ${riderEditErrors.vehicleNumber ? 'border-red-500' : 'border-stone-200'}`} value={riderEditForm.vehicleNumber} onChange={e => setRiderEditForm(f => ({...f, vehicleNumber: e.target.value}))} />
-                              {riderEditErrors.vehicleNumber && <p className="text-red-500 text-xs mt-1">{riderEditErrors.vehicleNumber}</p>}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button type="submit" className="flex-1 px-6 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700">Save Changes</button>
-                            <button type="button" onClick={() => setEditingRiderId(null)} className="flex-1 px-6 py-2 bg-stone-300 text-stone-900 rounded-lg font-bold hover:bg-stone-400">Cancel</button>
-                          </div>
-                        </form>
+                          </form>
+                        </div>
                       </div>
                     )}
 

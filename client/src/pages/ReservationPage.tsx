@@ -134,9 +134,6 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ user }) => {
     }
   };
 
-  const getTodayDateString = () => {
-    return new Date().toISOString().split('T')[0];
-  };
 
   // If user is not logged in, show login prompt
   if (!user) {
