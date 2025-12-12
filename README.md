@@ -315,15 +315,16 @@ MONGO_URI=mongodb://localhost:27017/savoria
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
 
+
 # Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+
 
 # Email Configuration (for Nodemailer)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
+EMAIL_PASSWORD=your-app-password
 EMAIL_FROM=noreply@savoria.com
 
 # Cloudinary (Image Storage)
@@ -634,7 +635,7 @@ savoria-bistro/
 | `STRIPE_SECRET_KEY` | Stripe secret key | Yes |
 | `EMAIL_HOST` | SMTP server | Yes |
 | `EMAIL_USER` | SMTP username | Yes |
-| `EMAIL_PASS` | SMTP password | Yes |
+| `EMAIL_PASSWORD` | SMTP password | Yes |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | Yes |
 | `CLOUDINARY_API_KEY` | Cloudinary API key | Yes |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret | Yes |
