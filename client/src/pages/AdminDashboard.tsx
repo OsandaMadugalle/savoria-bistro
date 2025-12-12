@@ -1276,7 +1276,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                 <div className="text-xs text-stone-600 mt-1">📦 Total Orders</div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-stone-200 shadow-sm">
-                <div className="text-2xl font-bold text-green-600">${orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</div>
+                <div className="text-2xl font-bold text-green-600">Rs{orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</div>
                 <div className="text-xs text-stone-600 mt-1">💰 Total Revenue</div>
               </div>
             </div>
@@ -1639,11 +1639,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                         <div className="text-sm text-green-600 mt-1">Total Orders</div>
                       </div>
                       <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                        <div className="text-2xl font-bold text-purple-700">${orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(0)}</div>
+                        <div className="text-2xl font-bold text-purple-700">Rs{orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(0)}</div>
                         <div className="text-sm text-purple-600 mt-1">Total Revenue</div>
                       </div>
                       <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                        <div className="text-2xl font-bold text-orange-700">${orders.length > 0 ? (orders.reduce((sum, o) => sum + (o.total || 0), 0) / orders.length).toFixed(2) : '0'}</div>
+                        <div className="text-2xl font-bold text-orange-700">Rs{orders.length > 0 ? (orders.reduce((sum, o) => sum + (o.total || 0), 0) / orders.length).toFixed(2) : '0'}</div>
                         <div className="text-sm text-orange-600 mt-1">Avg Order Value</div>
                       </div>
                     </div>
@@ -2189,6 +2189,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                                   <td className="p-4 font-semibold text-stone-900">{payment.reservationId?.name || '-'}</td>
                                   <td className="p-4 font-mono text-xs font-bold text-orange-600">{payment.confirmationCode || '-'}</td>
                                   <td className="p-4 font-bold text-green-600">${(payment.amount / 100).toFixed(2)}</td>
+                                                                    <td className="p-4 font-bold text-green-600">Rs{(payment.amount / 100).toFixed(2)}</td>
                                   <td className="p-4 text-stone-600 capitalize">{payment.paymentMethod || 'card'}</td>
                                   <td className="p-4">
                                     <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
@@ -3437,6 +3438,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           <div>
                             <p className="text-stone-600 text-xs">Deposit</p>
                             <p className="font-bold text-stone-900">${(settings.depositAmount / 100).toFixed(2)}</p>
+                                                      <p className="font-bold text-stone-900">Rs{(settings.depositAmount / 100).toFixed(2)}</p>
                           </div>
                           <div>
                             <p className="text-stone-600 text-xs">Duration</p>
