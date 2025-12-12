@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ToastContainer, { Toast, ToastType } from '../components/Toast';
 import { 
   getDeliveryStats, 
   getAllRiders, 
@@ -36,38 +37,41 @@ export default function DeliveryDashboard({ user, onLogout }: DeliveryDashboardP
   const [activeTab, setActiveTab] = useState<'overview' | 'riders' | 'deliveries'>('overview');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
+    loadData(true); // Only show loading screen on first load
+    // Removed auto-refresh interval for better UX
   }, []);
 
-  const loadData = async () => {
+  // Only show loading screen if initialLoad is true
+  const loadData = async (initialLoad = false) => {
     try {
-      setLoading(true);
+      if (initialLoad) setLoading(true);
       const [statsData, ridersData, ordersData] = await Promise.all([
         getDeliveryStats(),
         getAllRiders({ isActive: true }),
         fetchAllOrders()
       ]);
-      
       setStats(statsData);
       setRiders(ridersData);
-      // Only show orders that are not yet assigned (Packed & Ready)
       setOrders(ordersData.filter((o: any) => o.status === 'Packed & Ready'));
     } catch (error) {
       console.error('Failed to load delivery data:', error);
       showToast('Failed to load data', 'error');
     } finally {
-      setLoading(false);
+      if (initialLoad) setLoading(false);
     }
   };
 
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  const showToast = (message: string, type: ToastType = 'success', duration = 3000) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setToasts(prev => [...prev, { id, message, type, duration }]);
+    setTimeout(() => removeToast(id), duration);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
   const handleAssignRider = (order: any) => {
@@ -100,6 +104,7 @@ export default function DeliveryDashboard({ user, onLogout }: DeliveryDashboardP
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-600 mx-auto mb-4"></div>
           <p className="text-stone-600 font-semibold">Loading delivery dashboard...</p>
         </div>
+        <ToastContainer toasts={toasts} onClose={removeToast} />
       </div>
     );
   }
@@ -108,24 +113,23 @@ export default function DeliveryDashboard({ user, onLogout }: DeliveryDashboardP
     <div className="min-h-screen bg-gradient-to-br from-stone-50 to-stone-100 pb-12 pt-20">
       <AdminNavigation user={user} onLogout={onLogout} />
       {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg animate-in fade-in slide-in-from-top-2 ${
-          toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
-          <div className="flex items-center gap-2">
-            {toast.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-            <span className="font-semibold">{toast.message}</span>
-          </div>
-        </div>
-      )}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Header */}
       <div className="bg-white text-stone-900 py-8 px-6 shadow-sm border-b border-stone-200">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <h1 className="text-4xl font-serif font-bold flex items-center gap-3 mb-2">
             <Truck className="w-10 h-10 text-orange-600" />
             Delivery Management
           </h1>
+          <button
+            onClick={() => { loadData(); showToast('Dashboard refreshed', 'info'); }}
+            className="ml-4 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-semibold shadow hover:bg-orange-200 transition-all flex items-center gap-2"
+            title="Refresh Dashboard"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582M20 20v-5h-.581M5.635 19A9 9 0 1021 12.35" /></svg>
+            Refresh
+          </button>
         </div>
       </div>
 

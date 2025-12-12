@@ -457,11 +457,14 @@ router.get('/stats', requireRole(['admin', 'masterAdmin', 'deliveryManager']), a
 // GET: Rider's own deliveries (for rider app)
 router.get('/my-deliveries', requireRole(['rider']), async (req, res) => {
   try {
+    console.log('DEBUG /my-deliveries req.user:', req.user);
     if (req.user.role !== 'rider') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const rider = await DeliveryRider.findById(req.user._id);
+    // Use req.user.userId instead of _id, as JWT sets userId
+    const rider = await DeliveryRider.findById(req.user.userId);
+    console.log('DEBUG /my-deliveries found rider:', rider);
     if (!rider) {
       return res.status(404).json({ error: 'Rider profile not found' });
     }
