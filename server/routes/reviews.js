@@ -9,7 +9,11 @@ const { logActivity } = require('./auth');
 const checkAdminPermission = async (requesterEmail) => {
   if (!requesterEmail) return false;
   const user = await User.findOne({ email: requesterEmail });
-  return user && (user.role === 'admin' || user.role === 'masterAdmin');
+  if (user && (user.role === 'admin' || user.role === 'masterAdmin')) return true;
+  // Also check Admin collection
+  const Admin = require('../models/Admin');
+  const admin = await Admin.findOne({ email: requesterEmail });
+  return admin && (admin.role === 'admin' || admin.role === 'masterAdmin');
 };
 
 // Configure Cloudinary
