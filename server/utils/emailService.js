@@ -17,7 +17,29 @@ const emailTemplates = {
   privateEventFollowup: (name, staffName, body) => ({
     subject: 'Private Event Follow-up',
     html: `<h2>Dear ${name},</h2><p>${body}</p><p>Best regards,<br>Savoria Bistro Team</p>`
+  }),
+  passwordReset: (email, resetLink) => ({
+    subject: 'Reset Your Savoria Bistro Password',
+    html: `<h2>Password Reset Request</h2><p>We received a request to reset your password for ${email}.</p><p><a href="${resetLink}" style="background-color: #8B0000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a></p><p>If you did not request this, you can ignore this email.</p>`
   })
+};
+// Send password reset email
+const sendPasswordResetEmail = async (email, resetLink) => {
+  try {
+    const cleanEmail = String(email).replace(/["'<>\s]/g, '');
+    const template = emailTemplates.passwordReset(cleanEmail, resetLink);
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER || 'noreply@savoria.com',
+      to: cleanEmail,
+      subject: template.subject,
+      html: template.html
+    });
+    console.log('✅ Password reset email sent to:', cleanEmail);
+    return true;
+  } catch (err) {
+    console.error('Password reset email send error:', err);
+    return false;
+  }
 };
 
 const transporter = nodemailer.createTransport({
@@ -149,5 +171,6 @@ module.exports = {
   sendNewsletterToAll,
   sendUnsubscribeConfirmation,
   sendPrivateEventFollowup,
+  sendPasswordResetEmail,
   transporter
 };

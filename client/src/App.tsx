@@ -21,6 +21,8 @@ import RiderDashboard from './pages/RiderDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 import AIChef from './components/AIChef';
 import { MenuItem, CartItem, User } from './types';
@@ -114,9 +116,20 @@ const AppContent: React.FC<{
   handleLogin, handleLogout, isLoginModalOpen, setIsLoginModalOpen,
   authMode, setAuthMode, setCart
 }) => {
+
   const location = useLocation();
   const isDashboardRoute = location.pathname.startsWith('/staff') || location.pathname.startsWith('/rider') || location.pathname.startsWith('/admin') || location.pathname.startsWith('/delivery');
   const isFooterHiddenRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/staff') || location.pathname.startsWith('/rider') || location.pathname.startsWith('/delivery');
+
+  // Show sign-in modal if coming from password reset
+  React.useEffect(() => {
+    if (location.state && location.state.showSignIn) {
+      setAuthMode('signin');
+      setIsLoginModalOpen(true);
+      // Remove the state so it doesn't trigger again
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+  }, [location.state, setAuthMode, setIsLoginModalOpen, location.pathname]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -124,6 +137,8 @@ const AppContent: React.FC<{
 
       <main className="flex-grow">
         <Routes>
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/" element={<HomeRedirector user={user} />} />
           <Route path="/menu" element={<MenuPage addToCart={addToCart} />} />
           <Route path="/gallery" element={<GalleryPage user={user} />} />

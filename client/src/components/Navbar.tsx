@@ -11,8 +11,8 @@ interface NavbarProps {
   onLogout: () => void;
   isLoginModalOpen?: boolean;
   setIsLoginModalOpen?: (value: boolean) => void;
-  authMode?: 'signin' | 'signup';
-  setAuthMode?: (mode: 'signin' | 'signup') => void;
+  authMode?: 'signin' | 'signup' | 'forgot';
+  setAuthMode?: (mode: 'signin' | 'signup' | 'forgot') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, isLoginModalOpen: externalIsLoginModalOpen, setIsLoginModalOpen: externalSetIsLoginModalOpen, authMode: externalAuthMode, setAuthMode: externalSetAuthMode }) => {
@@ -21,9 +21,37 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
   const isLoginModalOpen = externalIsLoginModalOpen !== undefined ? externalIsLoginModalOpen : internalIsLoginModalOpen;
   const setIsLoginModalOpen = externalSetIsLoginModalOpen || setInternalIsLoginModalOpen;
   
-  const [internalAuthMode, setInternalAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [internalAuthMode, setInternalAuthMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const authMode = externalAuthMode !== undefined ? externalAuthMode : internalAuthMode;
   const setAuthMode = externalSetAuthMode || setInternalAuthMode;
+
+  // Forgot Password State
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+  const [forgotError, setForgotError] = useState('');
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotMessage('');
+    setForgotError('');
+    setIsForgotLoading(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to send reset email');
+      setForgotMessage('If this email is registered, a reset link has been sent.');
+    } catch (err: any) {
+      setForgotError(err.message || 'Failed to send reset email');
+    } finally {
+      setIsForgotLoading(false);
+    }
+  };
 
   // Prevent background scroll when modal is open
   useEffect(() => {
@@ -431,8 +459,8 @@ interface CustomerNavbarProps {
   onLogout: () => void;
   isLoginModalOpen: boolean;
   setIsLoginModalOpen: (value: boolean) => void;
-  authMode: 'signin' | 'signup';
-  setAuthMode: (mode: 'signin' | 'signup') => void;
+  authMode: 'signin' | 'signup' | 'forgot';
+  setAuthMode: (mode: 'signin' | 'signup' | 'forgot') => void;
   loginEmail: string;
   setLoginEmail: (value: string) => void;
   loginPassword: string;
@@ -530,6 +558,33 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
   handleVerification,
   handleResendVerification,
 }) => {
+  // Forgot Password State (local to modal)
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+  const [forgotError, setForgotError] = useState('');
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotMessage('');
+    setForgotError('');
+    setIsForgotLoading(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to send reset email');
+      setForgotMessage('If this email is registered, a reset link has been sent.');
+    } catch (err: any) {
+      setForgotError(err.message || 'Failed to send reset email');
+    } finally {
+      setIsForgotLoading(false);
+    }
+  };
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = React.useRef<HTMLDivElement>(null);
@@ -766,14 +821,22 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
             <div className="p-8 max-h-[82vh] overflow-auto">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-serif font-bold text-stone-900">
-                  {needsVerification ? 'Verify Your Email' : authMode === 'signin' ? 'Welcome Back' : 'Join Savoria'}
+                  {needsVerification
+                    ? 'Verify Your Email'
+                    : authMode === 'signin'
+                    ? 'Welcome Back'
+                    : authMode === 'signup'
+                    ? 'Join Savoria'
+                    : 'Forgot Password'}
                 </h2>
                 <p className="text-stone-500 text-sm mt-1">
-                  {needsVerification 
-                    ? `We've sent a verification code to ${verificationEmail}` 
-                    : authMode === 'signin' 
-                    ? 'Sign in to access your rewards.' 
-                    : 'Create an account to start earning points.'}
+                  {needsVerification
+                    ? `We've sent a verification code to ${verificationEmail}`
+                    : authMode === 'signin'
+                    ? 'Sign in to access your rewards.'
+                    : authMode === 'signup'
+                    ? 'Create an account to start earning points.'
+                    : ''}
                 </p>
               </div>
 
@@ -910,6 +973,51 @@ const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                   >
                     {isLoggingIn ? 'Signing In...' : 'Sign In'}
                   </button>
+                  <div className="text-center mt-3">
+                    <button
+                      type="button"
+                      className="text-sm text-orange-600 hover:underline font-semibold"
+                      onClick={() => {
+                        setAuthMode('forgot');
+                        setForgotEmail(loginEmail);
+                        setForgotMessage('');
+                        setForgotError('');
+                      }}
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                </form>
+              ) : authMode === 'forgot' ? (
+                /* FORGOT PASSWORD FORM */
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <p className="text-sm text-stone-500 text-center mb-2">Enter your email to receive a password reset link.</p>
+                  <input
+                    type="email"
+                    className="w-full border border-stone-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    placeholder="Email address"
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="w-full bg-orange-600 text-white py-2 rounded font-semibold hover:bg-orange-700 transition"
+                    disabled={isForgotLoading}
+                  >
+                    {isForgotLoading ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                  {forgotMessage && <div className="text-green-600 text-center">{forgotMessage}</div>}
+                  {forgotError && <div className="text-red-600 text-center">{forgotError}</div>}
+                  <div className="text-center mt-2">
+                    <button
+                      type="button"
+                      className="text-sm text-orange-600 hover:underline font-semibold"
+                      onClick={() => setAuthMode('signin')}
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
                 </form>
               ) : (
                 /* SIGN UP FORM */

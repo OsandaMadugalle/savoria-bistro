@@ -8,6 +8,67 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const ActivityLog = require('../models/ActivityLog');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+const emailService = require('../utils/emailService');
+// Forgot Password - Request Reset
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email required' });
+
+    // Find user in all collections
+    let user = await User.findOne({ email });
+    if (!user) user = await Admin.findOne({ email });
+    if (!user) user = await Staff.findOne({ email });
+    if (!user) user = await DeliveryRider.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Generate reset token and expiry (1 hour)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpires = Date.now() + 60 * 60 * 1000;
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetTokenExpires;
+    await user.save();
+
+    // Send reset email
+    const resetLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    await emailService.sendPasswordResetEmail(email, resetLink);
+
+    res.json({ message: 'Password reset email sent' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Reset Password - Set New Password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+    if (!email || !token || !newPassword) return res.status(400).json({ message: 'Missing fields' });
+
+    // Find user in all collections
+    let user = await User.findOne({ email, resetPasswordToken: token });
+    if (!user) user = await Admin.findOne({ email, resetPasswordToken: token });
+    if (!user) user = await Staff.findOne({ email, resetPasswordToken: token });
+    if (!user) user = await DeliveryRider.findOne({ email, resetPasswordToken: token });
+    if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
+
+    if (!user.resetPasswordExpires || Date.now() > user.resetPasswordExpires) {
+      return res.status(400).json({ message: 'Reset token expired' });
+    }
+
+    // Update password
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ message: 'Password has been reset successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // Email transporter configuration
 const transporter = nodemailer.createTransport({

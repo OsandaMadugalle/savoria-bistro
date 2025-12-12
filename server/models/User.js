@@ -34,7 +34,9 @@ const userSchema = new mongoose.Schema({
   },
   verificationCode: String,
   verificationCodeExpires: Date,
-  refreshTokens: [String]
+  refreshTokens: [String],
+  resetPasswordToken: String,
+  resetPasswordExpires: Date
 });
 
 // Pre-save hook to remove customer fields from non-customer users
