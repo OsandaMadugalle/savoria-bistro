@@ -108,8 +108,8 @@ const AppContent: React.FC<{
   handleLogout: () => void;
   isLoginModalOpen: boolean;
   setIsLoginModalOpen: (isOpen: boolean) => void;
-  authMode: 'signin' | 'signup';
-  setAuthMode: (mode: 'signin' | 'signup') => void;
+  authMode: 'signin' | 'signup' | 'forgot';
+  setAuthMode: (mode: 'signin' | 'signup' | 'forgot') => void;
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
 }> = ({
   user, cart, addToCart, updateQuantity, removeFromCart, clearCart,
@@ -205,7 +205,7 @@ const App: React.FC = () => {
 
   const [user, setUser] = useState<User | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
 
   const addToCart = (item: MenuItem) => {
     setCart(prev => {

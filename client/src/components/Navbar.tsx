@@ -29,34 +29,6 @@ export const Navbar: React.FC<NavbarProps> = ({ cart, user, onLogin, onLogout, i
   const authMode = externalAuthMode !== undefined ? externalAuthMode : internalAuthMode;
   const setAuthMode = externalSetAuthMode || setInternalAuthMode;
 
-  // Forgot Password State
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotMessage, setForgotMessage] = useState('');
-  const [forgotError, setForgotError] = useState('');
-  const [isForgotLoading, setIsForgotLoading] = useState(false);
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotMessage('');
-    setForgotError('');
-    setIsForgotLoading(true);
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${API_URL}/auth/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to send reset email');
-      setForgotMessage('If this email is registered, a reset link has been sent.');
-    } catch (err: any) {
-      setForgotError(err.message || 'Failed to send reset email');
-    } finally {
-      setIsForgotLoading(false);
-    }
-  };
-
   // Prevent background scroll when modal is open
   useEffect(() => {
     if (isLoginModalOpen) {
