@@ -1993,10 +1993,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                                             {inquiry.contactHistory && inquiry.contactHistory.length > 0 ? (
                                               <ul className="space-y-2 text-xs text-stone-600">
                                                 {inquiry.contactHistory.map((reply, idx) => (
-                                                  <li key={`${reply.sentAt || idx}-${idx}`} className="border border-stone-100 rounded-xl p-2 bg-stone-50">
-                                                    <div className="font-semibold text-stone-900">{reply.subject || 'Follow-up'}</div>
-                                                    <div className="text-stone-500">{reply.body}</div>
-                                                    <div className="text-stone-400 text-[11px]">{reply.staffName || 'Staff'} · {reply.sentAt ? new Date(reply.sentAt).toLocaleString() : 'Just now'}</div>
+                                                  <li key={`${reply.sentAt || idx}-${idx}`} className="border border-stone-100 rounded-xl p-4 bg-stone-50 text-sm break-words">
+                                                    <div className="font-semibold text-stone-900 mb-1">{reply.subject || 'Follow-up'}</div>
+                                                    <div className="text-stone-500 whitespace-pre-line mb-2">{reply.body}</div>
+                                                    <div className="text-stone-400 text-xs">{reply.staffName || 'Staff'} · {reply.sentAt ? new Date(reply.sentAt).toLocaleString() : 'Just now'}</div>
                                                   </li>
                                                 ))}
                                               </ul>
@@ -2188,7 +2188,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                                 <tr key={payment._id || idx} className="hover:bg-stone-50">
                                   <td className="p-4 font-semibold text-stone-900">{payment.reservationId?.name || '-'}</td>
                                   <td className="p-4 font-mono text-xs font-bold text-orange-600">{payment.confirmationCode || '-'}</td>
-                                  <td className="p-4 font-bold text-green-600">${(payment.amount / 100).toFixed(2)}</td>
+                                  <td className="p-4 font-bold text-green-600">Rs{(payment.amount / 100).toFixed(2)}</td>
                                                                     <td className="p-4 font-bold text-green-600">Rs{(payment.amount / 100).toFixed(2)}</td>
                                   <td className="p-4 text-stone-600 capitalize">{payment.paymentMethod || 'card'}</td>
                                   <td className="p-4">
@@ -3060,7 +3060,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                               <td className="p-4">
                                 <p className="text-stone-900 font-medium truncate max-w-xs">{order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
                               </td>
-                              <td className="p-4 font-bold text-stone-900">${order.total.toFixed(2)}</td>
+                              <td className="p-4 font-bold text-stone-900">Rs{order.total.toFixed(2)}</td>
                               <td className="p-4">
                                 <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
                                   order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
@@ -3374,7 +3374,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-bold text-stone-600 mb-2">Deposit Amount ($)</label>
+                          <label className="block text-sm font-bold text-stone-600 mb-2">Deposit Amount (Rs)</label>
                           <input
                             type="number"
                             value={settings.depositAmount / 100}
@@ -3437,8 +3437,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           </div>
                           <div>
                             <p className="text-stone-600 text-xs">Deposit</p>
-                            <p className="font-bold text-stone-900">${(settings.depositAmount / 100).toFixed(2)}</p>
-                                                      <p className="font-bold text-stone-900">Rs{(settings.depositAmount / 100).toFixed(2)}</p>
+                            <p className="font-bold text-stone-900">Rs{(settings.depositAmount / 100).toFixed(2)}</p>
                           </div>
                           <div>
                             <p className="text-stone-600 text-xs">Duration</p>

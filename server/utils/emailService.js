@@ -3,14 +3,20 @@ const nodemailer = require('nodemailer');
 // Minimal emailTemplates for confirmation email
 const emailTemplates = {
   confirmSubscription: (email, unsubscribeLink) => ({
-    subject: 'Reservation Confirmed',
-    html: `<h2>Thank you for your reservation!</h2><p>Your reservation is confirmed for ${email}.</p><p>If you wish to unsubscribe, click <a href="${unsubscribeLink}">here</a>.</p>`
+    subject: 'Newsletter Subscription Confirmed',
+    html: `<h2>Thank you for subscribing to our newsletter!</h2><p>Your subscription is confirmed for ${email}.</p><p>If you wish to unsubscribe, click <a href="${unsubscribeLink}">here</a>.</p>`
+  }),
+  newsletter: (subscriberName, content) => ({
+    subject: 'Savoria Bistro Newsletter',
+    html: `<h2>Hello${subscriberName ? ' ' + subscriberName : ''}!</h2><div>${content}</div><p style="margin-top:16px;font-size:12px;color:#888;">You are receiving this email because you subscribed to our newsletter.</p>`
+  }),
+  unsubscribeConfirmation: () => ({
+    subject: 'You have been unsubscribed',
+    html: `<h2>Unsubscribed from Newsletter</h2><p>You have been successfully unsubscribed from Savoria Bistro's newsletter. We're sorry to see you go!</p>`
   }),
   privateEventFollowup: (name, staffName, body) => ({
     subject: 'Private Event Follow-up',
-    html: `<h2>Dear ${name},</h2>
-      <p>${body}</p>
-      <p>Best regards,<br>Savoria Bistro Team</p>`
+    html: `<h2>Dear ${name},</h2><p>${body}</p><p>Best regards,<br>Savoria Bistro Team</p>`
   })
 };
 
