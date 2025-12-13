@@ -112,7 +112,7 @@ async function sendVerificationEmail(email, verificationCode) {
     const verificationLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?code=${verificationCode}&email=${encodeURIComponent(email)}`;
     
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@savoria-bistro.com',
+      from: process.env.EMAIL_FROM || 'Savoria Bistro <osanda.devworks@gmail.com>',
       to: email,
       subject: 'Verify Your Savoria Bistro Email',
       html: `

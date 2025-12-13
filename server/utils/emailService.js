@@ -29,7 +29,7 @@ const sendPasswordResetEmail = async (email, resetLink) => {
     const cleanEmail = String(email).replace(/["'<>\s]/g, '');
     const template = emailTemplates.passwordReset(cleanEmail, resetLink);
     await transporter.sendMail({
-      from: process.env.EMAIL_USER || 'noreply@savoria.com',
+      from: process.env.EMAIL_FROM || 'Savoria Bistro <osanda.devworks@gmail.com>',
       to: cleanEmail,
       subject: template.subject,
       html: template.html
@@ -61,7 +61,7 @@ const sendConfirmationEmail = async (email, unsubscribeToken) => {
     const template = emailTemplates.confirmSubscription(cleanEmail, unsubscribeLink);
 
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'Savoria Bistro <noreply@savoria.com>',
+      from: process.env.EMAIL_FROM || 'Savoria Bistro <osanda.devworks@gmail.com>',
       to: cleanEmail,
       subject: template.subject,
       html: template.html
@@ -81,7 +81,7 @@ const sendNewsletter = async (email, subscriberName, content) => {
     const template = emailTemplates.newsletter(subscriberName, content);
 
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'Savoria Bistro <noreply@savoria.com>',
+      from: process.env.EMAIL_FROM || 'Savoria Bistro <osanda.devworks@gmail.com>',
       to: email,
       subject: template.subject,
       html: template.html
@@ -132,7 +132,7 @@ const sendUnsubscribeConfirmation = async (email) => {
     const template = emailTemplates.unsubscribeConfirmation();
 
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'Savoria Bistro <noreply@savoria.com>',
+      from: process.env.EMAIL_FROM || 'Savoria Bistro <osanda.devworks@gmail.com>',
       to: email,
       subject: template.subject,
       html: template.html
@@ -151,7 +151,7 @@ const sendPrivateEventFollowup = async (email, name, staffName, body) => {
     const template = emailTemplates.privateEventFollowup(name, staffName, body);
 
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'Savoria Bistro <noreply@savoria.com>',
+      from: process.env.EMAIL_FROM || 'Savoria Bistro <osanda.devworks@gmail.com>',
       to: email,
       subject: template.subject,
       html: template.html
