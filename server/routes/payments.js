@@ -246,15 +246,47 @@ router.post('/reservation/confirm', async (req, res) => {
 
       // Mark reservation as confirmed and send confirmation email
       const Reservation = require('../models/Reservation');
-      const { sendConfirmationEmail } = require('../utils/emailService');
+
+      // Use the reservation confirmation email logic from reservations.js
       const reservation = await Reservation.findByIdAndUpdate(
         reservationId,
         { paymentStatus: 'completed', status: 'Confirmed' },
         { new: true }
       );
       if (reservation) {
+        // Inline the reservation confirmation email logic
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER || 'noreply@savoria.com',
+            pass: process.env.EMAIL_PASSWORD || 'default_password'
+          }
+        });
+        const mailOptions = {
+          from: 'Savoria Bistro <noreply@savoria.com>',
+          to: reservation.email,
+          subject: `Reservation Confirmed - ${reservation.confirmationCode}`,
+          html: `
+            <h2>Your Reservation is Confirmed!</h2>
+            <p>Dear ${reservation.name},</p>
+            <p>Thank you for booking with us at Savoria Bistro.</p>
+            <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3>Reservation Details</h3>
+              <p><strong>Confirmation Code:</strong> ${reservation.confirmationCode}</p>
+              <p><strong>Date:</strong> ${reservation.date}</p>
+              <p><strong>Time:</strong> ${reservation.time}</p>
+              <p><strong>Party Size:</strong> ${reservation.guests} ${reservation.guests === 1 ? 'guest' : 'guests'}</p>
+              <p><strong>Duration:</strong> ${reservation.duration} minutes</p>
+            </div>
+            <p>Please arrive 5-10 minutes early. If you need to modify or cancel, please call us at +94 11 234 5678 or reply to this email with your confirmation code.</p>
+            <p>Looking forward to serving you!</p>
+            <p>Savoria Bistro Team</p>
+          `
+        };
         try {
-          await sendConfirmationEmail(reservation);
+          await transporter.sendMail(mailOptions);
+          console.log('Confirmation email sent to', reservation.email);
         } catch (emailErr) {
           console.error('Email send error:', emailErr);
         }

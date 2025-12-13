@@ -24,6 +24,18 @@ A comprehensive, production-ready restaurant management platform featuring AI-po
 
 **Savoria Bistro** is a full-stack restaurant management system designed to provide a seamless dining experience for customers while offering powerful administrative tools for restaurant management. The platform supports multiple user roles, real-time order tracking, AI-powered menu recommendations, loyalty programs, and comprehensive analytics.
 
+---
+
+## 🖼️ UI Screenshots
+
+| Home | Menu | Admin Dashboard | Delivery Dashboard | Rider Dashboard | Reservation | Profile | Gallery | Contact | Sign In/Up |
+|------|------|----------------|-------------------|----------------|-------------|---------|---------|---------|------------|
+| ![Home](client/screenshots/Home.png) | ![Menu](client/screenshots/Menu.png) | ![Admin Dashboard 1](client/screenshots/Admin%20Dashboard%201.png) | ![Delivery Dashboard 1](client/screenshots/Delivery%20Dashboard%201.png) | ![Rider Dashboard 1](client/screenshots/Rider%20Dashboard%201.png) | ![Reservation](client/screenshots/Reservation.png) | ![Profile - Orders](client/screenshots/Profile%20-%20Orders.png) | ![Gallery](client/screenshots/Gallery.png) | ![Contact](client/screenshots/Contact.png) | ![Sign In](client/screenshots/Sign%20In.png) |
+
+Additional screenshots are available in the screenshots folder.
+
+---
+
 ### Key Highlights
 
 - **Multi-Role System**: Supports customers, staff, admins, master admins, delivery riders, and delivery managers
