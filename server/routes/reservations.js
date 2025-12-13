@@ -164,6 +164,13 @@ router.post('/', async (req, res) => {
 
     await reservation.save();
 
+    // Send confirmation email
+    try {
+      await sendConfirmationEmail(reservation);
+    } catch (err) {
+      console.error('Failed to send confirmation email:', err);
+    }
+
     // Log activity
     const { requesterEmail } = req.body;
     if (requesterEmail) {

@@ -11,7 +11,12 @@ const api = axios.create({
 
 // Add auth token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+  // Check both sessionStorage and localStorage for accessToken or token
+  const token =
+    sessionStorage.getItem('accessToken') ||
+    sessionStorage.getItem('token') ||
+    localStorage.getItem('accessToken') ||
+    localStorage.getItem('token');
   // console.log('🔑 DeliveryAPI Token:', token ? 'Found' : 'Not found', token?.substring(0, 20));
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
