@@ -699,15 +699,10 @@ savoria-bistro/
 
 ---
 
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+This is a private repository. Contributions are not currently accepted.
 
 ---
 
@@ -719,11 +714,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 👨‍💻 Author
 
-**Your Name**
-- Portfolio: [https://github.com/OsandaMadugalle/savoria-bistro]
-- GitHub: [@OsandaMadugalle]
-- LinkedIn: [https://www.linkedin.com/in/osandamadugalle/]
-- Email: osandamadugallel@gmail.com
+**Osanda Madugalle**
+- Portfolio: [https://osandamadugalle.me](https://osandamadugalle.me)
+- GitHub: [@OsandaMadugalle](https://github.com/OsandaMadugalle)
+- LinkedIn: [https://www.linkedin.com/in/osandamadugalle/](https://www.linkedin.com/in/osandamadugalle/)
+- Email: osandamadugalle@gmail.com
 
 ---
 
