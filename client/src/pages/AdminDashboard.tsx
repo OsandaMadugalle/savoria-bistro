@@ -3051,60 +3051,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                           <thead className="bg-stone-50">
                             <tr>
                               <th className="p-4 text-left font-bold text-stone-700">Order ID</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Date</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Items</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Total</th>
-                          <th className="p-4 text-left font-bold text-stone-700">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100 text-sm">
-                        {orders
-                          .filter(order => {
-                            // Status filter
-                            if (orderStatusFilter !== 'all' && order.status !== orderStatusFilter) return false;
-                            // Date filter
-                            if (orderDateFilter) {
-                              const orderDate = new Date(order.createdAt);
-                              const filterDate = new Date(orderDateFilter);
-                              if (
-                                orderDate.getFullYear() !== filterDate.getFullYear() ||
-                                orderDate.getMonth() !== filterDate.getMonth() ||
-                                orderDate.getDate() !== filterDate.getDate()
-                              ) return false;
-                            }
-                            // Search filter
-                            const search = orderSearch.toLowerCase();
-                            return (
-                              String(order.orderId).toLowerCase().includes(search) ||
-                              order.items.some(i => i.name.toLowerCase().includes(search))
-                            );
-                          })
-                          .map((order, idx) => (
-                            <tr key={order.orderId || idx} className="hover:bg-stone-50">
-                              <td className="p-4 font-mono font-bold text-stone-900">#{order.orderId}</td>
-                              <td className="p-4 text-stone-600">{new Date(order.createdAt).toLocaleDateString()} <span className="text-xs text-stone-400">{new Date(order.createdAt).toLocaleTimeString()}</span></td>
-                              <td className="p-4">
-                                <p className="text-stone-900 font-medium truncate max-w-xs">{order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
-                              </td>
-                              <td className="p-4 font-bold text-stone-900">Rs{order.total.toFixed(2)}</td>
-                              <td className="p-4">
-                                <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
-                                  order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
-                                  order.status === 'Confirmed' ? 'bg-red-100 text-red-700' :
-                                  'bg-orange-100 text-orange-700'
-                                }`}>
-                                  {order.status}
-                                </span>
-                              </td>
+                              <th className="p-4 text-left font-bold text-stone-700">Date</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Items</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Total</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Status</th>
+                              <th className="p-4 text-left font-bold text-stone-700">Delivery Proof</th>
                             </tr>
-                          ))}
-                        {orders.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="p-8 text-center text-stone-500">No orders found.</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100 text-sm">
+                            {orders
+                              .filter(order => {
+                                // Status filter
+                                if (orderStatusFilter !== 'all' && order.status !== orderStatusFilter) return false;
+                                // Date filter
+                                if (orderDateFilter) {
+                                  const orderDate = new Date(order.createdAt);
+                                  const filterDate = new Date(orderDateFilter);
+                                  if (
+                                    orderDate.getFullYear() !== filterDate.getFullYear() ||
+                                    orderDate.getMonth() !== filterDate.getMonth() ||
+                                    orderDate.getDate() !== filterDate.getDate()
+                                  ) return false;
+                                }
+                                // Search filter
+                                const search = orderSearch.toLowerCase();
+                                return (
+                                  String(order.orderId).toLowerCase().includes(search) ||
+                                  order.items.some(i => i.name.toLowerCase().includes(search))
+                                );
+                              })
+                              .map((order, idx) => (
+                                <tr key={order.orderId || idx} className="hover:bg-stone-50">
+                                  <td className="p-4 font-mono font-bold text-stone-900">#{order.orderId}</td>
+                                  <td className="p-4 text-stone-600">{new Date(order.createdAt).toLocaleDateString()} <span className="text-xs text-stone-400">{new Date(order.createdAt).toLocaleTimeString()}</span></td>
+                                  <td className="p-4">
+                                    <p className="text-stone-900 font-medium truncate max-w-xs">{order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
+                                  </td>
+                                  <td className="p-4 font-bold text-stone-900">Rs{order.total.toFixed(2)}</td>
+                                  <td className="p-4">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                                      order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
+                                      order.status === 'Confirmed' ? 'bg-red-100 text-red-700' :
+                                      'bg-orange-100 text-orange-700'
+                                    }`}>
+                                      {order.status}
+                                    </span>
+                                  </td>
+                                  <td className="p-4">
+                                    {order.status === 'Delivered' && order.deliveryProof ? (
+                                      <img src={order.deliveryProof} alt="Delivery Proof" className="w-20 h-20 object-cover rounded border" />
+                                    ) : (
+                                      <span className="text-xs text-stone-400">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            {orders.length === 0 && (
+                              <tr>
+                                <td colSpan={6} className="p-8 text-center text-stone-500">No orders found.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>

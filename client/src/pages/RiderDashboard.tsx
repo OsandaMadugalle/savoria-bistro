@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ToastContainer, { Toast, ToastType } from '../components/Toast';
 import { User } from '../types';
 import { fetchAllOrders } from '../services/api';
@@ -17,6 +17,8 @@ export default function RiderDashboard({ user, onLogout }: RiderDashboardProps) 
   const [activeTab, setActiveTab] = useState<'assigned' | 'completed'>('assigned');
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [codAmount, setCodAmount] = useState<{ [key: string]: number }>({});
+  const [deliveryProof, setDeliveryProof] = useState<{ [key: string]: File | null }>({});
+  const [proofPreview, setProofPreview] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     loadOrders();
@@ -110,12 +112,34 @@ export default function RiderDashboard({ user, onLogout }: RiderDashboardProps) 
         }
         payload.codAmount = amount;
       }
+      // Handle delivery proof
+      const file = deliveryProof[orderId];
+      if (file) {
+        // Convert to base64 (for demo; in production, use proper file upload API)
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        payload.deliveryProof = base64;
+      }
       await markOrderDelivered(orderId, payload);
       showToast('Order delivered successfully!', 'success');
       await loadOrders();
       await fetchEarnings();
       showToast(`Total Earnings: Rs ${(earnings + Math.floor(order.total * 0.1)).toLocaleString()}`, 'info');
       setCodAmount(prev => {
+        const updated = { ...prev };
+        delete updated[orderId];
+        return updated;
+      });
+      setDeliveryProof(prev => {
+        const updated = { ...prev };
+        delete updated[orderId];
+        return updated;
+      });
+      setProofPreview(prev => {
         const updated = { ...prev };
         delete updated[orderId];
         return updated;
@@ -186,6 +210,31 @@ export default function RiderDashboard({ user, onLogout }: RiderDashboardProps) 
                 />
               </div>
             )}
+            {/* Delivery Proof Upload */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-stone-700">Upload Delivery Proof (Photo)</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={e => {
+                  const file = e.target.files?.[0] || null;
+                  setDeliveryProof(prev => ({ ...prev, [orderId]: file }));
+                  if (file) {
+                    const url = URL.createObjectURL(file);
+                    setProofPreview(prev => ({ ...prev, [orderId]: url }));
+                  } else {
+                    setProofPreview(prev => {
+                      const updated = { ...prev };
+                      delete updated[orderId];
+                      return updated;
+                    });
+                  }
+                }}
+              />
+              {proofPreview[orderId] && (
+                <img src={proofPreview[orderId]} alt="Proof Preview" className="w-32 h-32 object-cover rounded border" />
+              )}
+            </div>
             <button
               onClick={() => handleDeliver(orderId)}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold flex items-center gap-2"
@@ -360,6 +409,13 @@ export default function RiderDashboard({ user, onLogout }: RiderDashboardProps) 
                             <div className="flex items-center gap-2">
                               <Clock size={16} />
                               <span><strong>Picked up:</strong> {new Date(order.pickedUpAt).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {/* Show delivery proof if available (for completed orders) */}
+                          {order.status === 'Delivered' && order.deliveryProof && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <img src={order.deliveryProof} alt="Delivery Proof" className="w-32 h-32 object-cover rounded border" />
+                              <span className="text-xs text-stone-500">Delivery Proof</span>
                             </div>
                           )}
                         </div>
