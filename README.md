@@ -1,12 +1,15 @@
-# 🍽️ Savoria Bistro - Full-Stack Restaurant Management System
+# Savoria Bistro ![Vite](https://img.shields.io/badge/Vite-4.0+-yellow?logo=vite)
 
-A comprehensive, production-ready restaurant management platform featuring AI-powered concierge services, real-time order tracking, multi-role user management, delivery system, and advanced admin analytics. Built with modern web technologies and best practices.
+A modern, full-stack restaurant management platform for reservations, delivery, and customer engagement. Built with React, TypeScript, Vite, Node.js, Express, and MongoDB.
+
+---
 
 ## 📋 Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [Tech Stack](#tech-stack)
+- [UI Screenshots](#ui-screenshots)
 - [Project Architecture](#project-architecture)
 - [Installation & Setup](#installation--setup)
 - [API Documentation](#api-documentation)
@@ -17,12 +20,14 @@ A comprehensive, production-ready restaurant management platform featuring AI-po
 - [Environment Variables](#environment-variables)
 - [Contributing](#contributing)
 - [License](#license)
+- [Author](#author)
+- [Acknowledgments](#acknowledgments)
 
 ---
 
-## 🎯 Overview
+## 🍽️ Overview
 
-**Savoria Bistro** is a full-stack restaurant management system designed to provide a seamless dining experience for customers while offering powerful administrative tools for restaurant management. The platform supports multiple user roles, real-time order tracking, AI-powered menu recommendations, loyalty programs, and comprehensive analytics.
+Savoria Bistro is a production-ready restaurant management platform featuring AI-powered concierge services, real-time order tracking, multi-role user management, delivery system, and advanced admin analytics. Built with modern web technologies and best practices.
 
 ---
 
@@ -700,25 +705,25 @@ savoria-bistro/
 ---
 
 
+
 ## 🤝 Contributing
 
-This is a private repository. Contributions are not currently accepted.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a pull request.
 
 ---
+
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
+
 ## 👨‍💻 Author
 
-**Osanda Madugalle**
-- Portfolio: [https://osandamadugalle.me](https://osandamadugalle.me)
-- GitHub: [@OsandaMadugalle](https://github.com/OsandaMadugalle)
-- LinkedIn: [https://www.linkedin.com/in/osandamadugalle/](https://www.linkedin.com/in/osandamadugalle/)
-- Email: osandamadugalle@gmail.com
+**Osanda Madugalle**  
+[Portfolio](https://osandamadugalle.me) | [GitHub](https://github.com/OsandaMadugalle) | [LinkedIn](https://www.linkedin.com/in/osandamadugalle/) | osandamadugalle@gmail.com
 
 ---
 
@@ -732,4 +737,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Built with ❤️ using React, TypeScript, Node.js, Express, and MongoDB**
+
+**Built with ❤️ using React, TypeScript, Vite, Node.js, Express, and MongoDB**
